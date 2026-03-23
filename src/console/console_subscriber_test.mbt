@@ -52,3 +52,17 @@ test "console subscriber no ansi when color false" {
   assert_false(output[0].contains("\u001b"))
   @moontrace.clear_subscriber()
 }
+
+///|
+test "console subscriber ansi color" {
+  let output : Array[String] = []
+  @moontrace.set_subscriber(
+    @console.subscriber(color=true, output=fn(s) { output.push(s) }),
+  )
+  @moontrace.warn("colored")
+  assert_eq(output.length(), 1)
+  // Verify ANSI escape codes in output for Warn (yellow = \u001b[33m) and reset
+  assert_true(output[0].contains("\u001b[33m"))
+  assert_true(output[0].contains("\u001b[0m"))
+  @moontrace.clear_subscriber()
+}

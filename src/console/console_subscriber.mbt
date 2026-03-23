@@ -3,13 +3,14 @@ pub fn subscriber(
   min_level? : @moontrace.Level = @moontrace.Trace,
   output? : (String) -> Unit = fn(s) { println(s) },
   color? : Bool = true,
+  format_timestamp? : (UInt64) -> String = fn(t) { t.to_string() },
 ) -> (@moontrace.Event) -> Unit {
   fn(event) {
     if event.level < min_level {
       return
     }
     let buf = StringBuilder::new()
-    buf.write_string(event.timestamp.to_string())
+    buf.write_string(format_timestamp(event.timestamp))
     buf.write_string(" ")
     let level_str = pad_right(event.level.to_string(), 5)
     if color {
