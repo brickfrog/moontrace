@@ -66,3 +66,18 @@ test "console subscriber ansi color" {
   assert_true(output[0].contains("\u001b[0m"))
   @moontrace.clear_subscriber()
 }
+
+///|
+test "console initialize() convenience function" {
+  let output : Array[String] = []
+  @console.initialize(min_level=Warn, color=true, output=fn(s) {
+    output.push(s)
+  })
+  @moontrace.info("skip")
+  @moontrace.warn("keep")
+  assert_eq(output.length(), 1)
+  assert_true(output[0].contains("WARN"))
+  // Verify color
+  assert_true(output[0].contains("\u001b[33m"))
+  @moontrace.clear_subscriber()
+}

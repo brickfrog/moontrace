@@ -33,3 +33,14 @@ test "json subscriber filters by min_level" {
   assert_eq(output.length(), 1)
   @moontrace.clear_subscriber()
 }
+
+///|
+test "json initialize() convenience function" {
+  let output : Array[String] = []
+  @json.initialize(min_level=Warn, output=fn(s) { output.push(s) })
+  @moontrace.info("skip")
+  @moontrace.warn("keep")
+  assert_eq(output.length(), 1)
+  assert_true(output[0].contains("WARN"))
+  @moontrace.clear_subscriber()
+}
