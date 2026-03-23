@@ -14,6 +14,7 @@ You can browse and install extra skills here:
 
 - In the toplevel directory, there is a `moon.mod.json` file listing module
   metadata.
+- additional project information can be found in CLAUDE.md
 
 ## Coding convention
 
