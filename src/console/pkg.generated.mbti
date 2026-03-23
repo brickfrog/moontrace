@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/console"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit, color? : Bool) -> (@moontrace.Event) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
