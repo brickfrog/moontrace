@@ -24,6 +24,8 @@ pub fn warn(String, fields? : Array[Field]) -> Unit
 
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
+pub fn[T] with_span(String, fields? : Array[Field], () -> T) -> T
+
 // Errors
 
 // Types and methods
