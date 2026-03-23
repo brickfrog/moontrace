@@ -37,10 +37,10 @@ test "event to_json has correct structure" {
   @moontrace.info("hello", fields=@moontrace.fields([("key", "val".to_json())]))
   let json = captured[0].to_json()
   let s = json.stringify()
-  // Verify the JSON string contains expected keys and values
-  assert_true(s.contains("level"))
-  assert_true(s.contains("INFO"))
-  assert_true(s.contains("hello"))
-  assert_true(s.contains("key"))
+  // Verify the JSON string contains expected keys and values with correct structure
+  assert_true(s.contains("\"level\":\"INFO\""))
+  assert_true(s.contains("\"message\":\"hello\""))
+  assert_true(s.contains("\"fields\":{\"key\":\"val\""))
+  assert_true(s.contains("\"timestamp\":"))
   @moontrace.clear_subscriber()
 }
