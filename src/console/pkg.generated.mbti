@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn initialize(min_level? : @moontrace.Level, color? : Bool) -> Unit
+
 pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit, color? : Bool, format_timestamp? : (UInt64) -> String) -> (@moontrace.Event) -> Unit
 
 // Errors

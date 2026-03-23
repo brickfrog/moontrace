@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn initialize(min_level? : @moontrace.Level) -> Unit
+
 pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit) -> (@moontrace.Event) -> Unit
 
 // Errors
