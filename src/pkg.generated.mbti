@@ -53,6 +53,7 @@ pub(all) enum Level {
   Warn
   Error_
 }
+pub fn Level::from_string(String) -> Self?
 pub fn Level::to_json(Self) -> Json
 pub fn Level::to_string(Self) -> String
 pub impl Compare for Level
