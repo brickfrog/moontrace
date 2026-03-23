@@ -25,12 +25,12 @@ pub fn Level::to_json(self : Level) -> Json {
 
 ///|
 pub fn Level::from_string(s : String) -> Level? {
-  match s {
-    "TRACE" | "trace" | "Trace" => Some(Trace)
-    "DEBUG" | "debug" | "Debug" => Some(Debug)
-    "INFO" | "info" | "Info" => Some(Info)
-    "WARN" | "warn" | "Warn" => Some(Warn)
-    "ERROR" | "error" | "Error" => Some(Error_)
+  match s[:].to_upper().to_string() {
+    "TRACE" => Some(Trace)
+    "DEBUG" => Some(Debug)
+    "INFO" => Some(Info)
+    "WARN" => Some(Warn)
+    "ERROR" => Some(Error_)
     _ => None
   }
 }

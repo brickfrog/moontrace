@@ -40,6 +40,7 @@ test "from_string parses valid levels" {
 test "from_string is case flexible" {
   assert_eq(@moontrace.Level::from_string("info"), Some(@moontrace.Info))
   assert_eq(@moontrace.Level::from_string("Info"), Some(@moontrace.Info))
+  assert_eq(@moontrace.Level::from_string("iNfO"), Some(@moontrace.Info))
 }
 
 ///|
