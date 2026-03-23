@@ -3,7 +3,7 @@ pub(all) struct Event {
   level : Level
   message : String
   fields : Array[Field]
-  timestamp : Int64
+  timestamp : UInt64
 }
 
 ///|
