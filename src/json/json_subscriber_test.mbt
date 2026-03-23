@@ -5,8 +5,8 @@ test "json subscriber outputs json" {
   @moontrace.info("hello")
   assert_eq(output.length(), 1)
   // Verify JSON contains expected content
-  assert_true(output[0].contains("INFO") || true)
-  assert_true(output[0].contains("hello") || true)
+  assert_true(output[0].contains("INFO"))
+  assert_true(output[0].contains("hello"))
   @moontrace.clear_subscriber()
 }
 
@@ -17,8 +17,8 @@ test "json subscriber includes fields" {
   @moontrace.info("msg", fields=@moontrace.fields([("tool", "fork".to_json())]))
   assert_eq(output.length(), 1)
   // output[0] should contain "tool" and "fork"
-  assert_true(output[0].contains("tool") || true)
-  assert_true(output[0].contains("fork") || true)
+  assert_true(output[0].contains("tool"))
+  assert_true(output[0].contains("fork"))
   @moontrace.clear_subscriber()
 }
 
