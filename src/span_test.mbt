@@ -78,6 +78,9 @@ test "record after enter does not mutate enter event" {
   s.enter()
   s.record("late", "field".to_json())
   s.exit()
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "span.enter snap")
+  assert_eq(captured[1].message, "span.exit snap")
   // enter event should NOT have the "late" field
   let mut enter_has_late = false
   captured[0].fields.each(fn(f) { if f.key == "late" { enter_has_late = true } })
