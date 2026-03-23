@@ -47,3 +47,20 @@ pub fn error(msg : String, fields? : Array[Field] = []) -> Unit {
 pub fn debug(msg : String, fields? : Array[Field] = []) -> Unit {
   emit(Debug, msg, fields)
 }
+
+///|
+pub fn trace(msg : String, fields? : Array[Field] = []) -> Unit {
+  emit(Trace, msg, fields)
+}
+
+///|
+pub fn Event::to_json(self : Event) -> Json {
+  let m : Map[String, Json] = {}
+  m.set("level", self.level.to_json())
+  m.set("message", self.message.to_json())
+  m.set("timestamp", self.timestamp.to_json())
+  let fm : Map[String, Json] = {}
+  self.fields.each(fn(f) { fm.set(f.key, f.value) })
+  m.set("fields", fm.to_json())
+  m.to_json()
+}

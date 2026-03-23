@@ -17,3 +17,8 @@ pub fn Level::to_string(self : Level) -> String {
     Error_ => "ERROR"
   }
 }
+
+///|
+pub fn Level::to_json(self : Level) -> Json {
+  self.to_string().to_json()
+}
