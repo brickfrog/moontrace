@@ -69,3 +69,25 @@ test "span preserves custom fields" {
   assert_eq(enter_has_tool, true)
   @moontrace.clear_subscriber()
 }
+
+///|
+test "record after enter does not mutate enter event" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  let s = @moontrace.span("snap")
+  s.enter()
+  s.record("late", "field".to_json())
+  s.exit()
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "span.enter snap")
+  assert_eq(captured[1].message, "span.exit snap")
+  // enter event should NOT have the "late" field
+  let mut enter_has_late = false
+  captured[0].fields.each(fn(f) { if f.key == "late" { enter_has_late = true } })
+  assert_eq(enter_has_late, false)
+  // exit event SHOULD have the "late" field
+  let mut exit_has_late = false
+  captured[1].fields.each(fn(f) { if f.key == "late" { exit_has_late = true } })
+  assert_eq(exit_has_late, true)
+  @moontrace.clear_subscriber()
+}
