@@ -14,9 +14,13 @@ pub fn fields(Array[(String, Json)]) -> Array[Field]
 
 pub fn info(String, fields? : Array[Field]) -> Unit
 
+pub fn noop() -> (Event) -> Unit
+
 pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field]) -> Span
+
+pub fn tap((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn trace(String, fields? : Array[Field]) -> Unit
 
