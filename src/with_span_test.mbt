@@ -28,6 +28,8 @@ test "with_span passes fields to span" {
     fn() {  },
   )
   // Just verify enter event has the field
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "span.enter op")
   let found = {
     let mut result = false
     captured[0].fields.each(fn(f) { if f.key == "key" { result = true } })
