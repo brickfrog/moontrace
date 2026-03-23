@@ -1,6 +1,6 @@
 ///|
 pub fn noop() -> (Event) -> Unit {
-  fn(_event) {}
+  fn(_event) {  }
 }
 
 ///|
