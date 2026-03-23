@@ -20,3 +20,9 @@ test "Level to_string" {
   assert_eq(@moontrace.Warn.to_string(), "WARN")
   assert_eq(@moontrace.Error_.to_string(), "ERROR")
 }
+
+///|
+test "level to_json" {
+  let j = @moontrace.Info.to_json()
+  assert_eq(j, "INFO".to_json())
+}
