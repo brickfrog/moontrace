@@ -10,6 +10,18 @@ test "span lifecycle" {
 }
 
 ///|
+test "span duration" {
+  let s = @moontrace.span("dur")
+  assert_eq(s.duration(), (0 : UInt64))
+  s.enter()
+  assert_eq(s.duration(), (0 : UInt64))
+  s.exit()
+  let has_duration = s.duration() >= (0 : UInt64)
+  assert_eq(has_duration, true)
+  @moontrace.clear_subscriber()
+}
+
+///|
 test "span emits events" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
@@ -29,6 +41,7 @@ test "span exit has duration field" {
   let s = @moontrace.span("timed")
   s.enter()
   s.exit()
+  assert_eq(captured.length(), 2)
   let exit_event = captured[1]
   let mut has_duration = false
   exit_event.fields.each(fn(f) {
@@ -50,6 +63,7 @@ test "span preserves custom fields" {
   )
   s.enter()
   s.exit()
+  assert_eq(captured.length(), 2)
   let mut enter_has_tool = false
   captured[0].fields.each(fn(f) { if f.key == "tool" { enter_has_tool = true } })
   assert_eq(enter_has_tool, true)

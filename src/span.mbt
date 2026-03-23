@@ -2,7 +2,7 @@
 pub(all) struct Span {
   name : String
   fields : Array[Field]
-  start_time : UInt64
+  mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool
 }
@@ -20,6 +20,8 @@ pub fn span(name : String, fields? : Array[Field] = []) -> Span {
 
 ///|
 pub fn Span::enter(self : Span) -> Unit {
+  self.start_time = @env.now()
+  self.end_time = (0 : UInt64)
   self.active = true
   emit(Trace, "span.enter " + self.name, self.fields)
 }
@@ -31,7 +33,7 @@ pub fn Span::exit(self : Span) -> Unit {
   let duration = self.end_time - self.start_time
   let exit_fields = []
   self.fields.each(fn(f) { exit_fields.push(f) })
-  exit_fields.push({ key: "duration_ns", value: duration.to_string().to_json() })
+  exit_fields.push({ key: "duration_ns", value: duration.to_json() })
   emit(Trace, "span.exit " + self.name, exit_fields)
 }
 
