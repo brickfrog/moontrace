@@ -16,5 +16,6 @@ test "tap runs side effect" {
   assert_eq(tapped.length(), 1)
   assert_eq(output.length(), 1)
   assert_eq(tapped[0], "hello")
+  assert_eq(output[0], "hello")
   @moontrace.clear_subscriber()
 }
