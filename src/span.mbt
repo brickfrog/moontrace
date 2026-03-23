@@ -23,7 +23,9 @@ pub fn Span::enter(self : Span) -> Unit {
   self.start_time = @env.now()
   self.end_time = (0 : UInt64)
   self.active = true
-  emit(Trace, "span.enter " + self.name, self.fields)
+  let enter_fields = []
+  self.fields.each(fn(f) { enter_fields.push(f) })
+  emit(Trace, "span.enter " + self.name, enter_fields)
 }
 
 ///|
