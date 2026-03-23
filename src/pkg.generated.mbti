@@ -71,6 +71,7 @@ pub fn Span::enter(Self) -> Unit
 pub fn Span::exit(Self) -> Unit
 pub fn Span::is_active(Self) -> Bool
 pub fn Span::record(Self, String, Json) -> Unit
+pub fn Span::to_json(Self) -> Json
 
 // Type aliases
 

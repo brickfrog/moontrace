@@ -8,7 +8,7 @@ test "span to_json has correct structure" {
   let str = j.stringify()
   assert_true(str.contains("\"name\":\"test\""))
   assert_true(str.contains("\"active\":false"))
-  assert_true(str.contains("\"k\":\"v\""))
+  assert_true(str.contains("\"fields\":{\"k\":\"v\""))
   @moontrace.clear_subscriber()
 }
 
@@ -21,6 +21,6 @@ test "span to_json reflects state after enter and exit" {
   s.exit()
   let after = s.to_json().stringify()
   assert_true(after.contains("\"active\":false"))
-  assert_true(after.contains("\"duration\""))
+  assert_true(after.contains("\"duration_ns\""))
   @moontrace.clear_subscriber()
 }
