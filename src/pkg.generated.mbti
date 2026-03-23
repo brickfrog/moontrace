@@ -4,6 +4,8 @@ package "brickfrog/moontrace"
 // Values
 pub fn clear_subscriber() -> Unit
 
+pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
+
 pub fn debug(String, fields? : Array[Field]) -> Unit
 
 pub fn error(String, fields? : Array[Field]) -> Unit
@@ -19,6 +21,8 @@ pub fn span(String, fields? : Array[Field]) -> Span
 pub fn trace(String, fields? : Array[Field]) -> Unit
 
 pub fn warn(String, fields? : Array[Field]) -> Unit
+
+pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
 // Errors
 
