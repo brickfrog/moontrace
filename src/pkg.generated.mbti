@@ -53,6 +53,8 @@ pub(all) struct Field {
   key : String
   value : Json
 }
+pub fn Field::to_json(Self) -> Json
+pub impl Show for Field
 
 pub(all) enum Level {
   Trace
