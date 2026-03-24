@@ -1,0 +1,8 @@
+import {
+  "brickfrog/moontrace",
+  "brickfrog/moontrace/console",
+}
+
+options(
+  "is-main": true,
+)

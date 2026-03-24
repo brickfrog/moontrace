@@ -1,7 +1,0 @@
-// import {
-//   "brickfrog/moontrace" @lib,
-// }
-
-options(
-  "is-main": true,
-)
