@@ -48,3 +48,11 @@ test "from_string returns None for unknown" {
   assert_eq(@moontrace.Level::from_string("UNKNOWN"), None)
   assert_eq(@moontrace.Level::from_string(""), None)
 }
+
+///|
+test "level show uses uppercase" {
+  let shown = "\{@moontrace.Info}"
+  assert_eq(shown, "INFO")
+  let shown2 = "\{@moontrace.Error_}"
+  assert_eq(shown2, "ERROR")
+}

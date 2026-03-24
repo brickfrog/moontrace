@@ -5,7 +5,7 @@ pub(all) enum Level {
   Info
   Warn
   Error_
-} derive(Show, Eq, Compare)
+} derive(Eq, Compare)
 
 ///|
 pub fn Level::to_string(self : Level) -> String {
@@ -33,4 +33,9 @@ pub fn Level::from_string(s : String) -> Level? {
     "ERROR" => Some(Error_)
     _ => None
   }
+}
+
+///|
+pub impl Show for Level with output(self, logger) {
+  logger.write_string(Level::to_string(self))
 }
