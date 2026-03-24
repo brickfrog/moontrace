@@ -16,6 +16,8 @@ pub fn get_min_level() -> Level
 
 pub fn info(String, fields? : Array[Field]) -> Unit
 
+pub fn level_color(Level) -> String
+
 pub fn noop() -> (Event) -> Unit
 
 pub fn set_min_level(Level) -> Unit

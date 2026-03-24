@@ -14,7 +14,7 @@ pub fn subscriber(
     buf.write_string(" ")
     let level_str = pad_right(event.level.to_string(), 5)
     if color {
-      buf.write_string(level_color(event.level))
+      buf.write_string(@moontrace.level_color(event.level))
       buf.write_string(level_str)
       buf.write_string("\u001b[0m")
     } else {
@@ -43,16 +43,5 @@ fn pad_right(s : String, width : Int) -> String {
       buf.write_string(" ")
     }
     buf.to_string()
-  }
-}
-
-///|
-fn level_color(level : @moontrace.Level) -> String {
-  match level {
-    @moontrace.Trace => "\u001b[2m"
-    @moontrace.Debug => "\u001b[34m"
-    @moontrace.Info => "\u001b[32m"
-    @moontrace.Warn => "\u001b[33m"
-    @moontrace.Error_ => "\u001b[31m"
   }
 }
