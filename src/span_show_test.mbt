@@ -12,7 +12,7 @@ test "span to_string shows active when entered" {
   let s = @moontrace.span("active")
   s.enter()
   let str = s.to_string()
-  assert_true(str.contains("active"))
+  assert_true(str.contains(", active"))
   s.exit()
   @moontrace.clear_subscriber()
 }
