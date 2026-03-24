@@ -45,6 +45,7 @@ pub(all) struct Event {
 }
 pub fn Event::format(Self, color? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
+pub impl Show for Event
 
 pub(all) struct Field {
   key : String
