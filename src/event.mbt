@@ -10,6 +10,19 @@ pub(all) struct Event {
 let global_subscriber : Ref[((Event) -> Unit)?] = { val: None }
 
 ///|
+let global_min_level : Ref[Level] = { val: Trace }
+
+///|
+pub fn set_min_level(level : Level) -> Unit {
+  global_min_level.val = level
+}
+
+///|
+pub fn get_min_level() -> Level {
+  global_min_level.val
+}
+
+///|
 pub fn set_subscriber(f : (Event) -> Unit) -> Unit {
   global_subscriber.val = Some(f)
 }
@@ -21,6 +34,9 @@ pub fn clear_subscriber() -> Unit {
 
 ///|
 fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
+  if level < global_min_level.val {
+    return
+  }
   let event = Event::{ level, message: msg, fields, timestamp: @env.now() }
   match global_subscriber.val {
     Some(f) => f(event)
