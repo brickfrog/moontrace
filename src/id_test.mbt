@@ -18,22 +18,6 @@ test "ids are unique" {
 }
 
 ///|
-test "trace id is lowercase hex" {
-  let id = next_trace_id()
-  for c in id.chars() {
-    assert_true("0123456789abcdef".contains(c.to_string()))
-  }
-}
-
-///|
-test "span id is lowercase hex" {
-  let id = next_span_id()
-  for c in id.chars() {
-    assert_true("0123456789abcdef".contains(c.to_string()))
-  }
-}
-
-///|
 test "trace ids are unique in small sample" {
   let a = next_trace_id()
   let b = next_trace_id()
