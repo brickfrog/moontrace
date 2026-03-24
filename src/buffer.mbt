@@ -7,7 +7,7 @@ pub(all) struct EventBuffer {
 
 ///|
 pub fn buffer(inner : (Event) -> Unit, capacity? : Int = 10) -> EventBuffer {
-  { events: [], capacity, inner }
+  { events: [], capacity: if capacity < 1 { 1 } else { capacity }, inner }
 }
 
 ///|
@@ -22,8 +22,9 @@ pub fn EventBuffer::subscriber(self : EventBuffer) -> (Event) -> Unit {
 
 ///|
 pub fn EventBuffer::flush(self : EventBuffer) -> Unit {
-  self.events.each(fn(e) { (self.inner)(e) })
+  let eventsToFlush = self.events
   self.events = []
+  eventsToFlush.each(fn(e) { (self.inner)(e) })
 }
 
 ///|

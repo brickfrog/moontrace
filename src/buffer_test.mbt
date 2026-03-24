@@ -23,6 +23,8 @@ test "buffer auto-flushes at capacity" {
   @moontrace.info("one")
   @moontrace.info("two")
   assert_eq(output.length(), 2)
+  assert_eq(output[0], "one")
+  assert_eq(output[1], "two")
   assert_eq(buf.len(), 0)
   @moontrace.clear_subscriber()
 }
