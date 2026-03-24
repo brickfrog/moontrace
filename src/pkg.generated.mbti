@@ -44,7 +44,9 @@ pub(all) struct Event {
   timestamp : UInt64
 }
 pub fn Event::format(Self, color? : Bool) -> String
+pub fn Event::output(Self, &Logger) -> Unit
 pub fn Event::to_json(Self) -> Json
+pub fn Event::to_string(Self) -> String
 
 pub(all) struct Field {
   key : String
