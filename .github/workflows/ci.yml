@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: moon update
+
+      - name: Check
+        run: moon check --target native
+
+      - name: Test
+        run: moon test --target native
+
+      - name: Format check
+        run: |
+          moon fmt
+          git diff --exit-code || (echo "Run 'moon fmt' before committing" && exit 1)

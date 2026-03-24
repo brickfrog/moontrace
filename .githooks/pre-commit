@@ -1,3 +1,11 @@
 #!/bin/sh
 
-moon check
+# Format check — fails if moon fmt changes anything
+moon fmt
+if ! git diff --quiet; then
+  echo "Error: moon fmt produced changes. Stage them and retry."
+  exit 1
+fi
+
+# Quick build check
+moon check --target native

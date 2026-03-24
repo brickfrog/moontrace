@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "deps": {},
   "readme": "README.mbt.md",
-  "repository": "",
+  "repository": "https://github.com/brickfrog/moontrace",
   "license": "Apache-2.0",
-  "keywords": [],
-  "description": "",
+  "keywords": ["tracing", "logging", "spans", "structured-logging", "observability"],
+  "description": "Structured tracing for MoonBit — spans, structured fields, pluggable subscribers.",
   "source": "src"
 }
