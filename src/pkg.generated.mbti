@@ -101,6 +101,32 @@ pub fn Span::to_json(Self) -> Json
 pub fn Span::with_field(Self, String, Json) -> Self
 pub impl Show for Span
 
+pub(all) enum SpanKind {
+  Internal
+  Server
+  Client
+  Producer
+  Consumer
+}
+pub fn SpanKind::to_int(Self) -> Int
+pub fn SpanKind::to_json(Self) -> Json
+pub fn SpanKind::to_string(Self) -> String
+pub impl Compare for SpanKind
+pub impl Eq for SpanKind
+pub impl Show for SpanKind
+
+pub(all) enum SpanStatus {
+  Unset
+  Ok
+  SpanError
+}
+pub fn SpanStatus::to_int(Self) -> Int
+pub fn SpanStatus::to_json(Self) -> Json
+pub fn SpanStatus::to_string(Self) -> String
+pub impl Compare for SpanStatus
+pub impl Eq for SpanStatus
+pub impl Show for SpanStatus
+
 // Type aliases
 
 // Traits
