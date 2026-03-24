@@ -223,6 +223,26 @@ let s = "\{span}"    // string interpolation works
 
 Libraries instrument with `@moontrace`. Applications choose subscribers.
 
+## Contributing
+
+Contributions welcome! Please:
+
+1. `moon fmt` before committing
+2. `moon test --target native` must pass
+3. Run `moon info && moon fmt` if you change public APIs (updates `.mbti` files)
+4. Add tests for new features
+
+The pre-commit hook runs `moon fmt` and `moon check` automatically.
+
+### Development
+
+```sh
+git clone https://github.com/brickfrog/moontrace
+cd moontrace
+git config core.hooksPath .githooks
+moon test --target native
+```
+
 ## License
 
 Apache-2.0
