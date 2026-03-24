@@ -1,3 +1,4 @@
+///|
 test "trace id is 32 hex chars" {
   let id = next_trace_id()
   assert_eq(id.length(), 32)
@@ -14,6 +15,22 @@ test "ids are unique" {
   let a = next_span_id()
   let b = next_span_id()
   assert_true(a != b)
+}
+
+///|
+test "trace id is lowercase hex" {
+  let id = next_trace_id()
+  for c in id.chars() {
+    assert_true("0123456789abcdef".contains(c.to_string()))
+  }
+}
+
+///|
+test "span id is lowercase hex" {
+  let id = next_span_id()
+  for c in id.chars() {
+    assert_true("0123456789abcdef".contains(c.to_string()))
+  }
 }
 
 ///|
