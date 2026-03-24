@@ -1,9 +1,9 @@
 ///|
-pub fn Event::to_string(self : Event) -> String {
-  self.format()
+pub impl Show for Event with output(self, logger) {
+  logger.write_string(self.format())
 }
 
 ///|
-pub fn Event::output(self : Event, logger : &Logger) -> Unit {
-  logger.write_string(self.format())
+pub impl Show for Event with to_string(self) {
+  self.format()
 }
