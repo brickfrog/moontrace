@@ -37,5 +37,5 @@ pub fn Level::from_string(s : String) -> Level? {
 
 ///|
 pub impl Show for Level with output(self, logger) {
-  logger.write_string(self.to_string())
+  logger.write_string(Level::to_string(self))
 }
