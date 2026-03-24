@@ -42,5 +42,6 @@ test "event format default no color" {
   // Should NOT contain any ANSI escape codes
   assert_true(formatted.contains("WARN"))
   assert_true(formatted.contains("plain"))
+  assert_true(!formatted.contains("\u001b["))
   @moontrace.clear_subscriber()
 }
