@@ -14,8 +14,19 @@ pub fn level_to_severity(level : @moontrace.Level) -> Int {
 // Convert moontrace Field to OTLP attribute
 
 ///|
+fn json_to_otlp_value(value : Json) -> OtlpValue {
+  match value {
+    String(s) => StringVal(s)
+    Number(n, ..) => DoubleVal(n)
+    True => BoolVal(true)
+    False => BoolVal(false)
+    _ => StringVal(value.stringify())
+  }
+}
+
+///|
 pub fn field_to_attribute(field : @moontrace.Field) -> OtlpAttribute {
-  { key: field.key, value: StringVal(field.value.stringify()) }
+  { key: field.key, value: json_to_otlp_value(field.value) }
 }
 
 // Convert moontrace Event to OTLP log record
@@ -37,7 +48,6 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
 pub fn wrap_log_records(records : Array[OtlpLogRecord]) -> Json {
   let scope : Map[String, Json] = {}
   scope.set("name", "moontrace".to_json())
-  scope.set("version", "0.1.0".to_json())
 
   let scope_logs : Map[String, Json] = {}
   scope_logs.set("scope", scope.to_json())
@@ -60,7 +70,6 @@ pub fn wrap_log_records(records : Array[OtlpLogRecord]) -> Json {
 pub fn wrap_spans(spans : Array[OtlpSpan]) -> Json {
   let scope : Map[String, Json] = {}
   scope.set("name", "moontrace".to_json())
-  scope.set("version", "0.1.0".to_json())
 
   let scope_spans : Map[String, Json] = {}
   scope_spans.set("scope", scope.to_json())

@@ -78,7 +78,9 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   let m : Map[String, Json] = {}
   m.set("traceId", self.trace_id.to_json())
   m.set("spanId", self.span_id.to_json())
-  m.set("parentSpanId", self.parent_span_id.to_json())
+  if self.parent_span_id.length() > 0 {
+    m.set("parentSpanId", self.parent_span_id.to_json())
+  }
   m.set("name", self.name.to_json())
   m.set("kind", self.kind.to_json())
   m.set("startTimeUnixNano", self.start_time_unix_nano.to_string().to_json())

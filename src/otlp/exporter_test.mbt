@@ -43,6 +43,7 @@ test "otlp span conversion" {
   assert_true(j.contains("\"traceId\""))
   assert_true(j.contains("\"spanId\""))
   assert_true(j.contains("\"key\""))
+  assert_true(j.contains("\"stringValue\":\"val\""))
   @moontrace.clear_subscriber()
 }
 
@@ -70,7 +71,7 @@ test "otlp level severity mapping" {
 }
 
 ///|
-test "otlp id generation is unique" {
+test "otlp id generation is unique and hex" {
   let id1 = @otlp.next_trace_id()
   let id2 = @otlp.next_trace_id()
   assert_true(id1 != id2)
@@ -79,4 +80,26 @@ test "otlp id generation is unique" {
   // span IDs should be 16 chars
   let sid = @otlp.next_span_id()
   assert_eq(sid.length(), 16)
+  // Verify non-empty
+  assert_true(id1.length() > 0)
+}
+
+///|
+test "otlp field conversion preserves types" {
+  let str_field = @moontrace.Field::{ key: "s", value: "hello".to_json() }
+  let num_field = @moontrace.Field::{ key: "n", value: (42).to_json() }
+  let bool_field = @moontrace.Field::{ key: "b", value: true.to_json() }
+
+  let sa = @otlp.field_to_attribute(str_field)
+  let na = @otlp.field_to_attribute(num_field)
+  let ba = @otlp.field_to_attribute(bool_field)
+
+  let sj = sa.to_json().stringify()
+  assert_true(sj.contains("\"stringValue\":\"hello\""))
+
+  let nj = na.to_json().stringify()
+  assert_true(nj.contains("\"doubleValue\""))
+
+  let bj = ba.to_json().stringify()
+  assert_true(bj.contains("\"boolValue\":true"))
 }
