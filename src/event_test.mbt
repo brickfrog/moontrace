@@ -54,17 +54,19 @@ test "min level gates emit" {
   @moontrace.info("skip")
   @moontrace.warn("keep")
   @moontrace.error("keep")
-  assert_eq(captured.length(), 2)
-  assert_eq(captured[0].message, "keep")
-  // Reset to default
+  // Reset global state before assertions so it's restored even if they fail
   @moontrace.set_min_level(@moontrace.Trace)
   @moontrace.clear_subscriber()
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "keep")
 }
 
 ///|
 test "get_min_level returns current level" {
+  let original = @moontrace.get_min_level()
+  @moontrace.set_min_level(@moontrace.Trace)
   assert_eq(@moontrace.get_min_level(), @moontrace.Trace)
   @moontrace.set_min_level(@moontrace.Error_)
   assert_eq(@moontrace.get_min_level(), @moontrace.Error_)
-  @moontrace.set_min_level(@moontrace.Trace)
+  @moontrace.set_min_level(original)
 }
