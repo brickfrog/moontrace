@@ -44,3 +44,27 @@ test "event to_json has correct structure" {
   assert_true(s.contains("\"timestamp\":"))
   @moontrace.clear_subscriber()
 }
+
+///|
+test "min level gates emit" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  @moontrace.set_min_level(@moontrace.Warn)
+  @moontrace.debug("skip")
+  @moontrace.info("skip")
+  @moontrace.warn("keep")
+  @moontrace.error("keep")
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "keep")
+  // Reset to default
+  @moontrace.set_min_level(@moontrace.Trace)
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "get_min_level returns current level" {
+  assert_eq(@moontrace.get_min_level(), @moontrace.Trace)
+  @moontrace.set_min_level(@moontrace.Error_)
+  assert_eq(@moontrace.get_min_level(), @moontrace.Error_)
+  @moontrace.set_min_level(@moontrace.Trace)
+}
