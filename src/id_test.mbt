@@ -11,6 +11,32 @@ test "span id is 16 hex chars" {
 }
 
 ///|
+test "trace id is lowercase hex" {
+  let id = @moontrace.next_trace_id()
+  let valid_chars = "0123456789abcdef"
+  let mut is_valid = true
+  for i = 0; i < id.length() && is_valid; i = i + 1 {
+    if !valid_chars.contains(id[i]) {
+      is_valid = false
+    }
+  }
+  assert_true(is_valid)
+}
+
+///|
+test "span id is lowercase hex" {
+  let id = @moontrace.next_span_id()
+  let valid_chars = "0123456789abcdef"
+  let mut is_valid = true
+  for i = 0; i < id.length() && is_valid; i = i + 1 {
+    if !valid_chars.contains(id[i]) {
+      is_valid = false
+    }
+  }
+  assert_true(is_valid)
+}
+
+///|
 test "ids are unique" {
   let a = @moontrace.next_span_id()
   let b = @moontrace.next_span_id()
