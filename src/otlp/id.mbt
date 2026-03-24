@@ -1,51 +1,30 @@
 ///|
-let id_counter : Ref[Int64] = { val: 0L }
+let id_counter : Ref[UInt64] = { val: (0 : UInt64) }
 
 ///|
-fn int64_to_hex(n : Int64, width : Int) -> String {
-  let hex_chars = "0123456789abcdef"
+fn to_hex_16(val : UInt64) -> String {
+  let chars = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+  ]
   let buf = StringBuilder::new()
-  let mut val = n
-  if val < 0L {
-    val = -val
+  for i = 0; i < 16; i = i + 1 {
+    let shift = (15 - i) * 4
+    let nibble = ((val >> shift) & (0xF : UInt64)).to_int()
+    buf.write_char(chars[nibble])
   }
-  if val == 0L {
-    buf.write_string("0")
-  } else {
-    let digits : Array[String] = []
-    while val > 0L {
-      let rem = (val % 16L).to_int()
-      digits.push(hex_chars[rem].to_string())
-      val = val / 16L
-    }
-    // Reverse
-    let mut i = digits.length() - 1
-    while i >= 0 {
-      buf.write_string(digits[i])
-      i = i - 1
-    }
-  }
-  let hex = buf.to_string()
-  let pad = width - hex.length()
-  if pad <= 0 {
-    return hex
-  }
-  let result = StringBuilder::new()
-  for j = 0; j < pad; j = j + 1 {
-    result.write_string("0")
-  }
-  result.write_string(hex)
-  result.to_string()
+  buf.to_string()
 }
 
 ///|
 pub fn next_trace_id() -> String {
-  id_counter.val = id_counter.val + 1L
-  int64_to_hex(id_counter.val, 32)
+  id_counter.val = id_counter.val + (1 : UInt64)
+  let time_part = @env.now()
+  let counter_part = id_counter.val
+  to_hex_16(time_part) + to_hex_16(counter_part)
 }
 
 ///|
 pub fn next_span_id() -> String {
-  id_counter.val = id_counter.val + 1L
-  int64_to_hex(id_counter.val, 16)
+  id_counter.val = id_counter.val + (1 : UInt64)
+  to_hex_16(id_counter.val)
 }

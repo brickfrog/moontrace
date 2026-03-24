@@ -1,3 +1,4 @@
 import {
   "brickfrog/moontrace",
+  "moonbitlang/core/env",
 }
