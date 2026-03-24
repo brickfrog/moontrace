@@ -1,16 +1,18 @@
 ///|
-let id_counter : Ref[UInt64] = { val: (0 : UInt64) }
+let hex_chars = [
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+]
+
+///|
+let id_counter : Ref[UInt64] = { val: (0x8000000000000000 : UInt64) }
 
 ///|
 fn to_hex_16(val : UInt64) -> String {
-  let chars = [
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-  ]
   let buf = StringBuilder::new()
   for i = 0; i < 16; i = i + 1 {
     let shift = (15 - i) * 4
     let nibble = ((val >> shift) & (0xF : UInt64)).to_int()
-    buf.write_char(chars[nibble])
+    buf.write_char(hex_chars[nibble])
   }
   buf.to_string()
 }

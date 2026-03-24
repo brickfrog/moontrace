@@ -16,3 +16,13 @@ test "ids are unique" {
   let b = @moontrace.next_span_id()
   assert_true(a != b)
 }
+
+///|
+test "trace ids are unique in small sample" {
+  let a = @moontrace.next_trace_id()
+  let b = @moontrace.next_trace_id()
+  let c = @moontrace.next_trace_id()
+  assert_true(a != b)
+  assert_true(a != c)
+  assert_true(b != c)
+}
