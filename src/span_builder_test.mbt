@@ -11,7 +11,7 @@ test "with_field returns span for chaining" {
 }
 
 ///|
-test "with_field works with with_span" {
+test "with_field fields appear in span events" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   let s = @moontrace.span("fluent").with_field("key", "val".to_json())
