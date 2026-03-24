@@ -1,0 +1,83 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/otlp"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub fn event_to_log_record(@moontrace.Event) -> OtlpLogRecord
+
+pub fn exporter(log_output? : (String) -> Unit, span_output? : (String) -> Unit, capacity? : Int) -> OtlpExporter
+
+pub fn field_to_attribute(@moontrace.Field) -> OtlpAttribute
+
+pub fn level_to_severity(@moontrace.Level) -> Int
+
+pub fn next_span_id() -> String
+
+pub fn next_trace_id() -> String
+
+pub fn span_to_otlp(@moontrace.Span, trace_id? : String, parent_span_id? : String, status_code? : Int, status_message? : String) -> OtlpSpan
+
+pub fn wrap_log_records(Array[OtlpLogRecord]) -> Json
+
+pub fn wrap_spans(Array[OtlpSpan]) -> Json
+
+// Errors
+
+// Types and methods
+pub(all) struct OtlpAttribute {
+  key : String
+  value : OtlpValue
+}
+pub fn OtlpAttribute::to_json(Self) -> Json
+
+pub(all) struct OtlpExporter {
+  mut log_records : Array[OtlpLogRecord]
+  mut spans : Array[OtlpSpan]
+  log_output : (String) -> Unit
+  span_output : (String) -> Unit
+  capacity : Int
+}
+pub fn OtlpExporter::add_span(Self, OtlpSpan) -> Unit
+pub fn OtlpExporter::flush(Self) -> Unit
+pub fn OtlpExporter::flush_logs(Self) -> Unit
+pub fn OtlpExporter::flush_spans(Self) -> Unit
+pub fn OtlpExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
+
+pub(all) struct OtlpLogRecord {
+  time_unix_nano : UInt64
+  severity_number : Int
+  severity_text : String
+  body : String
+  attributes : Array[OtlpAttribute]
+}
+pub fn OtlpLogRecord::to_json(Self) -> Json
+
+pub(all) struct OtlpSpan {
+  trace_id : String
+  span_id : String
+  parent_span_id : String
+  name : String
+  kind : Int
+  start_time_unix_nano : UInt64
+  end_time_unix_nano : UInt64
+  attributes : Array[OtlpAttribute]
+  status_code : Int
+  status_message : String
+}
+pub fn OtlpSpan::to_json(Self) -> Json
+
+pub(all) enum OtlpValue {
+  StringVal(String)
+  IntVal(Int64)
+  BoolVal(Bool)
+  DoubleVal(Double)
+}
+pub fn OtlpValue::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+
