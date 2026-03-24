@@ -2,6 +2,8 @@
 package "brickfrog/moontrace"
 
 // Values
+pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
+
 pub fn clear_subscriber() -> Unit
 
 pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
@@ -48,6 +50,15 @@ pub(all) struct Event {
 pub fn Event::format(Self, color? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
 pub impl Show for Event
+
+pub(all) struct EventBuffer {
+  mut events : Array[Event]
+  capacity : Int
+  inner : (Event) -> Unit
+}
+pub fn EventBuffer::flush(Self) -> Unit
+pub fn EventBuffer::len(Self) -> Int
+pub fn EventBuffer::subscriber(Self) -> (Event) -> Unit
 
 pub(all) struct Field {
   key : String
