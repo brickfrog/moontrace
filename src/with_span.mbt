@@ -10,3 +10,32 @@ pub fn[T] with_span(
   s.exit()
   result
 }
+
+///|
+pub fn[T] with_span_ctx(
+  name : String,
+  fields? : Array[Field] = [],
+  f : (Span) -> T,
+) -> T {
+  let s = span(name, fields~)
+  s.enter()
+  let result = f(s)
+  s.exit()
+  result
+}
+
+///|
+pub fn[T] with_child_span(
+  parent : Span,
+  name : String,
+  fields? : Array[Field] = [],
+  f : (Span) -> T,
+) -> T {
+  let child_fields = fields
+  child_fields.push({ key: "parent", value: parent.name.to_json() })
+  let s = span(name, fields=child_fields)
+  s.enter()
+  let result = f(s)
+  s.exit()
+  result
+}

@@ -38,3 +38,39 @@ test "with_span passes fields to span" {
   assert_eq(found, true)
   @moontrace.clear_subscriber()
 }
+
+///|
+test "with_span_ctx passes span to closure" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  @moontrace.with_span_ctx("ctx", fn(s) {
+    s.record("added", "during".to_json())
+  })
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "span.enter ctx")
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "with_span_ctx returns closure result" {
+  let result = @moontrace.with_span_ctx("calc", fn(_s) { 99 })
+  assert_eq(result, 99)
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "with_child_span links parent" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  @moontrace.with_span_ctx("parent", fn(parent) {
+    @moontrace.with_child_span(parent, "child", fn(_s) {  })
+  })
+  // Events: parent.enter, child.enter, child.exit, parent.exit
+  assert_eq(captured.length(), 4)
+  assert_eq(captured[1].message, "span.enter child")
+  // child enter event should have "parent" field
+  let mut found = false
+  captured[1].fields.each(fn(f) { if f.key == "parent" { found = true } })
+  assert_eq(found, true)
+  @moontrace.clear_subscriber()
+}

@@ -34,9 +34,13 @@ pub fn trace(String, fields? : Array[Field]) -> Unit
 
 pub fn warn(String, fields? : Array[Field]) -> Unit
 
+pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T) -> T
+
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
 pub fn[T] with_span(String, fields? : Array[Field], () -> T) -> T
+
+pub fn[T] with_span_ctx(String, fields? : Array[Field], (Span) -> T) -> T
 
 // Errors
 
