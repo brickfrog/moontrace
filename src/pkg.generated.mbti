@@ -43,7 +43,7 @@ pub(all) struct Event {
   fields : Array[Field]
   timestamp : UInt64
 }
-pub fn Event::format(Self) -> String
+pub fn Event::format(Self, color? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
 
 pub(all) struct Field {
