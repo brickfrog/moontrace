@@ -21,11 +21,23 @@ jobs:
       - name: Install dependencies
         run: moon update
 
-      - name: Check
+      - name: Check (native)
         run: moon check --target native
 
-      - name: Test
+      - name: Check (js)
+        run: moon check --target js
+
+      - name: Check (wasm-gc)
+        run: moon check --target wasm-gc
+
+      - name: Test (native)
         run: moon test --target native
+
+      - name: Test (js)
+        run: moon test --target js
+
+      - name: Test (wasm-gc)
+        run: moon test --target wasm-gc
 
       - name: Format check
         run: |
