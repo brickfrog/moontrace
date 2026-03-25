@@ -37,7 +37,17 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
   if level < global_min_level.val {
     return
   }
-  let event = Event::{ level, message: msg, fields, timestamp: @env.now() }
+  let all_fields : Array[Field] = []
+  // Global context fields first
+  global_context.val.each(fn(k, v) { all_fields.push({ key: k, value: v }) })
+  // Then explicit fields (these override context if same key)
+  fields.each(fn(f) { all_fields.push(f) })
+  let event = Event::{
+    level,
+    message: msg,
+    fields: all_fields,
+    timestamp: @env.now(),
+  }
   match global_subscriber.val {
     Some(f) => f(event)
     None => ()

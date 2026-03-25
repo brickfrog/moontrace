@@ -4,6 +4,8 @@ package "brickfrog/moontrace"
 // Values
 pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
 
+pub fn clear_global_fields() -> Unit
+
 pub fn clear_subscriber() -> Unit
 
 pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
@@ -13,6 +15,8 @@ pub fn debug(String, fields? : Array[Field]) -> Unit
 pub fn error(String, fields? : Array[Field]) -> Unit
 
 pub fn fields(Array[(String, Json)]) -> Array[Field]
+
+pub fn get_global_field(String) -> Json?
 
 pub fn get_min_level() -> Level
 
@@ -25,6 +29,10 @@ pub fn next_span_id() -> String
 pub fn next_trace_id() -> String
 
 pub fn noop() -> (Event) -> Unit
+
+pub fn remove_global_field(String) -> Unit
+
+pub fn set_global_field(String, Json) -> Unit
 
 pub fn set_min_level(Level) -> Unit
 
