@@ -25,6 +25,24 @@ pub fn span(name : String, fields? : Array[Field] = []) -> Span {
 }
 
 ///|
+pub fn span_with_trace(
+  name : String,
+  trace_id : String,
+  fields? : Array[Field] = [],
+) -> Span {
+  {
+    name,
+    fields,
+    trace_id,
+    span_id: next_span_id(),
+    parent_span_id: "",
+    start_time: @env.now(),
+    end_time: (0 : UInt64),
+    active: false,
+  }
+}
+
+///|
 fn span_with_ids(
   name : String,
   fields : Array[Field],

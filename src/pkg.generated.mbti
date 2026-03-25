@@ -32,6 +32,8 @@ pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field]) -> Span
 
+pub fn span_with_trace(String, String, fields? : Array[Field]) -> Span
+
 pub fn tap((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn trace(String, fields? : Array[Field]) -> Unit
