@@ -34,40 +34,25 @@ pub fn clear_subscriber() -> Unit {
 }
 
 ///|
-
-///|
-/// Internal emit function without SourceLoc (for spans and internal use)
-/// This bypasses module filtering and sets source to empty string
-///
-fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
-  if level < global_min_level.val {
-    return
-  }
-  // Fast path: skip allocation when no global context is set
-  let final_fields = if global_context.val.length() == 0 {
+fn merge_fields(fields : Array[Field]) -> Array[Field] {
+  if global_context.val.length() == 0 {
     fields
   } else {
-    // Collect explicit field keys for dedup
     let explicit_keys : Map[String, Bool] = {}
     fields.each(fn(f) { explicit_keys.set(f.key, true) })
     let merged : Array[Field] = []
-    // Global context first, skip keys that explicit fields override
     global_context.val.each(fn(k, v) {
       if not(explicit_keys.contains(k)) {
         merged.push({ key: k, value: v })
       }
     })
-    // Then explicit fields
     fields.each(fn(f) { merged.push(f) })
     merged
   }
-  let event = Event::{
-    level,
-    message: msg,
-    fields: final_fields,
-    timestamp: @env.now(),
-    source: "",
-  }
+}
+
+///|
+fn dispatch(event : Event) -> Unit {
   match global_subscriber.val {
     Some(f) => f(event)
     None => ()
@@ -75,9 +60,21 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
 }
 
 ///|
-/// Internal emit function with SourceLoc support for module filtering
-/// This is used by the public emit functions (info, warn, etc.)
-///
+fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
+  if level < global_min_level.val {
+    return
+  }
+  let event = Event::{
+    level,
+    message: msg,
+    fields: merge_fields(fields),
+    timestamp: @env.now(),
+    source: "",
+  }
+  dispatch(event)
+}
+
+///|
 fn emit_with_loc(
   level : Level,
   msg : String,
@@ -87,41 +84,18 @@ fn emit_with_loc(
   if level < global_min_level.val {
     return
   }
-  // Extract package name from SourceLoc
   let source = extract_package(loc)
-  // Check module filter
   if not(should_log_module(source, level)) {
     return
-  }
-  // Fast path: skip allocation when no global context is set
-  let final_fields = if global_context.val.length() == 0 {
-    fields
-  } else {
-    // Collect explicit field keys for dedup
-    let explicit_keys : Map[String, Bool] = {}
-    fields.each(fn(f) { explicit_keys.set(f.key, true) })
-    let merged : Array[Field] = []
-    // Global context first, skip keys that explicit fields override
-    global_context.val.each(fn(k, v) {
-      if not(explicit_keys.contains(k)) {
-        merged.push({ key: k, value: v })
-      }
-    })
-    // Then explicit fields
-    fields.each(fn(f) { merged.push(f) })
-    merged
   }
   let event = Event::{
     level,
     message: msg,
-    fields: final_fields,
+    fields: merge_fields(fields),
     timestamp: @env.now(),
     source,
   }
-  match global_subscriber.val {
-    Some(f) => f(event)
-    None => ()
-  }
+  dispatch(event)
 }
 
 ///|
