@@ -6,13 +6,17 @@ pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
 
 pub fn clear_global_fields() -> Unit
 
+pub fn clear_module_filters() -> Unit
+
 pub fn clear_subscriber() -> Unit
 
 pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
 
-pub fn debug(String, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn debug(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
-pub fn error(String, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn fields(Array[(String, Json)]) -> Array[Field]
 
@@ -20,7 +24,8 @@ pub fn get_global_field(String) -> Json?
 
 pub fn get_min_level() -> Level
 
-pub fn info(String, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn info(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn level_color(Level) -> String
 
@@ -36,6 +41,8 @@ pub fn set_global_field(String, Json) -> Unit
 
 pub fn set_min_level(Level) -> Unit
 
+pub fn set_module_filter(String, Level) -> Unit
+
 pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field]) -> Span
@@ -44,9 +51,11 @@ pub fn span_with_trace(String, String, fields? : Array[Field]) -> Span
 
 pub fn tap((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
-pub fn trace(String, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
-pub fn warn(String, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn warn(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T) -> T
 
@@ -64,6 +73,7 @@ pub(all) struct Event {
   message : String
   fields : Array[Field]
   timestamp : UInt64
+  source : String
 }
 pub fn Event::format(Self, color? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
