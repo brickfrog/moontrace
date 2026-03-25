@@ -2,26 +2,30 @@
 
 Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for MoonBit's constraints.
 
-## Current State (v0.2.0)
+## Current State (v0.3.0)
 
 - Events: info/warn/error/debug/trace with structured fields
 - Spans: enter/exit/duration, record(), with_field(), with_span_ctx, with_child_span
+- Span IDs: trace_id (32 hex), span_id (16 hex), parent_span_id — auto-generated, propagated
+- SpanKind (Internal/Server/Client/Producer/Consumer), SpanStatus (Unset/Ok/SpanError)
+- span_with_trace() for custom trace ID injection (cross-process correlation)
 - Subscribers: JSON, console, OTLP JSON export
 - Composition: compose(), with_filter(), noop(), tap(), EventBuffer
 - Performance: global level gate (set_min_level)
 - Serialization: to_json() on Event/Span/Field, Event.format(color?)
 - Show trait on all types, Level.from_string()
 - Cross-platform: native, JS, WASM-GC
+- CI: GitHub Actions testing all 3 backends
+- 94 tests
 
-## Phase 1: OTLP Alignment (Core)
+## ~~Phase 1: OTLP Alignment (Core)~~ DONE (v0.3.0)
 
-Move OTLP concepts into core so all subscribers benefit.
-
-- [ ] Add `SpanKind` enum to core (Internal, Server, Client, Producer, Consumer)
-- [ ] Add `SpanStatus` enum to core (Unset, Ok, Error)
-- [ ] Move trace/span ID generation from otlp to core — auto-generate in `span()`
-- [ ] Add `trace_id` and `span_id` fields to core `Span` struct
-- [ ] Ensure `with_child_span` propagates trace_id and sets parent_span_id
+- [x] Add `SpanKind` enum to core (Internal, Server, Client, Producer, Consumer)
+- [x] Add `SpanStatus` enum to core (Unset, Ok, SpanError)
+- [x] Move trace/span ID generation from otlp to core — auto-generate in `span()`
+- [x] Add `trace_id` and `span_id` fields to core `Span` struct
+- [x] Ensure `with_child_span` propagates trace_id and sets parent_span_id
+- [x] `span_with_trace()` for custom trace ID injection
 
 ## Phase 2: Context System (`@moontrace/context`)
 
