@@ -4,6 +4,7 @@ pub(all) struct Event {
   message : String
   fields : Array[Field]
   timestamp : UInt64
+  source : String
 }
 
 ///|
@@ -33,34 +34,25 @@ pub fn clear_subscriber() -> Unit {
 }
 
 ///|
-fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
-  if level < global_min_level.val {
-    return
-  }
-  // Fast path: skip allocation when no global context is set
-  let final_fields = if global_context.val.length() == 0 {
+fn merge_fields(fields : Array[Field]) -> Array[Field] {
+  if global_context.val.length() == 0 {
     fields
   } else {
-    // Collect explicit field keys for dedup
     let explicit_keys : Map[String, Bool] = {}
     fields.each(fn(f) { explicit_keys.set(f.key, true) })
     let merged : Array[Field] = []
-    // Global context first, skip keys that explicit fields override
     global_context.val.each(fn(k, v) {
       if not(explicit_keys.contains(k)) {
         merged.push({ key: k, value: v })
       }
     })
-    // Then explicit fields
     fields.each(fn(f) { merged.push(f) })
     merged
   }
-  let event = Event::{
-    level,
-    message: msg,
-    fields: final_fields,
-    timestamp: @env.now(),
-  }
+}
+
+///|
+fn dispatch(event : Event) -> Unit {
   match global_subscriber.val {
     Some(f) => f(event)
     None => ()
@@ -68,28 +60,92 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
 }
 
 ///|
-pub fn info(msg : String, fields? : Array[Field] = []) -> Unit {
-  emit(Info, msg, fields)
+fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
+  if level < global_min_level.val {
+    return
+  }
+  let event = Event::{
+    level,
+    message: msg,
+    fields: merge_fields(fields),
+    timestamp: @env.now(),
+    source: "",
+  }
+  dispatch(event)
 }
 
 ///|
-pub fn warn(msg : String, fields? : Array[Field] = []) -> Unit {
-  emit(Warn, msg, fields)
+fn emit_with_loc(
+  level : Level,
+  msg : String,
+  fields : Array[Field],
+  loc : SourceLoc,
+) -> Unit {
+  if level < global_min_level.val {
+    return
+  }
+  let source = extract_package(loc)
+  if not(should_log_module(source, level)) {
+    return
+  }
+  let event = Event::{
+    level,
+    message: msg,
+    fields: merge_fields(fields),
+    timestamp: @env.now(),
+    source,
+  }
+  dispatch(event)
 }
 
 ///|
-pub fn error(msg : String, fields? : Array[Field] = []) -> Unit {
-  emit(Error_, msg, fields)
+#callsite(autofill(loc))
+pub fn info(
+  msg : String,
+  fields? : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  emit_with_loc(Info, msg, fields, loc)
 }
 
 ///|
-pub fn debug(msg : String, fields? : Array[Field] = []) -> Unit {
-  emit(Debug, msg, fields)
+#callsite(autofill(loc))
+pub fn warn(
+  msg : String,
+  fields? : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  emit_with_loc(Warn, msg, fields, loc)
 }
 
 ///|
-pub fn trace(msg : String, fields? : Array[Field] = []) -> Unit {
-  emit(Trace, msg, fields)
+#callsite(autofill(loc))
+pub fn error(
+  msg : String,
+  fields? : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  emit_with_loc(Error_, msg, fields, loc)
+}
+
+///|
+#callsite(autofill(loc))
+pub fn debug(
+  msg : String,
+  fields? : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  emit_with_loc(Debug, msg, fields, loc)
+}
+
+///|
+#callsite(autofill(loc))
+pub fn trace(
+  msg : String,
+  fields? : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  emit_with_loc(Trace, msg, fields, loc)
 }
 
 ///|
@@ -98,6 +154,7 @@ pub fn Event::to_json(self : Event) -> Json {
   m.set("level", self.level.to_json())
   m.set("message", self.message.to_json())
   m.set("timestamp", self.timestamp.to_json())
+  m.set("source", self.source.to_json())
   let fm : Map[String, Json] = {}
   self.fields.each(fn(f) { fm.set(f.key, f.value) })
   m.set("fields", fm.to_json())
