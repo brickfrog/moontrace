@@ -2,6 +2,9 @@
 pub(all) struct Span {
   name : String
   fields : Array[Field]
+  trace_id : String
+  span_id : String
+  parent_span_id : String
   mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool
@@ -12,6 +15,28 @@ pub fn span(name : String, fields? : Array[Field] = []) -> Span {
   {
     name,
     fields,
+    trace_id: next_trace_id(),
+    span_id: next_span_id(),
+    parent_span_id: "",
+    start_time: @env.now(),
+    end_time: (0 : UInt64),
+    active: false,
+  }
+}
+
+///|
+fn span_with_ids(
+  name : String,
+  fields : Array[Field],
+  trace_id : String,
+  parent_span_id : String,
+) -> Span {
+  {
+    name,
+    fields,
+    trace_id,
+    span_id: next_span_id(),
+    parent_span_id,
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,

@@ -92,6 +92,9 @@ pub impl Show for Level
 pub(all) struct Span {
   name : String
   fields : Array[Field]
+  trace_id : String
+  span_id : String
+  parent_span_id : String
   mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool

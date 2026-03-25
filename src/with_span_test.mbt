@@ -74,3 +74,22 @@ test "with_child_span links parent" {
   assert_eq(found, true)
   @moontrace.clear_subscriber()
 }
+
+///|
+test "with_child_span propagates trace_id" {
+  let mut parent_trace = ""
+  let mut child_trace = ""
+  let mut child_parent_id = ""
+  let mut parent_span = ""
+  @moontrace.with_span_ctx("parent", fn(p) {
+    parent_trace = p.trace_id
+    parent_span = p.span_id
+    @moontrace.with_child_span(p, "child", fn(c) {
+      child_trace = c.trace_id
+      child_parent_id = c.parent_span_id
+    })
+  })
+  assert_eq(parent_trace, child_trace)
+  assert_eq(child_parent_id, parent_span)
+  @moontrace.clear_subscriber()
+}
