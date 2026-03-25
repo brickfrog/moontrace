@@ -47,27 +47,57 @@ Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for 
 - [x] `clear_module_filters()` for test isolation
 - [x] Span events bypass module filtering (use global `set_min_level` only)
 
-## Phase 4: File Management (`@moontrace/file`)
+## Phase 4: Error Integration
 
-Production log file output with rotation and retention.
+Small, self-contained. Useful for any application doing error handling with tracing.
 
-- [ ] File subscriber: write events to a file path
-- [ ] Rotation by size or time interval
-- [ ] Retention policies: max files, max age
-- [ ] Compression of rotated logs (gzip)
-- [ ] Multiple files with different levels/formats
+- [ ] `Span.set_status(status, message?)` — set SpanStatus on a span
+- [ ] `Span.record_error(msg)` — records error message and auto-sets status to SpanError
+- [ ] Error fields included in span exit events
+- [ ] `with_span` variants that catch errors and auto-record them on the span
 
 ```moonbit
-@file.initialize("app.log", rotation=Size(100_000_000), retention=MaxFiles(5))
+@moontrace.with_span_ctx("db_query", fn(s) {
+  match run_query() {
+    Ok(result) => s.set_status(Ok)
+    Err(e) => s.record_error(e.to_string())  // sets SpanError + records message
+  }
+})
 ```
 
-**Note:** Depends on MoonBit's filesystem APIs. May be native-only initially.
+## Phase 5: File Management (`@moontrace/file`)
 
-## Phase 5: Error Integration
+Production log file output with rotation and retention. **Native-only initially.**
 
-- [ ] `error_event(msg, err)` that auto-extracts error message and type
-- [ ] Span status auto-set to Error when recording an error
-- [ ] Stack trace capture (if MoonBit adds support)
+### Research Findings (2026-03-25)
+
+**Available:** `@moonbitlang/async/fs` provides full async file I/O on native target:
+- `open()`, `write()`, `read()` with append mode
+- `File::size()` for rotation checks
+- `readdir()` for retention cleanup
+- `File::lock()` for multi-process safety
+- `BufferedWriter` for batched writes
+
+**Architecture challenge:** Subscriber interface is synchronous `(Event) -> Unit` but file I/O is async. Solution: buffer events synchronously (EventBuffer already exists), flush to disk asynchronously on timer/capacity.
+
+**Target support:**
+| Feature | Native | JS | WASM-GC |
+|---------|--------|-----|---------|
+| File I/O | `@moonbitlang/async/fs` | Node.js fs via JS FFI | No WASI support |
+| Compression | External `gzip` process | Node.js zlib | Not available |
+
+**No compression packages** exist in mooncakes. Options: external `gzip` process, C FFI to zlib, or skip compression initially.
+
+### Implementation Plan
+
+- [ ] Native-only file subscriber using `@moonbitlang/async/fs`
+- [ ] Synchronous buffering → async flush pattern (keeps `(Event) -> Unit` interface)
+- [ ] Size-based rotation via `File::size()`
+- [ ] Retention via `readdir()` + `remove()`
+- [ ] Compression via external `gzip` process (optional)
+- [ ] JS target support via Node.js `fs/promises` FFI (later)
+
+**Priority: Low.** Most MoonBit apps log to stdout/console. File management is a production deployment feature — important eventually but not blocking anyone right now.
 
 ## Lower Priority
 
@@ -106,4 +136,5 @@ Production log file output with rotation and retention.
 
 - **No task-local storage** in MoonBit (and no plans for it)
 - **No compile-time macros** — can't eliminate function call overhead for disabled levels
-- **Filesystem access** varies by target (native vs JS vs WASM)
+- **Filesystem access** — native only via `@moonbitlang/async/fs`, JS via FFI, no WASM support
+- **Async subscriber gap** — file I/O is async but subscriber interface is sync; bridge via buffering
