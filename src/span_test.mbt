@@ -10,6 +10,15 @@ test "span lifecycle" {
 }
 
 ///|
+test "span has trace and span ids" {
+  let s = @moontrace.span("test")
+  assert_eq(s.trace_id.length(), 32)
+  assert_eq(s.span_id.length(), 16)
+  assert_eq(s.parent_span_id, "")
+  @moontrace.clear_subscriber()
+}
+
+///|
 test "span duration" {
   let s = @moontrace.span("dur")
   assert_eq(s.duration(), (0 : UInt64))

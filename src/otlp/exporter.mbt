@@ -78,12 +78,17 @@ pub fn span_to_otlp(
   status_code? : Int = 1,
   status_message? : String = "",
 ) -> OtlpSpan {
-  let tid = if trace_id.length() == 0 { next_trace_id() } else { trace_id }
-  let sid = next_span_id()
+  let tid = if trace_id.length() == 0 { span.trace_id } else { trace_id }
+  let sid = span.span_id
+  let psid = if parent_span_id.length() == 0 {
+    span.parent_span_id
+  } else {
+    parent_span_id
+  }
   {
     trace_id: tid,
     span_id: sid,
-    parent_span_id,
+    parent_span_id: psid,
     name: span.name,
     kind: 1, // INTERNAL
     start_time_unix_nano: span.start_time,

@@ -8,6 +8,8 @@ pub impl Show for Span with to_string(self) {
   let buf = StringBuilder::new()
   buf.write_string("Span(")
   buf.write_string(self.name)
+  buf.write_string(" ")
+  buf.write_string(self.span_id)
   if self.active {
     buf.write_string(", active")
   } else {
