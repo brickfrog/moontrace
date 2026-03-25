@@ -2,67 +2,50 @@
 
 Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for MoonBit's constraints.
 
-## Current State (v0.3.0)
+## Current State (v0.4.0)
 
 - Events: info/warn/error/debug/trace with structured fields
+- Automatic source location via `#callsite(autofill(loc~))` + `SourceLoc`
+- Event.source field populated with package name
 - Spans: enter/exit/duration, record(), with_field(), with_span_ctx, with_child_span
 - Span IDs: trace_id (32 hex), span_id (16 hex), parent_span_id — auto-generated, propagated
 - SpanKind (Internal/Server/Client/Producer/Consumer), SpanStatus (Unset/Ok/SpanError)
 - span_with_trace() for custom trace ID injection (cross-process correlation)
 - Subscribers: JSON, console, OTLP JSON export
 - Composition: compose(), with_filter(), noop(), tap(), EventBuffer
-- Performance: global level gate (set_min_level)
+- Performance: global level gate (set_min_level), per-module filtering (set_module_filter)
+- Global context fields: set_global_field/get_global_field/remove_global_field/clear_global_fields
 - Serialization: to_json() on Event/Span/Field, Event.format(color?)
 - Show trait on all types, Level.from_string()
 - Cross-platform: native, JS, WASM-GC
 - CI: GitHub Actions testing all 3 backends
-- 94 tests
+- 107 tests
 
 ## ~~Phase 1: OTLP Alignment (Core)~~ DONE (v0.3.0)
 
-- [x] Add `SpanKind` enum to core (Internal, Server, Client, Producer, Consumer)
-- [x] Add `SpanStatus` enum to core (Unset, Ok, SpanError)
-- [x] Move trace/span ID generation from otlp to core — auto-generate in `span()`
+- [x] Add `SpanKind` enum to core
+- [x] Add `SpanStatus` enum to core
+- [x] Move trace/span ID generation from otlp to core
 - [x] Add `trace_id` and `span_id` fields to core `Span` struct
-- [x] Ensure `with_child_span` propagates trace_id and sets parent_span_id
+- [x] `with_child_span` propagates trace_id and sets parent_span_id
 - [x] `span_with_trace()` for custom trace ID injection
 
-## Phase 2: Context System (`@moontrace/context`)
+## ~~Phase 2: Context System~~ DONE (v0.4.0)
 
-MoonBit has no task-local storage. Provide an explicit context API instead.
+- [x] Global context: `set_global_field(key, value)`, `get_global_field(key)`
+- [x] Auto-inject global context fields into emitted events
+- [x] `remove_global_field(key)`, `clear_global_fields()` for cleanup/test isolation
+- [x] Fast-path: zero overhead when no context is set
+- [x] Explicit fields override context on key collision (dedup)
+- [x] Span-bound context via existing `span.record()` — no separate API needed
 
-- [ ] Global context for single-threaded apps: `set_global(key, value)`, `get_global(key)`
-- [ ] Span-bound context: `bind_to_span(span, key, value)`
-- [ ] Auto-inject global context fields into emitted events
-- [ ] Child spans inherit parent context fields
-- [ ] `clear_global()` for test isolation
+## ~~Phase 3: Per-Module Filtering~~ DONE (v0.4.0)
 
-```moonbit
-// Single-threaded convenience
-@context.set_global("request_id", "abc-123".to_json())
-@moontrace.info("handling")  // automatically includes request_id
-
-// Async-safe explicit passing
-@moontrace.with_span_ctx("op", fn(span) {
-  @context.bind_to_span(span, "user_id", "42".to_json())
-  @moontrace.with_child_span(span, "query", fn(child) {
-    // child inherits user_id from parent context
-  })
-})
-```
-
-## Phase 3: Per-Module Filtering
-
-Go beyond global min_level to target-specific filtering.
-
-- [ ] Filter string parsing: `"db=debug,api=warn,default=info"`
-- [ ] `set_filter_string(s)` for programmatic configuration
-- [ ] `set_filter_fn(f: (String, Level) -> Bool)` for custom logic
-- [ ] Module/target name on events (requires source location or manual tagging)
-
-```moonbit
-@moontrace.set_filter_string("db=trace,http=warn")
-```
+- [x] `set_module_filter(package_name, level)` for per-package min levels
+- [x] Automatic source location via `#callsite(autofill(loc~))` + `SourceLoc`
+- [x] `Event.source` field populated from SourceLoc package name
+- [x] `clear_module_filters()` for test isolation
+- [x] Span events bypass module filtering (use global `set_min_level` only)
 
 ## Phase 4: File Management (`@moontrace/file`)
 
