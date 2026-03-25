@@ -18,7 +18,7 @@ test "ids are unique" {
 }
 
 ///|
-test "trace ids are unique in small sample" {
+test "trace ids are unique" {
   let a = @moontrace.next_trace_id()
   let b = @moontrace.next_trace_id()
   let c = @moontrace.next_trace_id()

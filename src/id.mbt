@@ -1,9 +1,4 @@
 ///|
-const HEX_CHARS : ReadOnlyArray[Char] = [
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-]
-
-///|
 let id_counter : Ref[UInt64] = { val: (0x8000000000000000 : UInt64) }
 
 ///|
@@ -12,7 +7,25 @@ fn to_hex_16(val : UInt64) -> String {
   for i = 0; i < 16; i = i + 1 {
     let shift = (15 - i) * 4
     let nibble = ((val >> shift) & (0xF : UInt64)).to_int()
-    buf.write_char(HEX_CHARS[nibble])
+    let c = match nibble {
+      0 => '0'
+      1 => '1'
+      2 => '2'
+      3 => '3'
+      4 => '4'
+      5 => '5'
+      6 => '6'
+      7 => '7'
+      8 => '8'
+      9 => '9'
+      10 => 'a'
+      11 => 'b'
+      12 => 'c'
+      13 => 'd'
+      14 => 'e'
+      _ => 'f'
+    }
+    buf.write_char(c)
   }
   buf.to_string()
 }
