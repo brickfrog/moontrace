@@ -37,7 +37,30 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
   if level < global_min_level.val {
     return
   }
-  let event = Event::{ level, message: msg, fields, timestamp: @env.now() }
+  // Fast path: skip allocation when no global context is set
+  let final_fields = if global_context.val.length() == 0 {
+    fields
+  } else {
+    // Collect explicit field keys for dedup
+    let explicit_keys : Map[String, Bool] = {}
+    fields.each(fn(f) { explicit_keys.set(f.key, true) })
+    let merged : Array[Field] = []
+    // Global context first, skip keys that explicit fields override
+    global_context.val.each(fn(k, v) {
+      if not(explicit_keys.contains(k)) {
+        merged.push({ key: k, value: v })
+      }
+    })
+    // Then explicit fields
+    fields.each(fn(f) { merged.push(f) })
+    merged
+  }
+  let event = Event::{
+    level,
+    message: msg,
+    fields: final_fields,
+    timestamp: @env.now(),
+  }
   match global_subscriber.val {
     Some(f) => f(event)
     None => ()
