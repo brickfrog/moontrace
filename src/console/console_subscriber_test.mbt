@@ -1,83 +1,122 @@
 ///|
-test "console subscriber formats output" {
-  let output : Array[String] = []
-  @moontrace.set_subscriber(
-    @console.subscriber(color=false, output=fn(s) { output.push(s) }),
-  )
-  @moontrace.info("hello")
-  assert_eq(output.length(), 1)
-  // Output should contain INFO and hello
-  assert_true(output[0].contains("INFO"))
-  assert_true(output[0].contains("hello"))
-  @moontrace.clear_subscriber()
+fn sample_console_event(
+  level : @moontrace.Level,
+  message : String,
+  fields? : Array[@moontrace.Field] = [],
+  source? : String = "brickfrog/choir/server",
+) -> @moontrace.Event {
+  @moontrace.Event::{
+    level,
+    message,
+    fields,
+    timestamp: (52_303_903_000_000 : UInt64),
+    source,
+  }
 }
 
 ///|
-test "console subscriber includes fields" {
+test "console subscriber formats pipe-separated output" {
   let output : Array[String] = []
-  @moontrace.set_subscriber(
-    @console.subscriber(color=false, output=fn(s) { output.push(s) }),
+  let subscriber = @console.subscriber(color=false, output=fn(s) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(
+      @moontrace.Debug,
+      "no listen_tcp configured",
+      fields=@moontrace.fields([("service", "choir".to_json())]),
+    ),
   )
-  @moontrace.info("msg", fields=@moontrace.fields([("key", "val".to_json())]))
   assert_eq(output.length(), 1)
-  // Output should contain key=\"val\" or key="val"
-  assert_true(output[0].contains("key=\"val\""))
-  @moontrace.clear_subscriber()
+  assert_eq(
+    output[0],
+    "14:31:43.903 | DEBUG | choir/server — no listen_tcp configured  service=\"choir\"",
+  )
+}
+
+///|
+test "console subscriber omits empty source" {
+  let output : Array[String] = []
+  let subscriber = @console.subscriber(color=false, output=fn(s) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(
+      @moontrace.Info,
+      "follow up",
+      fields=@moontrace.fields([("detail", "needs attention".to_json())]),
+      source="",
+    ),
+  )
+  assert_eq(output.length(), 1)
+  assert_eq(
+    output[0],
+    "14:31:43.903 | INFO  — follow up  detail=\"needs attention\"",
+  )
 }
 
 ///|
 test "console subscriber min_level filtering" {
   let output : Array[String] = []
-  @moontrace.set_subscriber(
-    @console.subscriber(min_level=@moontrace.Warn, color=false, output=fn(s) {
-      output.push(s)
-    }),
+  let subscriber = @console.subscriber(min_level=@moontrace.Warn, color=false, output=fn(
+    s,
+  ) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(@moontrace.Info, "skip", source="brickfrog/moontrace"),
   )
-  @moontrace.info("skip")
-  @moontrace.warn("keep")
+  subscriber(
+    sample_console_event(@moontrace.Warn, "keep", source="brickfrog/moontrace"),
+  )
   assert_eq(output.length(), 1)
-  @moontrace.clear_subscriber()
+  assert_eq(output[0], "14:31:43.903 | WARN  | moontrace — keep")
 }
 
 ///|
 test "console subscriber no ansi when color false" {
   let output : Array[String] = []
-  @moontrace.set_subscriber(
-    @console.subscriber(color=false, output=fn(s) { output.push(s) }),
+  let subscriber = @console.subscriber(color=false, output=fn(s) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(@moontrace.Info, "test", source="brickfrog/moontrace"),
   )
-  @moontrace.info("test")
   assert_eq(output.length(), 1)
-  // Verify no ANSI escape codes in output
-  // Check output[0] does NOT contain the escape character
   assert_false(output[0].contains("\u001b"))
-  @moontrace.clear_subscriber()
 }
 
 ///|
 test "console subscriber ansi color" {
   let output : Array[String] = []
-  @moontrace.set_subscriber(
-    @console.subscriber(color=true, output=fn(s) { output.push(s) }),
+  let subscriber = @console.subscriber(color=true, output=fn(s) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(
+      @moontrace.Warn,
+      "colored",
+      source="brickfrog/moontrace",
+    ),
   )
-  @moontrace.warn("colored")
   assert_eq(output.length(), 1)
-  // Verify ANSI escape codes in output for Warn (yellow = \u001b[33m) and reset
-  assert_true(output[0].contains("\u001b[33m"))
-  assert_true(output[0].contains("\u001b[0m"))
-  @moontrace.clear_subscriber()
+  assert_eq(
+    output[0],
+    "14:31:43.903 | \u001b[33mWARN \u001b[0m | moontrace — colored",
+  )
 }
 
 ///|
-test "console initialize() convenience function" {
+test "console initialize convenience function" {
   let output : Array[String] = []
-  @console.initialize(min_level=Warn, color=true, output=fn(s) {
+  @console.initialize(min_level=@moontrace.Warn, color=true, output=fn(s) {
     output.push(s)
   })
   @moontrace.info("skip")
   @moontrace.warn("keep")
-  assert_eq(output.length(), 1)
-  assert_true(output[0].contains("WARN"))
-  // Verify color
-  assert_true(output[0].contains("\u001b[33m"))
   @moontrace.clear_subscriber()
+  assert_eq(output.length(), 1)
+  assert_true(output[0].contains(" | "))
+  assert_true(output[0].contains(" — "))
+  assert_true(output[0].contains("\u001b[33m"))
 }

@@ -1,4 +1,20 @@
 ///|
+fn sample_event(
+  level : @moontrace.Level,
+  message : String,
+  fields? : Array[@moontrace.Field] = [],
+  source? : String = "brickfrog/choir/server",
+) -> @moontrace.Event {
+  @moontrace.Event::{
+    level,
+    message,
+    fields,
+    timestamp: (52_303_903_000_000 : UInt64),
+    source,
+  }
+}
+
+///|
 test "format timestamp hms zero pads components" {
   let timestamp = (52_303_903_000_000 : UInt64)
   assert_eq(@moontrace.format_timestamp_hms(timestamp), "14:31:43.903")
@@ -11,44 +27,48 @@ test "format timestamp hms wraps after 24 hours" {
 }
 
 ///|
-test "event format matches console style" {
-  let event = @moontrace.Event::{
-    level: @moontrace.Debug,
-    message: "no listen_tcp configured",
-    fields: @moontrace.fields([("service", "choir".to_json())]),
-    timestamp: (52_303_903_000_000 : UInt64),
-    source: "choir/server",
-  }
+test "event format basic" {
+  let formatted = sample_event(@moontrace.Info, "hello").format()
+  assert_eq(formatted, "14:31:43.903 | INFO  | choir/server — hello")
+}
 
+///|
+test "event format includes fields" {
+  let event = sample_event(
+    @moontrace.Info,
+    "msg",
+    fields=@moontrace.fields([
+      ("key", "val".to_json()),
+      ("detail", "needs attention".to_json()),
+    ]),
+  )
   assert_eq(
     event.format(),
-    "14:31:43.903 | DEBUG | choir/server — no listen_tcp configured  service=\"choir\"",
+    "14:31:43.903 | INFO  | choir/server — msg  key=\"val\" detail=\"needs attention\"",
   )
 }
 
 ///|
-test "event format omits source separator when source is empty" {
-  let event = @moontrace.Event::{
-    level: @moontrace.Info,
-    message: "UDS server listening",
-    fields: [],
-    timestamp: (52_303_903_000_000 : UInt64),
-    source: "",
-  }
+test "event format with color" {
+  let formatted = sample_event(@moontrace.Info, "colored").format(color=true)
+  assert_eq(
+    formatted, "14:31:43.903 | \u001b[32mINFO \u001b[0m | choir/server — colored",
+  )
+}
 
-  assert_eq(event.format(), "14:31:43.903 | INFO  — UDS server listening")
+///|
+test "event format omits source when empty" {
+  let formatted = sample_event(@moontrace.Warn, "plain", source="").format()
+  assert_eq(formatted, "14:31:43.903 | WARN  — plain")
 }
 
 ///|
 test "event format colors the padded level only" {
-  let event = @moontrace.Event::{
-    level: @moontrace.Warn,
-    message: "colored",
-    fields: @moontrace.fields([("service", "choir".to_json())]),
-    timestamp: (52_303_903_000_000 : UInt64),
-    source: "choir/server",
-  }
-
+  let event = sample_event(
+    @moontrace.Warn,
+    "colored",
+    fields=@moontrace.fields([("service", "choir".to_json())]),
+  )
   assert_eq(
     event.format(color=true),
     "14:31:43.903 | \u001b[33mWARN \u001b[0m | choir/server — colored  service=\"choir\"",
@@ -56,18 +76,15 @@ test "event format colors the padded level only" {
 }
 
 ///|
-test "event format uses two spaces before first field and one between fields" {
-  let event = @moontrace.Event::{
-    level: @moontrace.Info,
-    message: "listening",
-    fields: @moontrace.fields([
+test "event format two spaces before fields one between" {
+  let event = sample_event(
+    @moontrace.Info,
+    "listening",
+    fields=@moontrace.fields([
       ("service", "choir".to_json()),
       ("path", ".choir/server.sock".to_json()),
     ]),
-    timestamp: (52_303_903_000_000 : UInt64),
-    source: "choir/server",
-  }
-
+  )
   assert_eq(
     event.format(),
     "14:31:43.903 | INFO  | choir/server — listening  service=\"choir\" path=\".choir/server.sock\"",
