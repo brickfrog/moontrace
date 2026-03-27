@@ -8,6 +8,8 @@ pub(all) struct Span {
   mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool
+  mut status : SpanStatus
+  mut status_message : String
 }
 
 ///|
@@ -21,6 +23,8 @@ pub fn span(name : String, fields? : Array[Field] = []) -> Span {
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
+    status: Unset,
+    status_message: "",
   }
 }
 
@@ -39,6 +43,8 @@ pub fn span_with_trace(
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
+    status: Unset,
+    status_message: "",
   }
 }
 
@@ -58,6 +64,8 @@ fn span_with_ids(
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
+    status: Unset,
+    status_message: "",
   }
 }
 
@@ -82,7 +90,36 @@ pub fn Span::exit(self : Span) -> Unit {
   let exit_fields = []
   self.fields.each(fn(f) { exit_fields.push(f) })
   exit_fields.push({ key: "duration_ns", value: duration.to_json() })
+  if self.status != Unset {
+    exit_fields.push({ key: "status", value: self.status.to_json() })
+    if self.status_message.length() > 0 {
+      exit_fields.push({
+        key: "status_message",
+        value: self.status_message.to_json(),
+      })
+    }
+  }
   emit(Trace, "span.exit " + self.name, exit_fields)
+}
+
+///|
+pub fn Span::set_status(
+  self : Span,
+  status : SpanStatus,
+  message? : String? = None,
+) -> Unit {
+  self.status = status
+  match message {
+    Some(m) => self.status_message = m
+    None => ()
+  }
+}
+
+///|
+pub fn Span::record_error(self : Span, msg : String) -> Unit {
+  self.status = SpanError
+  self.status_message = msg
+  self.fields.push({ key: "error", value: msg.to_json() })
 }
 
 ///|

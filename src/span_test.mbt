@@ -114,3 +114,82 @@ test "record after enter does not mutate enter event" {
   assert_eq(exit_has_late, true)
   @moontrace.clear_subscriber()
 }
+
+///|
+test "span set_status" {
+  let s = @moontrace.span("test")
+  s.set_status(@moontrace.Ok)
+  assert_eq(s.status, @moontrace.Ok)
+  assert_eq(s.status_message, "")
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "span set_status without message preserves status_message" {
+  let s = @moontrace.span("test")
+  s.record_error("boom")
+  s.set_status(@moontrace.Ok)
+  assert_eq(s.status, @moontrace.Ok)
+  assert_eq(s.status_message, "boom")
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "span record_error sets status and message" {
+  let s = @moontrace.span("test")
+  s.record_error("something broke")
+  assert_eq(s.status, @moontrace.SpanError)
+  assert_eq(s.status_message, "something broke")
+  let mut has_error = false
+  s.fields.each(fn(f) { if f.key == "error" { has_error = true } })
+  assert_eq(has_error, true)
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "span exit includes status fields" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  let s = @moontrace.span("test")
+  s.enter()
+  s.record_error("failed")
+  s.exit()
+  @moontrace.clear_subscriber()
+  let exit_event = captured[captured.length() - 1]
+  let mut has_status = false
+  let mut has_msg = false
+  exit_event.fields.each(fn(f) {
+    if f.key == "status" {
+      has_status = true
+    }
+    if f.key == "status_message" {
+      has_msg = true
+    }
+  })
+  assert_eq(has_status, true)
+  assert_eq(has_msg, true)
+}
+
+///|
+test "span to_json includes status" {
+  let s = @moontrace.span("test")
+  s.set_status(@moontrace.SpanError, message=Some("oops"))
+  let json = s.to_json().stringify()
+  assert_true(json.contains("SpanError") || json.contains("ERROR"))
+  assert_true(json.contains("oops"))
+  @moontrace.clear_subscriber()
+}
+
+///|
+test "unset status not included in exit" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  let s = @moontrace.span("test")
+  s.enter()
+  s.exit()
+  @moontrace.clear_subscriber()
+  let exit_event = captured[captured.length() - 1]
+  let mut has_status = false
+  exit_event.fields.each(fn(f) { if f.key == "status" { has_status = true } })
+  assert_eq(has_status, false)
+}

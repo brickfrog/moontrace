@@ -25,6 +25,14 @@ pub impl Show for Span with to_string(self) {
     buf.write_string(", fields=")
     buf.write_string(self.fields.length().to_string())
   }
+  if self.status != Unset {
+    buf.write_string(", status=")
+    buf.write_string(self.status.to_string())
+    if self.status_message.length() > 0 {
+      buf.write_string(" msg=")
+      buf.write_string(self.status_message)
+    }
+  }
   buf.write_string(")")
   buf.to_string()
 }
