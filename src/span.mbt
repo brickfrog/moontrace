@@ -91,7 +91,7 @@ pub fn Span::exit(self : Span) -> Unit {
   self.fields.each(fn(f) { exit_fields.push(f) })
   exit_fields.push({ key: "duration_ns", value: duration.to_json() })
   if self.status != Unset {
-    exit_fields.push({ key: "status", value: self.status.to_string().to_json() })
+    exit_fields.push({ key: "status", value: self.status.to_json() })
     if self.status_message.length() > 0 {
       exit_fields.push({
         key: "status_message",
@@ -106,10 +106,13 @@ pub fn Span::exit(self : Span) -> Unit {
 pub fn Span::set_status(
   self : Span,
   status : SpanStatus,
-  message? : String = "",
+  message? : String? = None,
 ) -> Unit {
   self.status = status
-  self.status_message = message
+  match message {
+    Some(m) => self.status_message = m
+    None => ()
+  }
 }
 
 ///|

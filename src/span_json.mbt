@@ -11,7 +11,7 @@ pub fn Span::to_json(self : Span) -> Json {
   m.set("start_time_ns", self.start_time.to_json())
   m.set("end_time_ns", self.end_time.to_json())
   m.set("duration_ns", self.duration().to_json())
-  m.set("status", self.status.to_string().to_json())
+  m.set("status", self.status.to_json())
   if self.status_message.length() > 0 {
     m.set("status_message", self.status_message.to_json())
   }

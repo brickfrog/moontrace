@@ -125,6 +125,16 @@ test "span set_status" {
 }
 
 ///|
+test "span set_status without message preserves status_message" {
+  let s = @moontrace.span("test")
+  s.record_error("boom")
+  s.set_status(@moontrace.Ok)
+  assert_eq(s.status, @moontrace.Ok)
+  assert_eq(s.status_message, "boom")
+  @moontrace.clear_subscriber()
+}
+
+///|
 test "span record_error sets status and message" {
   let s = @moontrace.span("test")
   s.record_error("something broke")
@@ -163,7 +173,7 @@ test "span exit includes status fields" {
 ///|
 test "span to_json includes status" {
   let s = @moontrace.span("test")
-  s.set_status(@moontrace.SpanError, message="oops")
+  s.set_status(@moontrace.SpanError, message=Some("oops"))
   let json = s.to_json().stringify()
   assert_true(json.contains("SpanError") || json.contains("ERROR"))
   assert_true(json.contains("oops"))
