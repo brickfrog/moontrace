@@ -23,6 +23,23 @@ test "json subscriber includes fields" {
 }
 
 ///|
+test "json subscriber delegates to event to_json" {
+  let output : Array[String] = []
+  let event = @moontrace.Event::{
+    level: @moontrace.Info,
+    message: "msg",
+    fields: @moontrace.fields([("count", (1).to_json())]),
+    timestamp: (123 : UInt64),
+    source: "brickfrog/moontrace",
+  }
+  let subscriber = @json.subscriber(output=fn(s) { output.push(s) })
+  subscriber(event)
+  assert_eq(output.length(), 1)
+  assert_eq(output[0], event.to_json().stringify())
+  @moontrace.clear_subscriber()
+}
+
+///|
 test "json subscriber filters by min_level" {
   let output : Array[String] = []
   @moontrace.set_subscriber(

@@ -17,3 +17,13 @@ test "fields() helper with mixed types" {
   assert_eq(arr[1].key, "active")
   assert_eq(arr[1].value, true.to_json())
 }
+
+///|
+test "fields_to_json converts fields to object json" {
+  let json = @moontrace.fields_to_json(
+    @moontrace.fields([("tool", "fork".to_json()), ("count", (2).to_json())]),
+  )
+  let str = json.stringify()
+  assert_true(str.contains("\"tool\":\"fork\""))
+  assert_true(str.contains("\"count\":2"))
+}

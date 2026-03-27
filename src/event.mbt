@@ -155,8 +155,6 @@ pub fn Event::to_json(self : Event) -> Json {
   m.set("message", self.message.to_json())
   m.set("timestamp", self.timestamp.to_json())
   m.set("source", self.source.to_json())
-  let fm : Map[String, Json] = {}
-  self.fields.each(fn(f) { fm.set(f.key, f.value) })
-  m.set("fields", fm.to_json())
+  m.set("fields", fields_to_json(self.fields))
   m.to_json()
 }
