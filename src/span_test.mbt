@@ -63,6 +63,20 @@ test "span exit has duration field" {
 }
 
 ///|
+test "span exit is idempotent when already inactive" {
+  let captured = []
+  @moontrace.set_subscriber(fn(e) { captured.push(e) })
+  let s = @moontrace.span("once")
+  s.enter()
+  s.exit()
+  s.exit()
+  @moontrace.clear_subscriber()
+  assert_eq(captured.length(), 2)
+  assert_eq(captured[0].message, "span.enter once")
+  assert_eq(captured[1].message, "span.exit once")
+}
+
+///|
 test "span preserves custom fields" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })

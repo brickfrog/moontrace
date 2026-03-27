@@ -49,19 +49,17 @@ fn should_log_module(source : String, level : Level) -> Bool {
 ///
 fn extract_package(loc : SourceLoc) -> String {
   let s = loc.to_string()
-  // Format: "file:start_line:start_column-end_line:end_column@package/name"
-  // Find @ and extract everything after it
-  let mut at_pos = -1
-  let mut i = 0
-  while i < s.length() {
+  // Scan from the end so we intentionally use the last '@' delimiter.
+  let mut i = s.length() - 1
+  while i >= 0 {
     if s[i] == '@' {
-      at_pos = i + 1
-      break
+      let at_pos = i + 1
+      if at_pos >= s.length() {
+        return "unknown"
+      }
+      return s[at_pos:].to_string()
     }
-    i = i + 1
+    i = i - 1
   }
-  if at_pos == -1 || at_pos >= s.length() {
-    return "unknown"
-  }
-  s[at_pos:].to_string()
+  "unknown"
 }
