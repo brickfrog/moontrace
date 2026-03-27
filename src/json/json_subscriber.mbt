@@ -7,13 +7,7 @@ pub fn subscriber(
     if event.level < min_level {
       return
     }
-    let m : Map[String, Json] = {}
-    m.set("level", event.level.to_string().to_json())
-    m.set("message", event.message.to_json())
-    m.set("timestamp", event.timestamp.to_string().to_json())
-    let fm : Map[String, Json] = {}
-    event.fields.each(fn(f) { fm.set(f.key, f.value) })
-    m.set("fields", fm.to_json())
-    output(m.to_json().stringify())
+    let json_str = event.to_json().stringify()
+    output(json_str)
   }
 }

@@ -20,6 +20,8 @@ pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn fields(Array[(String, Json)]) -> Array[Field]
 
+pub fn fields_to_json(Array[Field]) -> Json
+
 pub fn get_global_field(String) -> Json?
 
 pub fn get_min_level() -> Level
