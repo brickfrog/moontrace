@@ -3,4 +3,5 @@ _build/
 .mooncakes/
 .moonagent/
 .choir/
+.cursor/
 bisect.coverage
