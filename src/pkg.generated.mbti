@@ -120,12 +120,16 @@ pub(all) struct Span {
   mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool
+  mut status : SpanStatus
+  mut status_message : String
 }
 pub fn Span::duration(Self) -> UInt64
 pub fn Span::enter(Self) -> Unit
 pub fn Span::exit(Self) -> Unit
 pub fn Span::is_active(Self) -> Bool
 pub fn Span::record(Self, String, Json) -> Unit
+pub fn Span::record_error(Self, String) -> Unit
+pub fn Span::set_status(Self, SpanStatus, message? : String) -> Unit
 pub fn Span::to_json(Self) -> Json
 pub fn Span::with_field(Self, String, Json) -> Self
 pub impl Show for Span
