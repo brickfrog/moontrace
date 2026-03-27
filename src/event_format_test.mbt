@@ -11,8 +11,6 @@ fn sample_event(
     fields,
     timestamp: (52_303_903_000_000 : UInt64),
     source,
-    status: @moontrace.Unset,
-    status_message: "",
   }
 }
 
@@ -54,8 +52,7 @@ test "event format includes fields" {
 test "event format with color" {
   let formatted = sample_event(@moontrace.Info, "colored").format(color=true)
   assert_eq(
-    formatted,
-    "14:31:43.903 | \u001b[32mINFO \u001b[0m | choir/server — colored",
+    formatted, "14:31:43.903 | \u001b[32mINFO \u001b[0m | choir/server — colored",
   )
 }
 

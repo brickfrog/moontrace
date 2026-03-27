@@ -11,8 +11,6 @@ fn sample_console_event(
     fields,
     timestamp: (52_303_903_000_000 : UInt64),
     source,
-    status: @moontrace.Unset,
-    status_message: "",
   }
 }
 
@@ -60,13 +58,17 @@ test "console subscriber omits empty source" {
 ///|
 test "console subscriber min_level filtering" {
   let output : Array[String] = []
-  let subscriber = @console.subscriber(
-    min_level=@moontrace.Warn,
-    color=false,
-    output=fn(s) { output.push(s) },
+  let subscriber = @console.subscriber(min_level=@moontrace.Warn, color=false, output=fn(
+    s,
+  ) {
+    output.push(s)
+  })
+  subscriber(
+    sample_console_event(@moontrace.Info, "skip", source="brickfrog/moontrace"),
   )
-  subscriber(sample_console_event(@moontrace.Info, "skip", source="brickfrog/moontrace"))
-  subscriber(sample_console_event(@moontrace.Warn, "keep", source="brickfrog/moontrace"))
+  subscriber(
+    sample_console_event(@moontrace.Warn, "keep", source="brickfrog/moontrace"),
+  )
   assert_eq(output.length(), 1)
   assert_eq(output[0], "14:31:43.903 | WARN  | moontrace — keep")
 }
@@ -77,7 +79,9 @@ test "console subscriber no ansi when color false" {
   let subscriber = @console.subscriber(color=false, output=fn(s) {
     output.push(s)
   })
-  subscriber(sample_console_event(@moontrace.Info, "test", source="brickfrog/moontrace"))
+  subscriber(
+    sample_console_event(@moontrace.Info, "test", source="brickfrog/moontrace"),
+  )
   assert_eq(output.length(), 1)
   assert_false(output[0].contains("\u001b"))
 }
@@ -88,7 +92,13 @@ test "console subscriber ansi color" {
   let subscriber = @console.subscriber(color=true, output=fn(s) {
     output.push(s)
   })
-  subscriber(sample_console_event(@moontrace.Warn, "colored", source="brickfrog/moontrace"))
+  subscriber(
+    sample_console_event(
+      @moontrace.Warn,
+      "colored",
+      source="brickfrog/moontrace",
+    ),
+  )
   assert_eq(output.length(), 1)
   assert_eq(
     output[0],

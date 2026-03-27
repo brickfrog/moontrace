@@ -22,6 +22,8 @@ pub fn fields(Array[(String, Json)]) -> Array[Field]
 
 pub fn fields_to_json(Array[Field]) -> Json
 
+pub fn format_event(Event, Bool, (UInt64) -> String) -> String
+
 pub fn format_timestamp_hms(UInt64) -> String
 
 pub fn get_global_field(String) -> Json?
