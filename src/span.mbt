@@ -73,6 +73,9 @@ pub fn Span::enter(self : Span) -> Unit {
 
 ///|
 pub fn Span::exit(self : Span) -> Unit {
+  if not(self.active) {
+    return
+  }
   self.end_time = @env.now()
   self.active = false
   let duration = self.end_time - self.start_time
