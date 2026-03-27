@@ -49,14 +49,17 @@ fn should_log_module(source : String, level : Level) -> Bool {
 ///
 fn extract_package(loc : SourceLoc) -> String {
   let s = loc.to_string()
-  let mut at_pos = -1
-  for i = 0; i < s.length(); i = i + 1 {
+  // Scan from the end so we intentionally use the last '@' delimiter.
+  let mut i = s.length() - 1
+  while i >= 0 {
     if s[i] == '@' {
-      at_pos = i + 1
+      let at_pos = i + 1
+      if at_pos >= s.length() {
+        return "unknown"
+      }
+      return s[at_pos:].to_string()
     }
+    i = i - 1
   }
-  if at_pos == -1 || at_pos >= s.length() {
-    return "unknown"
-  }
-  s[at_pos:].to_string()
+  "unknown"
 }
