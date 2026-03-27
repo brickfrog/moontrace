@@ -72,13 +72,13 @@ test "otlp level severity mapping" {
 
 ///|
 test "otlp id generation is unique and hex" {
-  let id1 = @otlp.next_trace_id()
-  let id2 = @otlp.next_trace_id()
+  let id1 = @moontrace.next_trace_id()
+  let id2 = @moontrace.next_trace_id()
   assert_true(id1 != id2)
   // trace IDs should be 32 chars
   assert_eq(id1.length(), 32)
   // span IDs should be 16 chars
-  let sid = @otlp.next_span_id()
+  let sid = @moontrace.next_span_id()
   assert_eq(sid.length(), 16)
   // Verify non-empty
   assert_true(id1.length() > 0)

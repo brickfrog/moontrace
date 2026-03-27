@@ -14,10 +14,6 @@ pub fn field_to_attribute(@moontrace.Field) -> OtlpAttribute
 
 pub fn level_to_severity(@moontrace.Level) -> Int
 
-pub fn next_span_id() -> String
-
-pub fn next_trace_id() -> String
-
 pub fn span_to_otlp(@moontrace.Span, trace_id? : String, parent_span_id? : String, status_code? : Int, status_message? : String) -> OtlpSpan
 
 pub fn wrap_log_records(Array[OtlpLogRecord]) -> Json
