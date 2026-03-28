@@ -14,7 +14,7 @@ moon add brickfrog/moontrace
 
 ```moonbit
 fn main {
-  // One-liner setup with console output
+  // One-liner setup with colored console output
   @console.initialize()
 
   // Structured events
@@ -26,6 +26,16 @@ fn main {
     @moontrace.info("processing")
   })
 }
+```
+
+Output:
+
+```
+14:31:43.903 | INFO  | myapp — server started  port=8080
+14:31:43.904 | WARN  | myapp — slow query  ms=250
+14:31:43.904 | TRACE | moontrace — span.enter handle_request
+14:31:43.904 | INFO  | myapp — processing
+14:31:43.904 | TRACE | moontrace — span.exit handle_request  duration_ns=12345
 ```
 
 ## Events
@@ -51,12 +61,42 @@ Attach structured fields to any event:
   ]))
 ```
 
-## Spans
+Every event automatically captures its source package via `SourceLoc`, available as `event.source`.
 
-Spans track operations with enter/exit lifecycle and duration:
+## Global Context
+
+Set fields once, automatically included in every event:
 
 ```moonbit
-// Manual span control
+@moontrace.set_global_field("service", "my-app".to_json())
+@moontrace.set_global_field("version", "1.2.0".to_json())
+
+@moontrace.info("started")  // automatically includes service and version fields
+```
+
+Explicit fields override global context on key collision.
+
+```moonbit
+@moontrace.remove_global_field("version")  // remove a single field
+@moontrace.clear_global_fields()            // remove all
+```
+
+## Per-Module Filtering
+
+Filter log levels by package:
+
+```moonbit
+@moontrace.set_module_filter("my/db/package", @moontrace.Debug)
+@moontrace.set_module_filter("my/http/package", @moontrace.Warn)
+```
+
+Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed.
+
+## Spans
+
+Spans track operations with enter/exit lifecycle, duration, and distributed tracing IDs:
+
+```moonbit
 let s = @moontrace.span("db_query")
   .with_field("table", "users".to_json())
   .with_field("limit", (100).to_json())
@@ -66,6 +106,21 @@ s.record("rows", (42).to_json())  // add fields after creation
 s.exit()
 // s.duration() returns elapsed nanoseconds
 ```
+
+Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex chars).
+
+### Error Handling on Spans
+
+```moonbit
+@moontrace.with_span_ctx("db_query", fn(s) {
+  match run_query() {
+    Ok(result) => s.set_status(@moontrace.Ok)
+    Err(e) => s.record_error(e.to_string())  // sets SpanError + records error field
+  }
+})
+```
+
+`record_error` sets the span status to `SpanError`, records the error message as a field, and includes both in the span's exit event and JSON output.
 
 ### Convenience Wrappers
 
@@ -88,19 +143,28 @@ s.exit()
 })
 ```
 
+`with_child_span` propagates the parent's `trace_id` and sets `parent_span_id`, linking spans in a trace.
+
+### Cross-Process Trace Correlation
+
+For distributed tracing across process boundaries, inject an existing trace ID:
+
+```moonbit
+let s = @moontrace.span_with_trace("handle_request", external_trace_id)
+```
+
 ### Async Span Propagation
 
-MoonBit has no task-local storage, so spans must be passed explicitly across async boundaries. Use `with_span_ctx` and `with_child_span`:
+MoonBit has no task-local storage, so spans must be passed explicitly across async boundaries:
 
 ```moonbit
 @moontrace.with_span_ctx("request", fn(parent) {
-  // Pass parent span to async work explicitly
   async_work(parent)
 })
 
 pub async fn async_work(parent : @moontrace.Span) -> Unit {
   @moontrace.with_child_span(parent, "async_step", fn(_s) {
-    // ... async work ...
+    // child inherits parent's trace_id
   })
 }
 ```
@@ -115,6 +179,27 @@ Subscribers receive events. Set one globally:
 })
 ```
 
+### Console Subscriber
+
+Human-readable colored output with timestamps, source, and pipe separators:
+
+```moonbit
+@console.initialize()
+// or with options:
+@moontrace.set_subscriber(@console.subscriber(
+  min_level=@moontrace.Info,
+  color=true,
+))
+```
+
+Output:
+
+```
+14:31:43.903 | INFO  | server — UDS server listening  path=".choir/server.sock"
+14:31:44.012 | WARN  | poller — retry  attempt=3 max=5
+14:31:44.500 | ERROR | handler — delivery failed  target="leaf-1" exit_code=2
+```
+
 ### JSON Subscriber
 
 Machine-readable JSON output:
@@ -125,18 +210,28 @@ Machine-readable JSON output:
 @moontrace.set_subscriber(@json.subscriber(min_level=@moontrace.Warn))
 ```
 
-### Console Subscriber
+### OTLP Export
 
-Human-readable colored output:
+Convert events and spans to OpenTelemetry-compatible JSON:
 
 ```moonbit
-@console.initialize()
-// or with options:
-@moontrace.set_subscriber(@console.subscriber(
-  min_level=@moontrace.Info,
-  color=true,
-))
+let exp = @otlp.exporter(
+  log_output=fn(json) { send_to_collector(json) },
+  span_output=fn(json) { send_to_collector(json) },
+  capacity=100,
+)
+@moontrace.set_subscriber(exp.subscriber())
+
+// Spans must be added manually
+let s = @moontrace.span("operation")
+s.enter()
+// ... work ...
+s.exit()
+exp.add_span(@otlp.span_to_otlp(s))
+exp.flush()  // send remaining batched data
 ```
+
+The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
 
 ### Subscriber Composition
 
@@ -190,6 +285,8 @@ Set a global minimum level to skip event allocation entirely:
 // trace() and debug() calls now short-circuit before allocating Event
 ```
 
+Global context fields use a fast path — zero allocation overhead when no context is set.
+
 ## Serialization
 
 Events, spans, and fields all support JSON serialization:
@@ -199,7 +296,9 @@ let event_json = event.to_json().stringify()
 let span_json = span.to_json().stringify()
 ```
 
-And human-readable formatting:
+Span JSON includes trace_id, span_id, parent_span_id, status, and duration.
+
+Human-readable formatting with the new pipe-separated style:
 
 ```moonbit
 let plain = event.format()           // no color
@@ -219,6 +318,7 @@ let s = "\{span}"    // string interpolation works
 @moontrace           # core — what libraries depend on
 @moontrace/json      # JSON subscriber (structured output)
 @moontrace/console   # console subscriber (colored, human-readable)
+@moontrace/otlp      # OpenTelemetry JSON format conversion
 ```
 
 Libraries instrument with `@moontrace`. Applications choose subscribers.
