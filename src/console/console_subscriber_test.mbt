@@ -9,7 +9,7 @@ fn sample_console_event(
     level,
     message,
     fields,
-    timestamp: (52_303_903_000_000 : UInt64),
+    timestamp: (52_303_903 : UInt64),
     source,
   }
 }

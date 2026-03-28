@@ -9,20 +9,21 @@ fn sample_event(
     level,
     message,
     fields,
-    timestamp: (52_303_903_000_000 : UInt64),
+    timestamp: (52_303_903 : UInt64),
     source,
   }
 }
 
 ///|
 test "format timestamp hms zero pads components" {
-  let timestamp = (52_303_903_000_000 : UInt64)
+  let timestamp = (52_303_903 : UInt64)
   assert_eq(@moontrace.format_timestamp_hms(timestamp), "14:31:43.903")
 }
 
 ///|
 test "format timestamp hms wraps after 24 hours" {
-  let timestamp = (90_003_004_000_000 : UInt64)
+  // 25*3600*1000 + 3*1000 + 4 = 90_003_004 ms → wraps to 01:00:03.004
+  let timestamp = (90_003_004 : UInt64)
   assert_eq(@moontrace.format_timestamp_hms(timestamp), "01:00:03.004")
 }
 

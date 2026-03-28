@@ -1,6 +1,7 @@
 ///|
 pub fn format_timestamp_hms(timestamp : UInt64) -> String {
-  let total_millis = timestamp / (1_000_000 : UInt64)
+  // @env.now() returns milliseconds since epoch
+  let total_millis = timestamp
   let total_seconds = total_millis / (1000 : UInt64)
   let hours = total_seconds / (3600 : UInt64) % (24 : UInt64)
   let minutes = total_seconds / (60 : UInt64) % (60 : UInt64)
