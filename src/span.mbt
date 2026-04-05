@@ -109,7 +109,7 @@ pub fn Span::set_status(
   self.status = status
   match message {
     Some(m) => self.status_message = m
-    None => ()
+    None => if status != SpanError { self.status_message = "" }
   }
 }
 

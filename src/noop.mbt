@@ -4,7 +4,7 @@ pub fn noop() -> (Event) -> Unit {
 }
 
 ///|
-pub fn tap(
+pub fn intercept(
   subscriber : (Event) -> Unit,
   on_event : (Event) -> Unit,
 ) -> (Event) -> Unit {

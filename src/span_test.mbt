@@ -125,12 +125,12 @@ test "span set_status" {
 }
 
 ///|
-test "span set_status without message preserves status_message" {
+test "span set_status clears message on non-error status" {
   let s = @moontrace.span("test")
   s.record_error("boom")
   s.set_status(@moontrace.Ok)
   assert_eq(s.status, @moontrace.Ok)
-  assert_eq(s.status_message, "boom")
+  assert_eq(s.status_message, "")
   @moontrace.clear_subscriber()
 }
 

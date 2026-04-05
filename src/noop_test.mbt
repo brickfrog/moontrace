@@ -6,12 +6,12 @@ test "noop does not crash" {
 }
 
 ///|
-test "tap runs side effect" {
+test "intercept runs side effect before subscriber" {
   let tapped : Array[String] = []
   let output : Array[String] = []
   let inner = fn(e : @moontrace.Event) { output.push(e.message) }
   let side = fn(e : @moontrace.Event) { tapped.push(e.message) }
-  @moontrace.set_subscriber(@moontrace.tap(inner, side))
+  @moontrace.set_subscriber(@moontrace.intercept(inner, side))
   @moontrace.info("hello")
   assert_eq(tapped.length(), 1)
   assert_eq(output.length(), 1)
