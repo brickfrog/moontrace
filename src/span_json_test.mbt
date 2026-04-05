@@ -13,6 +13,24 @@ test "span to_json has correct structure" {
 }
 
 ///|
+test "span to_json includes parent_span_id when set" {
+  let parent = @moontrace.span("parent")
+  let mut child_json = ""
+  @moontrace.with_child_span(parent, "child", fn(child) {
+    child_json = child.to_json().stringify()
+  })
+  assert_true(child_json.contains("\"parent_span_id\""))
+  assert_true(child_json.contains(parent.span_id))
+}
+
+///|
+test "span to_json omits parent_span_id when empty" {
+  let s = @moontrace.span("solo")
+  let j = s.to_json().stringify()
+  assert_true(!j.contains("parent_span_id"))
+}
+
+///|
 test "span to_json reflects state after enter and exit" {
   let s = @moontrace.span("lifecycle")
   s.enter()

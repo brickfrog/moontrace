@@ -91,3 +91,17 @@ test "event format two spaces before fields one between" {
     "14:31:43.903 | INFO  | choir/server — listening  service=\"choir\" path=\".choir/server.sock\"",
   )
 }
+
+///|
+test "format timestamp hms at zero" {
+  assert_eq(@moontrace.format_timestamp_hms((0 : UInt64)), "00:00:00.000")
+}
+
+///|
+test "level_color returns ANSI codes for each level" {
+  assert_eq(@moontrace.level_color(@moontrace.Trace), "\u001b[2m")
+  assert_eq(@moontrace.level_color(@moontrace.Debug), "\u001b[34m")
+  assert_eq(@moontrace.level_color(@moontrace.Info), "\u001b[32m")
+  assert_eq(@moontrace.level_color(@moontrace.Warn), "\u001b[33m")
+  assert_eq(@moontrace.level_color(@moontrace.Error_), "\u001b[31m")
+}

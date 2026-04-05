@@ -116,6 +116,28 @@ test "record after enter does not mutate enter event" {
 }
 
 ///|
+test "span_with_trace uses custom trace id" {
+  let s = @moontrace.span_with_trace(
+    "custom", "aabbccdd11223344aabbccdd11223344",
+  )
+  assert_eq(s.trace_id, "aabbccdd11223344aabbccdd11223344")
+  assert_eq(s.span_id.length(), 16)
+  assert_eq(s.parent_span_id, "")
+  assert_eq(s.name, "custom")
+}
+
+///|
+test "span_with_trace passes fields through" {
+  let s = @moontrace.span_with_trace(
+    "custom",
+    "aabbccdd11223344aabbccdd11223344",
+    fields=[@moontrace.field("key", "val")],
+  )
+  assert_eq(s.fields.length(), 1)
+  assert_eq(s.fields[0].key, "key")
+}
+
+///|
 test "span set_status" {
   let s = @moontrace.span("test")
   s.set_status(@moontrace.Ok)
