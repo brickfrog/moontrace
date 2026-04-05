@@ -109,6 +109,16 @@ span.exit()
 
 3. **Subscriber composition** — Multiple subscribers with different level filters need a dispatch layer. Not hard but must be designed upfront.
 
+## Design Decisions (do not change without discussion)
+
+- **Level/SpanKind/SpanStatus have manual Show impls** — `derive(Show)` produces `"Trace"` not `"TRACE"`. Manual `to_string` is needed for OTLP compat and human-readable output. Don't replace with derive.
+- **merge_fields uses Map for key collision** — `Map[String, Bool]` is clearer than linear scan for dedup. Field counts are small (0-5). Don't micro-optimize this.
+- **`Error_` trailing underscore** — `Error` is reserved in MoonBit. No alternative exists. Not a code smell.
+- **set_status clears status_message on non-error** — Intentional per OTLP spec: `status_message` is semantically bound to error status. Don't revert to preserving old messages across status changes.
+- **`intercept()` runs callback before subscriber** — Middleware-style interception, not passive observation. The ordering is intentional. For passive tapping, use `compose()`.
+- **`fields()` coexists with `field()`** — `fields()` accepts raw `Json` for custom `ToJson` impls. `field()` is the ergonomic path with trait dispatch. Neither replaces the other.
+- **Blackbox test SourceLoc package** — MoonBit reports blackbox test package as the parent package name (e.g. `"brickfrog/moontrace"` not `"brickfrog/moontrace_blackbox_test"`). Module filter tests must use the parent package name.
+
 ## Development Rules
 
 - `moon fmt` before committing

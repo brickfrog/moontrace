@@ -22,9 +22,9 @@ pub fn EventBuffer::subscriber(self : EventBuffer) -> (Event) -> Unit {
 
 ///|
 pub fn EventBuffer::flush(self : EventBuffer) -> Unit {
-  let eventsToFlush = self.events
+  let events_to_flush = self.events
   self.events = []
-  eventsToFlush.each(fn(e) { (self.inner)(e) })
+  events_to_flush.each(fn(e) { (self.inner)(e) })
 }
 
 ///|

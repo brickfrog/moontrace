@@ -65,17 +65,16 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
     return
   }
   match global_subscriber.val {
-    None => return
-    _ => ()
+    Some(f) =>
+      f(Event::{
+        level,
+        message: msg,
+        fields: merge_fields(fields),
+        timestamp: @env.now(),
+        source: "",
+      })
+    None => ()
   }
-  let event = Event::{
-    level,
-    message: msg,
-    fields: merge_fields(fields),
-    timestamp: @env.now(),
-    source: "",
-  }
-  dispatch(event)
 }
 
 ///|
