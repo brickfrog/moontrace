@@ -8,13 +8,13 @@ pub fn format_timestamp_hms(timestamp : UInt64) -> String {
   let seconds = total_seconds % (60 : UInt64)
   let millis = total_millis % (1000 : UInt64)
   let buf = StringBuilder::new()
-  buf.write_string(pad_left_uint64(hours, 2))
+  buf.write_string(hours.to_string().pad_start(2, '0'))
   buf.write_string(":")
-  buf.write_string(pad_left_uint64(minutes, 2))
+  buf.write_string(minutes.to_string().pad_start(2, '0'))
   buf.write_string(":")
-  buf.write_string(pad_left_uint64(seconds, 2))
+  buf.write_string(seconds.to_string().pad_start(2, '0'))
   buf.write_string(".")
-  buf.write_string(pad_left_uint64(millis, 3))
+  buf.write_string(millis.to_string().pad_start(3, '0'))
   buf.to_string()
 }
 
@@ -32,7 +32,7 @@ pub fn format_event(
   let buf = StringBuilder::new()
   buf.write_string(format_timestamp(event.timestamp))
   buf.write_string(" | ")
-  let level_str = pad_right(event.level.to_string(), 5)
+  let level_str = event.level.to_string().pad_end(5, ' ')
   if color {
     buf.write_string(level_color(event.level))
     buf.write_string(level_str)
@@ -65,51 +65,9 @@ pub fn format_event(
 }
 
 ///|
-fn pad_left_uint64(value : UInt64, width : Int) -> String {
-  pad_left(value.to_string(), width)
-}
-
-///|
-fn pad_left(s : String, width : Int) -> String {
-  if s.length() >= width {
-    s
-  } else {
-    let buf = StringBuilder::new()
-    for i = s.length(); i < width; i = i + 1 {
-      buf.write_string("0")
-    }
-    buf.write_string(s)
-    buf.to_string()
-  }
-}
-
-///|
 fn format_source(source : String) -> String {
-  if source.length() == 0 {
-    return ""
-  }
-  for i = 0; i < source.length(); i = i + 1 {
-    if source[i] == '/' {
-      let next = i + 1
-      if next >= source.length() {
-        return source
-      }
-      return source[next:].to_string()
-    }
-  }
-  source
-}
-
-///|
-fn pad_right(s : String, width : Int) -> String {
-  if s.length() >= width {
-    s
-  } else {
-    let buf = StringBuilder::new()
-    buf.write_string(s)
-    for i = s.length(); i < width; i = i + 1 {
-      buf.write_string(" ")
-    }
-    buf.to_string()
+  match source.split_once("/") {
+    Some((_, after)) => after.to_string()
+    None => source
   }
 }

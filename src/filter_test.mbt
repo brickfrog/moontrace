@@ -19,10 +19,7 @@ test "no filter means all events pass" {
 
 ///|
 test "module filter blocks events below level" {
-  @moontrace.set_module_filter(
-    "brickfrog/moontrace_blackbox_test",
-    @moontrace.Warn,
-  )
+  @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Warn)
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.debug("blocked")
@@ -38,10 +35,7 @@ test "module filter blocks events below level" {
 
 ///|
 test "module filter allows events at or above level" {
-  @moontrace.set_module_filter(
-    "brickfrog/moontrace_blackbox_test",
-    @moontrace.Info,
-  )
+  @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Info)
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.trace("blocked")
@@ -56,10 +50,7 @@ test "module filter allows events at or above level" {
 
 ///|
 test "clearing module filters allows all events" {
-  @moontrace.set_module_filter(
-    "brickfrog/moontrace_blackbox_test",
-    @moontrace.Error_,
-  )
+  @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Error_)
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.info("blocked")
@@ -72,10 +63,7 @@ test "clearing module filters allows all events" {
 
 ///|
 test "span events bypass module filtering" {
-  @moontrace.set_module_filter(
-    "brickfrog/moontrace_blackbox_test",
-    @moontrace.Error_,
-  )
+  @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Error_)
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   let s = @moontrace.span("test_span")

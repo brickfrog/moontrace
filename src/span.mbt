@@ -81,7 +81,7 @@ pub fn Span::enter(self : Span) -> Unit {
 
 ///|
 pub fn Span::exit(self : Span) -> Unit {
-  if not(self.active) {
+  if !self.active {
     return
   }
   self.end_time = @env.now()

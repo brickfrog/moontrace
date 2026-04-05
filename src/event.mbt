@@ -42,7 +42,7 @@ fn merge_fields(fields : Array[Field]) -> Array[Field] {
     fields.each(fn(f) { explicit_keys.set(f.key, true) })
     let merged : Array[Field] = []
     global_context.val.each(fn(k, v) {
-      if not(explicit_keys.contains(k)) {
+      if !explicit_keys.contains(k) {
         merged.push({ key: k, value: v })
       }
     })
@@ -85,7 +85,7 @@ fn emit_with_loc(
     return
   }
   let source = extract_package(loc)
-  if not(should_log_module(source, level)) {
+  if !should_log_module(source, level) {
     return
   }
   let event = Event::{

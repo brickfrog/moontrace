@@ -48,18 +48,13 @@ fn should_log_module(source : String, level : Level) -> Bool {
 /// Returns the package name, or "unknown" if parsing fails
 ///
 fn extract_package(loc : SourceLoc) -> String {
-  let s = loc.to_string()
-  // Scan from the end so we intentionally use the last '@' delimiter.
-  let mut i = s.length() - 1
-  while i >= 0 {
-    if s[i] == '@' {
-      let at_pos = i + 1
-      if at_pos >= s.length() {
-        return "unknown"
+  match loc.to_string().rev_split_once("@") {
+    Some((_, pkg)) =>
+      if pkg.to_string().length() == 0 {
+        "unknown"
+      } else {
+        pkg.to_string()
       }
-      return s[at_pos:].to_string()
-    }
-    i = i - 1
+    None => "unknown"
   }
-  "unknown"
 }
