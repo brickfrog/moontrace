@@ -18,6 +18,8 @@ pub fn debug(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+pub fn[T : ToJson] field(String, T) -> Field
+
 pub fn fields(Array[(String, Json)]) -> Array[Field]
 
 pub fn fields_to_json(Array[Field]) -> Json
@@ -107,12 +109,10 @@ pub(all) enum Level {
   Info
   Warn
   Error_
-}
+} derive(Compare, Eq)
 pub fn Level::from_string(String) -> Self?
 pub fn Level::to_json(Self) -> Json
 pub fn Level::to_string(Self) -> String
-pub impl Compare for Level
-pub impl Eq for Level
 pub impl Show for Level
 
 pub(all) struct Span {
@@ -144,24 +144,20 @@ pub(all) enum SpanKind {
   Client
   Producer
   Consumer
-}
+} derive(Compare, Eq)
 pub fn SpanKind::to_int(Self) -> Int
 pub fn SpanKind::to_json(Self) -> Json
 pub fn SpanKind::to_string(Self) -> String
-pub impl Compare for SpanKind
-pub impl Eq for SpanKind
 pub impl Show for SpanKind
 
 pub(all) enum SpanStatus {
   Unset
   Ok
   SpanError
-}
+} derive(Compare, Eq)
 pub fn SpanStatus::to_int(Self) -> Int
 pub fn SpanStatus::to_json(Self) -> Json
 pub fn SpanStatus::to_string(Self) -> String
-pub impl Compare for SpanStatus
-pub impl Eq for SpanStatus
 pub impl Show for SpanStatus
 
 // Type aliases
