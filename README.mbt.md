@@ -18,8 +18,8 @@ fn main {
   @console.initialize()
 
   // Structured events
-  @moontrace.info("server started", fields=@moontrace.fields([("port", (8080).to_json())]))
-  @moontrace.warn("slow query", fields=@moontrace.fields([("ms", (250).to_json())]))
+  @moontrace.info("server started", fields=[@moontrace.field("port", 8080)])
+  @moontrace.warn("slow query", fields=[@moontrace.field("ms", 250)])
 
   // Spans with duration tracking
   @moontrace.with_span("handle_request", fn() {
@@ -54,12 +54,14 @@ Attach structured fields to any event:
 
 ```moonbit
 @moontrace.info("request handled",
-  fields=@moontrace.fields([
-    ("method", "GET".to_json()),
-    ("path", "/api/users".to_json()),
-    ("status", (200).to_json()),
-  ]))
+  fields=[
+    @moontrace.field("method", "GET"),
+    @moontrace.field("path", "/api/users"),
+    @moontrace.field("status", 200),
+  ])
 ```
+
+The `field()` function uses MoonBit's `ToJson` trait dispatch — any type implementing `ToJson` works. For raw `Json` values, use `fields()` instead.
 
 Every event automatically captures its source package via `SourceLoc`, available as `event.source`.
 
@@ -68,8 +70,8 @@ Every event automatically captures its source package via `SourceLoc`, available
 Set fields once, automatically included in every event:
 
 ```moonbit
-@moontrace.set_global_field("service", "my-app".to_json())
-@moontrace.set_global_field("version", "1.2.0".to_json())
+@moontrace.set_global_field("service", "my-app")
+@moontrace.set_global_field("version", "1.2.0")
 
 @moontrace.info("started")  // automatically includes service and version fields
 ```
@@ -98,11 +100,11 @@ Spans track operations with enter/exit lifecycle, duration, and distributed trac
 
 ```moonbit
 let s = @moontrace.span("db_query")
-  .with_field("table", "users".to_json())
-  .with_field("limit", (100).to_json())
+  .with_field("table", "users")
+  .with_field("limit", 100)
 s.enter()
 // ... do work ...
-s.record("rows", (42).to_json())  // add fields after creation
+s.record("rows", 42)  // add fields after creation
 s.exit()
 // s.duration() returns elapsed nanoseconds
 ```
@@ -132,7 +134,7 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 // Access the span inside the closure
 @moontrace.with_span_ctx("operation", fn(span) {
-  span.record("result", "ok".to_json())
+  span.record("result", "ok")
 })
 
 // Nested spans with parent linking
@@ -258,8 +260,8 @@ Filter events for any subscriber:
 // No-op (for benchmarks/testing)
 @moontrace.set_subscriber(@moontrace.noop())
 
-// Tap (side-effect without replacing subscriber)
-@moontrace.set_subscriber(@moontrace.tap(
+// Intercept (run a side-effect before the main subscriber)
+@moontrace.set_subscriber(@moontrace.intercept(
   main_subscriber,
   fn(e) { metrics.increment(e.level.to_string()) },
 ))
