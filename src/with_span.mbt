@@ -31,8 +31,7 @@ pub fn[T] with_child_span(
   fields? : Array[Field] = [],
   f : (Span) -> T,
 ) -> T {
-  let child_fields = []
-  fields.each(fn(f) { child_fields.push(f) })
+  let child_fields = fields.copy()
   child_fields.push({ key: "parent", value: parent.name.to_json() })
   let s = span_with_ids(name, child_fields, parent.trace_id, parent.span_id)
   s.enter()

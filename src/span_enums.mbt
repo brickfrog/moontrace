@@ -9,7 +9,7 @@ pub(all) enum SpanKind {
 
 ///|
 pub impl Show for SpanKind with output(self, logger) {
-  logger.write_string(SpanKind::to_string(self))
+  logger.write_string(self.to_string())
 }
 
 ///|
@@ -43,7 +43,7 @@ pub(all) enum SpanStatus {
 
 ///|
 pub impl Show for SpanStatus with output(self, logger) {
-  logger.write_string(SpanStatus::to_string(self))
+  logger.write_string(self.to_string())
 }
 
 ///|

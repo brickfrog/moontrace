@@ -35,7 +35,7 @@ pub fn clear_subscriber() -> Unit {
 
 ///|
 fn merge_fields(fields : Array[Field]) -> Array[Field] {
-  if global_context.val.length() == 0 {
+  if global_context.val.is_empty() {
     fields
   } else {
     let explicit_keys : Map[String, Bool] = {}
@@ -63,6 +63,10 @@ fn dispatch(event : Event) -> Unit {
 fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
   if level < global_min_level.val {
     return
+  }
+  match global_subscriber.val {
+    None => return
+    _ => ()
   }
   let event = Event::{
     level,

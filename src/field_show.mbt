@@ -1,11 +1,6 @@
 ///|
 pub impl Show for Field with output(self, logger) {
-  logger.write_string(self.to_string())
-}
-
-///|
-pub impl Show for Field with to_string(self) {
-  self.key + "=" + self.value.stringify()
+  logger.write_string("\{self.key}=\{self.value.stringify()}")
 }
 
 ///|

@@ -42,7 +42,7 @@ pub fn OtlpExporter::add_span(self : OtlpExporter, span : OtlpSpan) -> Unit {
 
 ///|
 pub fn OtlpExporter::flush_logs(self : OtlpExporter) -> Unit {
-  if self.log_records.length() == 0 {
+  if self.log_records.is_empty() {
     return
   }
   let to_flush = self.log_records
@@ -53,7 +53,7 @@ pub fn OtlpExporter::flush_logs(self : OtlpExporter) -> Unit {
 
 ///|
 pub fn OtlpExporter::flush_spans(self : OtlpExporter) -> Unit {
-  if self.spans.length() == 0 {
+  if self.spans.is_empty() {
     return
   }
   let to_flush = self.spans
@@ -78,9 +78,9 @@ pub fn span_to_otlp(
   status_code? : Int = 1,
   status_message? : String = "",
 ) -> OtlpSpan {
-  let tid = if trace_id.length() == 0 { span.trace_id } else { trace_id }
+  let tid = if trace_id.is_empty() { span.trace_id } else { trace_id }
   let sid = span.span_id
-  let psid = if parent_span_id.length() == 0 {
+  let psid = if parent_span_id.is_empty() {
     span.parent_span_id
   } else {
     parent_span_id

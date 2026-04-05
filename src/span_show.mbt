@@ -1,10 +1,5 @@
 ///|
 pub impl Show for Span with output(self, logger) {
-  logger.write_string(self.to_string())
-}
-
-///|
-pub impl Show for Span with to_string(self) {
   let buf = StringBuilder::new()
   buf.write_string("Span(")
   buf.write_string(self.name)
@@ -21,18 +16,18 @@ pub impl Show for Span with to_string(self) {
     buf.write_string(d.to_string())
     buf.write_string("ns")
   }
-  if self.fields.length() > 0 {
+  if !self.fields.is_empty() {
     buf.write_string(", fields=")
     buf.write_string(self.fields.length().to_string())
   }
   if self.status != Unset {
     buf.write_string(", status=")
     buf.write_string(self.status.to_string())
-    if self.status_message.length() > 0 {
+    if !self.status_message.is_empty() {
       buf.write_string(" msg=")
       buf.write_string(self.status_message)
     }
   }
   buf.write_string(")")
-  buf.to_string()
+  logger.write_string(buf.to_string())
 }

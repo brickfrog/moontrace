@@ -50,7 +50,7 @@ fn should_log_module(source : String, level : Level) -> Bool {
 fn extract_package(loc : SourceLoc) -> String {
   match loc.to_string().rev_split_once("@") {
     Some((_, pkg)) =>
-      if pkg.to_string().length() == 0 {
+      if pkg.to_string().is_empty() {
         "unknown"
       } else {
         pkg.to_string()

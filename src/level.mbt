@@ -19,13 +19,18 @@ pub fn Level::to_string(self : Level) -> String {
 }
 
 ///|
+pub impl Show for Level with output(self, logger) {
+  logger.write_string(self.to_string())
+}
+
+///|
 pub fn Level::to_json(self : Level) -> Json {
   self.to_string().to_json()
 }
 
 ///|
 pub fn Level::from_string(s : String) -> Level? {
-  match s[:].to_upper().to_string() {
+  match s.to_upper() {
     "TRACE" => Some(Trace)
     "DEBUG" => Some(Debug)
     "INFO" => Some(Info)
@@ -33,9 +38,4 @@ pub fn Level::from_string(s : String) -> Level? {
     "ERROR" => Some(Error_)
     _ => None
   }
-}
-
-///|
-pub impl Show for Level with output(self, logger) {
-  logger.write_string(Level::to_string(self))
 }

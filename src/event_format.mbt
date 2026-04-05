@@ -41,13 +41,13 @@ pub fn format_event(
     buf.write_string(level_str)
   }
   let source = format_source(event.source)
-  if source.length() > 0 {
+  if !source.is_empty() {
     buf.write_string(" | ")
     buf.write_string(source)
   }
   buf.write_string(" — ")
   buf.write_string(event.message)
-  if event.fields.length() > 0 {
+  if !event.fields.is_empty() {
     buf.write_string("  ")
     let mut first = true
     event.fields.each(fn(f) {

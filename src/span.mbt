@@ -74,9 +74,8 @@ pub fn Span::enter(self : Span) -> Unit {
   self.start_time = @env.now()
   self.end_time = (0 : UInt64)
   self.active = true
-  let enter_fields = []
-  self.fields.each(fn(f) { enter_fields.push(f) })
-  emit(Trace, "span.enter " + self.name, enter_fields)
+  let enter_fields = self.fields.copy()
+  emit(Trace, "span.enter \{self.name}", enter_fields)
 }
 
 ///|
@@ -87,19 +86,18 @@ pub fn Span::exit(self : Span) -> Unit {
   self.end_time = @env.now()
   self.active = false
   let duration = self.end_time - self.start_time
-  let exit_fields = []
-  self.fields.each(fn(f) { exit_fields.push(f) })
+  let exit_fields = self.fields.copy()
   exit_fields.push({ key: "duration_ns", value: duration.to_json() })
   if self.status != Unset {
     exit_fields.push({ key: "status", value: self.status.to_json() })
-    if self.status_message.length() > 0 {
+    if !self.status_message.is_empty() {
       exit_fields.push({
         key: "status_message",
         value: self.status_message.to_json(),
       })
     }
   }
-  emit(Trace, "span.exit " + self.name, exit_fields)
+  emit(Trace, "span.exit \{self.name}", exit_fields)
 }
 
 ///|

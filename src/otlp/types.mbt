@@ -78,7 +78,7 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   let m : Map[String, Json] = {}
   m.set("traceId", self.trace_id.to_json())
   m.set("spanId", self.span_id.to_json())
-  if self.parent_span_id.length() > 0 {
+  if !self.parent_span_id.is_empty() {
     m.set("parentSpanId", self.parent_span_id.to_json())
   }
   m.set("name", self.name.to_json())
@@ -88,7 +88,7 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
   let status : Map[String, Json] = {}
   status.set("code", self.status_code.to_json())
-  if self.status_message.length() > 0 {
+  if !self.status_message.is_empty() {
     status.set("message", self.status_message.to_json())
   }
   m.set("status", status.to_json())
