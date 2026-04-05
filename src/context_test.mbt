@@ -1,6 +1,6 @@
 ///|
 test "global context injects fields into events" {
-  @moontrace.set_global_field("request_id", "abc".to_json())
+  @moontrace.set_global_field("request_id", "abc")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.info("hello")
@@ -13,7 +13,7 @@ test "global context injects fields into events" {
 
 ///|
 test "explicit fields appear after context fields" {
-  @moontrace.set_global_field("ctx", "global".to_json())
+  @moontrace.set_global_field("ctx", "global")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.info("msg", fields=@moontrace.fields([("local", "val".to_json())]))
@@ -27,7 +27,7 @@ test "explicit fields appear after context fields" {
 
 ///|
 test "explicit fields override context on collision" {
-  @moontrace.set_global_field("key", "context".to_json())
+  @moontrace.set_global_field("key", "context")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   @moontrace.info(
@@ -51,8 +51,8 @@ test "explicit fields override context on collision" {
 
 ///|
 test "clear global fields removes all context" {
-  @moontrace.set_global_field("a", "1".to_json())
-  @moontrace.set_global_field("b", "2".to_json())
+  @moontrace.set_global_field("a", "1")
+  @moontrace.set_global_field("b", "2")
   @moontrace.clear_global_fields()
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
@@ -63,8 +63,8 @@ test "clear global fields removes all context" {
 
 ///|
 test "remove global field" {
-  @moontrace.set_global_field("keep", "yes".to_json())
-  @moontrace.set_global_field("drop", "no".to_json())
+  @moontrace.set_global_field("keep", "yes")
+  @moontrace.set_global_field("drop", "no")
   @moontrace.remove_global_field("drop")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
@@ -87,7 +87,7 @@ test "remove global field" {
 
 ///|
 test "get global field returns value" {
-  @moontrace.set_global_field("key", "val".to_json())
+  @moontrace.set_global_field("key", "val")
   let v = @moontrace.get_global_field("key")
   @moontrace.clear_global_fields()
   match v {

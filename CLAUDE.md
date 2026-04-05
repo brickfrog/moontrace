@@ -117,6 +117,7 @@ span.exit()
 - **set_status clears status_message on non-error** — Intentional per OTLP spec: `status_message` is semantically bound to error status. Don't revert to preserving old messages across status changes.
 - **`intercept()` runs callback before subscriber** — Middleware-style interception, not passive observation. The ordering is intentional. For passive tapping, use `compose()`.
 - **`fields()` coexists with `field()`** — `fields()` accepts raw `Json` for custom `ToJson` impls. `field()` is the ergonomic path with trait dispatch. Neither replaces the other.
+- **`set_status(message=Some(""))` is fine** — An empty string is a valid explicit message. `is_empty()` checks downstream treat it as "no message" which is correct. Don't add edge-case tests for this — the behavior is obvious and intentional.
 - **Blackbox test SourceLoc package** — MoonBit reports blackbox test package as the parent package name (e.g. `"brickfrog/moontrace"` not `"brickfrog/moontrace_blackbox_test"`). Module filter tests must use the parent package name.
 
 ## Development Rules

@@ -99,7 +99,7 @@ test "record after enter does not mutate enter event" {
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   let s = @moontrace.span("snap")
   s.enter()
-  s.record("late", "field".to_json())
+  s.record("late", "field")
   s.exit()
   assert_eq(captured.length(), 2)
   assert_eq(captured[0].message, "span.enter snap")

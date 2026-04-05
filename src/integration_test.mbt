@@ -44,7 +44,7 @@ test "full pipeline: spans with nested context" {
   @moontrace.with_span_ctx("request", fn(parent) {
     @moontrace.info("handling")
     @moontrace.with_child_span(parent, "db", fn(child) {
-      child.record("query", "SELECT *".to_json())
+      child.record("query", "SELECT *")
       @moontrace.debug("querying")
     })
   })
@@ -99,7 +99,7 @@ test "full pipeline: event to_json roundtrip" {
   assert_true(json_str.contains("\"tag\":\"test\""))
 
   // Verify span to_json also works
-  let s = @moontrace.span("test_span").with_field("x", (1).to_json())
+  let s = @moontrace.span("test_span").with_field("x", 1)
   let span_json = s.to_json().stringify()
   assert_true(span_json.contains("\"name\":\"test_span\""))
   assert_true(span_json.contains("\"active\":false"))

@@ -43,9 +43,7 @@ test "with_span passes fields to span" {
 test "with_span_ctx passes span to closure" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.with_span_ctx("ctx", fn(s) {
-    s.record("added", "during".to_json())
-  })
+  @moontrace.with_span_ctx("ctx", fn(s) { s.record("added", "during") })
   assert_eq(captured.length(), 2)
   assert_eq(captured[0].message, "span.enter ctx")
   @moontrace.clear_subscriber()
