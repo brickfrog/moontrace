@@ -17,7 +17,12 @@ pub fn level_to_severity(level : @moontrace.Level) -> Int {
 fn json_to_otlp_value(value : Json) -> OtlpValue {
   match value {
     String(s) => StringVal(s)
-    Number(n, ..) => DoubleVal(n)
+    Number(n, ..) =>
+      if n == n.floor() {
+        IntVal(n.floor().to_int64())
+      } else {
+        DoubleVal(n)
+      }
     True => BoolVal(true)
     False => BoolVal(false)
     _ => StringVal(value.stringify())

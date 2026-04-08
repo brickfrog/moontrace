@@ -5,6 +5,7 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
+  mut kind : SpanKind
   mut start_time : UInt64
   mut end_time : UInt64
   mut active : Bool
@@ -13,13 +14,18 @@ pub(all) struct Span {
 }
 
 ///|
-pub fn span(name : String, fields? : Array[Field] = []) -> Span {
+pub fn span(
+  name : String,
+  fields? : Array[Field] = [],
+  kind? : SpanKind = Internal,
+) -> Span {
   {
     name,
     fields,
     trace_id: next_trace_id(),
     span_id: next_span_id(),
     parent_span_id: "",
+    kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
@@ -33,6 +39,7 @@ pub fn span_with_trace(
   name : String,
   trace_id : String,
   fields? : Array[Field] = [],
+  kind? : SpanKind = Internal,
 ) -> Span {
   {
     name,
@@ -40,6 +47,7 @@ pub fn span_with_trace(
     trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
+    kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
@@ -54,6 +62,7 @@ fn span_with_ids(
   fields : Array[Field],
   trace_id : String,
   parent_span_id : String,
+  kind : SpanKind,
 ) -> Span {
   {
     name,
@@ -61,6 +70,7 @@ fn span_with_ids(
     trace_id,
     span_id: next_span_id(),
     parent_span_id,
+    kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
     active: false,
@@ -71,6 +81,9 @@ fn span_with_ids(
 
 ///|
 pub fn Span::enter(self : Span) -> Unit {
+  if self.active {
+    return
+  }
   self.start_time = @env.now()
   self.end_time = (0 : UInt64)
   self.active = true

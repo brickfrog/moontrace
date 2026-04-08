@@ -5,6 +5,10 @@ pub impl Show for Span with output(self, logger) {
   buf.write_string(self.name)
   buf.write_string(" ")
   buf.write_string(self.span_id)
+  if self.kind != Internal {
+    buf.write_string(", kind=")
+    buf.write_string(self.kind.to_string())
+  }
   if self.active {
     buf.write_string(", active")
   } else {

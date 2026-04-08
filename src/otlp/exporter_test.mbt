@@ -98,7 +98,7 @@ test "otlp field conversion preserves types" {
   assert_true(sj.contains("\"stringValue\":\"hello\""))
 
   let nj = na.to_json().stringify()
-  assert_true(nj.contains("\"doubleValue\""))
+  assert_true(nj.contains("\"intValue\""))
 
   let bj = ba.to_json().stringify()
   assert_true(bj.contains("\"boolValue\":true"))

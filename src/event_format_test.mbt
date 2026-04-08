@@ -15,16 +15,16 @@ fn sample_event(
 }
 
 ///|
-test "format timestamp hms zero pads components" {
+test "format timestamp utc zero pads components" {
   let timestamp = (52_303_903 : UInt64)
-  assert_eq(@moontrace.format_timestamp_hms(timestamp), "14:31:43.903")
+  assert_eq(@moontrace.format_timestamp_utc(timestamp), "14:31:43.903")
 }
 
 ///|
-test "format timestamp hms wraps after 24 hours" {
+test "format timestamp utc wraps after 24 hours" {
   // 25*3600*1000 + 3*1000 + 4 = 90_003_004 ms → wraps to 01:00:03.004
   let timestamp = (90_003_004 : UInt64)
-  assert_eq(@moontrace.format_timestamp_hms(timestamp), "01:00:03.004")
+  assert_eq(@moontrace.format_timestamp_utc(timestamp), "01:00:03.004")
 }
 
 ///|
@@ -93,8 +93,8 @@ test "event format two spaces before fields one between" {
 }
 
 ///|
-test "format timestamp hms at zero" {
-  assert_eq(@moontrace.format_timestamp_hms((0 : UInt64)), "00:00:00.000")
+test "format timestamp utc at zero" {
+  assert_eq(@moontrace.format_timestamp_utc((0 : UInt64)), "00:00:00.000")
 }
 
 ///|

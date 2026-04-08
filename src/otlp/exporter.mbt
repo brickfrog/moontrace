@@ -71,30 +71,22 @@ pub fn OtlpExporter::flush(self : OtlpExporter) -> Unit {
 // Helper: create an OtlpSpan from a completed moontrace Span
 
 ///|
-pub fn span_to_otlp(
-  span : @moontrace.Span,
-  trace_id? : String = "",
-  parent_span_id? : String = "",
-  status_code? : Int = 1,
-  status_message? : String = "",
-) -> OtlpSpan {
-  let tid = if trace_id.is_empty() { span.trace_id } else { trace_id }
-  let sid = span.span_id
-  let psid = if parent_span_id.is_empty() {
-    span.parent_span_id
-  } else {
-    parent_span_id
+pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
+  let status_code = match span.status {
+    Unset => 0
+    Ok => 1
+    SpanError => 2
   }
   {
-    trace_id: tid,
-    span_id: sid,
-    parent_span_id: psid,
+    trace_id: span.trace_id,
+    span_id: span.span_id,
+    parent_span_id: span.parent_span_id,
     name: span.name,
-    kind: 1, // INTERNAL
+    kind: span.kind.to_int(),
     start_time_unix_nano: span.start_time,
     end_time_unix_nano: span.end_time,
     attributes: span.fields.map(fn(f) { field_to_attribute(f) }),
     status_code,
-    status_message,
+    status_message: span.status_message,
   }
 }

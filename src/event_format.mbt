@@ -1,5 +1,6 @@
 ///|
-pub fn format_timestamp_hms(timestamp : UInt64) -> String {
+/// Format a millisecond timestamp as HH:MM:SS.mmm in UTC.
+pub fn format_timestamp_utc(timestamp : UInt64) -> String {
   // @env.now() returns milliseconds since epoch
   let total_millis = timestamp
   let total_seconds = total_millis / (1000 : UInt64)
@@ -19,8 +20,15 @@ pub fn format_timestamp_hms(timestamp : UInt64) -> String {
 }
 
 ///|
+/// Deprecated: use `format_timestamp_utc` instead.
+#deprecated("Use `format_timestamp_utc` instead")
+pub fn format_timestamp_hms(timestamp : UInt64) -> String {
+  format_timestamp_utc(timestamp)
+}
+
+///|
 pub fn Event::format(self : Event, color? : Bool = false) -> String {
-  format_event(self, color, format_timestamp_hms)
+  format_event(self, color, format_timestamp_utc)
 }
 
 ///|

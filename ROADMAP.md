@@ -2,7 +2,7 @@
 
 Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for MoonBit's constraints.
 
-## Current State (v0.4.0)
+## Current State (v0.6.0)
 
 - Events: info/warn/error/debug/trace with structured fields
 - Automatic source location via `#callsite(autofill(loc~))` + `SourceLoc`
@@ -11,15 +11,15 @@ Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for 
 - Span IDs: trace_id (32 hex), span_id (16 hex), parent_span_id — auto-generated, propagated
 - SpanKind (Internal/Server/Client/Producer/Consumer), SpanStatus (Unset/Ok/SpanError)
 - span_with_trace() for custom trace ID injection (cross-process correlation)
+- Span error integration: set_status(), record_error(), error fields in exit events
 - Subscribers: JSON, console, OTLP JSON export
-- Composition: compose(), with_filter(), noop(), tap(), EventBuffer
+- Composition: compose(), with_filter(), noop(), intercept(), EventBuffer
 - Performance: global level gate (set_min_level), per-module filtering (set_module_filter)
 - Global context fields: set_global_field/get_global_field/remove_global_field/clear_global_fields
 - Serialization: to_json() on Event/Span/Field, Event.format(color?)
 - Show trait on all types, Level.from_string()
 - Cross-platform: native, JS, WASM-GC
 - CI: GitHub Actions testing all 3 backends
-- 107 tests
 
 ## ~~Phase 1: OTLP Alignment (Core)~~ DONE (v0.3.0)
 
@@ -47,14 +47,12 @@ Feature gap analysis vs Rust's `tracing` and Python's `loguru`, prioritized for 
 - [x] `clear_module_filters()` for test isolation
 - [x] Span events bypass module filtering (use global `set_min_level` only)
 
-## Phase 4: Error Integration
+## ~~Phase 4: Error Integration~~ DONE (v0.5.0)
 
-Small, self-contained. Useful for any application doing error handling with tracing.
-
-- [ ] `Span.set_status(status, message?)` — set SpanStatus on a span
-- [ ] `Span.record_error(msg)` — records error message and auto-sets status to SpanError
-- [ ] Error fields included in span exit events
-- [ ] `with_span` variants that catch errors and auto-record them on the span
+- [x] `Span.set_status(status, message?)` — set SpanStatus on a span
+- [x] `Span.record_error(msg)` — records error message and auto-sets status to SpanError
+- [x] Error fields included in span exit events
+- [x] `with_span` variants that catch errors and auto-record them on the span
 
 ```moonbit
 @moontrace.with_span_ctx("db_query", fn(s) {
