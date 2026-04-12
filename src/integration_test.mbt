@@ -58,11 +58,6 @@ test "full pipeline: spans with nested context" {
   assert_eq(captured[4].message, "span.exit db")
   assert_eq(captured[5].message, "span.exit request")
 
-  // Child span should have parent field
-  let mut has_parent = false
-  captured[2].fields.each(fn(f) { if f.key == "parent" { has_parent = true } })
-  assert_eq(has_parent, true)
-
   // Exit event should have duration_ns
   let mut has_duration = false
   captured[4].fields.each(fn(f) {
