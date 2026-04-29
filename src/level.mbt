@@ -5,7 +5,7 @@ pub(all) enum Level {
   Info
   Warn
   Error_
-} derive(Eq, Compare)
+} derive(Eq, Compare, Debug)
 
 ///|
 pub fn Level::to_string(self : Level) -> String {

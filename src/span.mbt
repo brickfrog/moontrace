@@ -11,7 +11,7 @@ pub(all) struct Span {
   mut active : Bool
   mut status : SpanStatus
   mut status_message : String
-}
+} derive(Debug)
 
 ///|
 pub fn span(

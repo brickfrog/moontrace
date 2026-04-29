@@ -75,7 +75,7 @@ pub fn format_event(
 ///|
 fn format_source(source : String) -> String {
   match source.split_once("/") {
-    Some((_, after)) => after.to_string()
+    Some((_, after)) => after.to_owned()
     None => source
   }
 }

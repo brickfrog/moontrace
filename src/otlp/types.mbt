@@ -6,13 +6,13 @@ pub(all) enum OtlpValue {
   IntVal(Int64)
   BoolVal(Bool)
   DoubleVal(Double)
-}
+} derive(Debug)
 
 ///|
 pub(all) struct OtlpAttribute {
   key : String
   value : OtlpValue
-}
+} derive(Debug)
 
 ///|
 pub(all) struct OtlpSpan {
@@ -26,7 +26,7 @@ pub(all) struct OtlpSpan {
   attributes : Array[OtlpAttribute]
   status_code : Int // 0=UNSET, 1=OK, 2=ERROR
   status_message : String
-}
+} derive(Debug)
 
 ///|
 pub(all) struct OtlpLogRecord {
@@ -35,7 +35,7 @@ pub(all) struct OtlpLogRecord {
   severity_text : String
   body : String
   attributes : Array[OtlpAttribute]
-}
+} derive(Debug)
 
 // Convert OtlpValue to Json
 

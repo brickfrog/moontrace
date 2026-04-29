@@ -5,7 +5,7 @@ pub(all) struct Event {
   fields : Array[Field]
   timestamp : UInt64
   source : String
-}
+} derive(Debug)
 
 ///|
 let global_subscriber : Ref[((Event) -> Unit)?] = { val: None }

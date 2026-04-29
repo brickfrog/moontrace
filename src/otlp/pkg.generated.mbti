@@ -3,6 +3,7 @@ package "brickfrog/moontrace/otlp"
 
 import {
   "brickfrog/moontrace",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -26,7 +27,7 @@ pub fn wrap_spans(Array[OtlpSpan]) -> Json
 pub(all) struct OtlpAttribute {
   key : String
   value : OtlpValue
-}
+} derive(@debug.Debug)
 pub fn OtlpAttribute::to_json(Self) -> Json
 
 pub(all) struct OtlpExporter {
@@ -48,7 +49,7 @@ pub(all) struct OtlpLogRecord {
   severity_text : String
   body : String
   attributes : Array[OtlpAttribute]
-}
+} derive(@debug.Debug)
 pub fn OtlpLogRecord::to_json(Self) -> Json
 
 pub(all) struct OtlpSpan {
@@ -62,7 +63,7 @@ pub(all) struct OtlpSpan {
   attributes : Array[OtlpAttribute]
   status_code : Int
   status_message : String
-}
+} derive(@debug.Debug)
 pub fn OtlpSpan::to_json(Self) -> Json
 
 pub(all) enum OtlpValue {
@@ -70,7 +71,7 @@ pub(all) enum OtlpValue {
   IntVal(Int64)
   BoolVal(Bool)
   DoubleVal(Double)
-}
+} derive(@debug.Debug)
 pub fn OtlpValue::to_json(Self) -> Json
 
 // Type aliases

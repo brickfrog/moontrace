@@ -5,7 +5,7 @@ pub(all) enum SpanKind {
   Client // 3
   Producer // 4
   Consumer // 5
-} derive(Eq, Compare)
+} derive(Eq, Compare, Debug)
 
 ///|
 pub impl Show for SpanKind with output(self, logger) {
@@ -39,7 +39,7 @@ pub(all) enum SpanStatus {
   Unset // 0 in OTLP
   Ok // 1
   SpanError // 2 — can't use Error (keyword-adjacent)
-} derive(Eq, Compare)
+} derive(Eq, Compare, Debug)
 
 ///|
 pub impl Show for SpanStatus with output(self, logger) {

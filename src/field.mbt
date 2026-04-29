@@ -2,7 +2,7 @@
 pub(all) struct Field {
   key : String
   value : Json
-}
+} derive(Debug)
 
 ///|
 pub fn fields_to_json(fields : Array[Field]) -> Json {
