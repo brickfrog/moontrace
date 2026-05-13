@@ -1,6 +1,6 @@
 {
   "name": "brickfrog/moontrace",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "deps": {
     "moonbitlang/async": "0.17.1"
   },
