@@ -1,6 +1,6 @@
 ///|
 pub impl Show for Span with output(self, logger) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("Span(")
   buf.write_string(self.name)
   buf.write_string(" ")

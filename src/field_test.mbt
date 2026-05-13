@@ -2,7 +2,7 @@
 test "constructing a Field directly" {
   let f = @moontrace.Field::{ key: "name", value: "hello".to_json() }
   assert_eq(f.key, "name")
-  assert_eq(f.value, "hello".to_json())
+  @debug.assert_eq(f.value, "hello".to_json())
 }
 
 ///|
@@ -13,37 +13,37 @@ test "fields() helper with mixed types" {
   ])
   assert_eq(arr.length(), 2)
   assert_eq(arr[0].key, "count")
-  assert_eq(arr[0].value, (42).to_json())
+  @debug.assert_eq(arr[0].value, (42).to_json())
   assert_eq(arr[1].key, "active")
-  assert_eq(arr[1].value, true.to_json())
+  @debug.assert_eq(arr[1].value, true.to_json())
 }
 
 ///|
 test "field() with string value" {
   let f = @moontrace.field("host", "localhost")
   assert_eq(f.key, "host")
-  assert_eq(f.value, "localhost".to_json())
+  @debug.assert_eq(f.value, "localhost".to_json())
 }
 
 ///|
 test "field() with int value" {
   let f = @moontrace.field("port", 8080)
   assert_eq(f.key, "port")
-  assert_eq(f.value, (8080).to_json())
+  @debug.assert_eq(f.value, (8080).to_json())
 }
 
 ///|
 test "field() with bool value" {
   let f = @moontrace.field("active", true)
   assert_eq(f.key, "active")
-  assert_eq(f.value, true.to_json())
+  @debug.assert_eq(f.value, true.to_json())
 }
 
 ///|
 test "field() with double value" {
   let f = @moontrace.field("ratio", 0.75)
   assert_eq(f.key, "ratio")
-  assert_eq(f.value, 0.75.to_json())
+  @debug.assert_eq(f.value, 0.75.to_json())
 }
 
 ///|
@@ -57,9 +57,9 @@ test "field() in emit function" {
   @moontrace.clear_subscriber()
   assert_eq(captured[0].fields.length(), 2)
   assert_eq(captured[0].fields[0].key, "port")
-  assert_eq(captured[0].fields[0].value, (8080).to_json())
+  @debug.assert_eq(captured[0].fields[0].value, (8080).to_json())
   assert_eq(captured[0].fields[1].key, "host")
-  assert_eq(captured[0].fields[1].value, "localhost".to_json())
+  @debug.assert_eq(captured[0].fields[1].value, "localhost".to_json())
 }
 
 ///|

@@ -46,7 +46,7 @@ test "explicit fields override context on collision" {
     }
   })
   assert_eq(count, 1)
-  assert_eq(seen_value, "explicit".to_json())
+  @debug.assert_eq(seen_value, "explicit".to_json())
 }
 
 ///|
@@ -91,7 +91,7 @@ test "get global field returns value" {
   let v = @moontrace.get_global_field("key")
   @moontrace.clear_global_fields()
   match v {
-    Some(val) => assert_eq(val, "val".to_json())
+    Some(val) => @debug.assert_eq(val, "val".to_json())
     None => abort("expected Some")
   }
 }
