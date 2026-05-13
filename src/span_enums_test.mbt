@@ -47,12 +47,12 @@ test "span status show" {
 
 ///|
 test "span kind to_json" {
-  assert_eq(@moontrace.Internal.to_json(), "INTERNAL".to_json())
-  assert_eq(@moontrace.Server.to_json(), "SERVER".to_json())
+  @debug.assert_eq(@moontrace.Internal.to_json(), "INTERNAL".to_json())
+  @debug.assert_eq(@moontrace.Server.to_json(), "SERVER".to_json())
 }
 
 ///|
 test "span status to_json" {
-  assert_eq(@moontrace.Ok.to_json(), "OK".to_json())
-  assert_eq(@moontrace.SpanError.to_json(), "ERROR".to_json())
+  @debug.assert_eq(@moontrace.Ok.to_json(), "OK".to_json())
+  @debug.assert_eq(@moontrace.SpanError.to_json(), "ERROR".to_json())
 }

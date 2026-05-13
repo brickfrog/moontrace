@@ -2,3 +2,7 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/core/random",
 }
+
+import {
+  "moonbitlang/core/debug",
+} for "test"

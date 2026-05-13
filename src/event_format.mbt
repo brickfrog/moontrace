@@ -8,7 +8,7 @@ pub fn format_timestamp_utc(timestamp : UInt64) -> String {
   let minutes = total_seconds / (60 : UInt64) % (60 : UInt64)
   let seconds = total_seconds % (60 : UInt64)
   let millis = total_millis % (1000 : UInt64)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(hours.to_string().pad_start(2, '0'))
   buf.write_string(":")
   buf.write_string(minutes.to_string().pad_start(2, '0'))
@@ -37,7 +37,7 @@ pub fn format_event(
   color : Bool,
   format_timestamp : (UInt64) -> String,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(format_timestamp(event.timestamp))
   buf.write_string(" | ")
   let level_str = event.level.to_string().pad_end(5, ' ')
