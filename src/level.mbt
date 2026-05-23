@@ -19,7 +19,7 @@ pub fn Level::to_string(self : Level) -> String {
 }
 
 ///|
-pub impl Show for Level with output(self, logger) {
+pub impl Show for Level with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 

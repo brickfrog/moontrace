@@ -1,5 +1,5 @@
 ///|
-pub impl Show for Span with output(self, logger) {
+pub impl Show for Span with fn output(self, logger) {
   let buf = StringBuilder()
   buf.write_string("Span(")
   buf.write_string(self.name)

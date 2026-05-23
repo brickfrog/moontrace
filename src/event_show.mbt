@@ -1,4 +1,4 @@
 ///|
-pub impl Show for Event with output(self, logger) {
+pub impl Show for Event with fn output(self, logger) {
   logger.write_string(self.format())
 }

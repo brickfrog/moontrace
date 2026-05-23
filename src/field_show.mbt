@@ -1,5 +1,5 @@
 ///|
-pub impl Show for Field with output(self, logger) {
+pub impl Show for Field with fn output(self, logger) {
   logger.write_string("\{self.key}=\{self.value.stringify()}")
 }
 

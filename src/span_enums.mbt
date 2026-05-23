@@ -8,7 +8,7 @@ pub(all) enum SpanKind {
 } derive(Eq, Compare, Debug)
 
 ///|
-pub impl Show for SpanKind with output(self, logger) {
+pub impl Show for SpanKind with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
@@ -42,7 +42,7 @@ pub(all) enum SpanStatus {
 } derive(Eq, Compare, Debug)
 
 ///|
-pub impl Show for SpanStatus with output(self, logger) {
+pub impl Show for SpanStatus with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
