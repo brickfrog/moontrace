@@ -5,3 +5,9 @@ _build/
 .choir/
 .cursor/
 bisect.coverage
+
+# Local Beads/Dolt state
+.beads/
+.dolt/
+*.db
+.beads-credential-key
