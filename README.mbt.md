@@ -109,6 +109,8 @@ s.exit()
 // s.duration() returns elapsed nanoseconds
 ```
 
+Spans are single-use lifecycles: `exit()` closes a span, and later `enter()`/`exit()` calls on the same span are ignored. Create a new child span for repeated or nested work.
+
 Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex chars).
 
 ### Error Handling on Spans
@@ -214,7 +216,7 @@ Machine-readable JSON output:
 
 ### OTLP Export
 
-Convert events and spans to OpenTelemetry-compatible JSON:
+Convert events and completed spans to OpenTelemetry-compatible JSON:
 
 ```moonbit
 let exp = @otlp.exporter(
@@ -223,17 +225,16 @@ let exp = @otlp.exporter(
   capacity=100,
 )
 @moontrace.set_subscriber(exp.subscriber())
+@moontrace.set_span_observer(exp.span_observer())
 
-// Spans must be added manually
 let s = @moontrace.span("operation")
 s.enter()
 // ... work ...
 s.exit()
-exp.add_span(@otlp.span_to_otlp(s))
 exp.flush()  // send remaining batched data
 ```
 
-The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
+`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
 
 ### Subscriber Composition
 

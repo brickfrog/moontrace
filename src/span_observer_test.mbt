@@ -55,7 +55,7 @@ test "record after enter is visible to record and close observers only" {
 }
 
 ///|
-test "span observer enter and exit hooks are idempotent" {
+test "span observer enter exit and close hooks are single-use after close" {
   let observed : Array[String] = []
   @moontrace.set_span_observer(
     @moontrace.span_lifecycle_observer(
@@ -68,6 +68,8 @@ test "span observer enter and exit hooks are idempotent" {
 
   let s = @moontrace.span("once")
   s.enter()
+  s.enter()
+  s.exit()
   s.enter()
   s.exit()
   s.exit()

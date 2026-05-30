@@ -86,8 +86,13 @@ fn span_with_ids(
 }
 
 ///|
+fn Span::is_closed(self : Span) -> Bool {
+  !self.active && self.end_time != (0 : UInt64)
+}
+
+///|
 pub fn Span::enter(self : Span) -> Unit {
-  if self.active {
+  if self.active || self.is_closed() {
     return
   }
   self.start_time = @env.now()

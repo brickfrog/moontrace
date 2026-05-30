@@ -66,6 +66,21 @@ test "otlp exporter captures completed spans through observer" {
 }
 
 ///|
+test "otlp exporter captures reopened span only once" {
+  let output : Array[String] = []
+  let exp = @otlp.exporter(span_output=fn(s) { output.push(s) }, capacity=1)
+  @moontrace.set_span_observer(exp.span_observer())
+  let s = @moontrace.span("single")
+  s.enter()
+  s.exit()
+  s.enter()
+  s.exit()
+  @moontrace.clear_span_observer()
+  assert_eq(output.length(), 1)
+  assert_true(output[0].contains("\"name\":\"single\""))
+}
+
+///|
 test "otlp wrap_spans produces valid envelope" {
   let s = @moontrace.span("op")
   s.enter()

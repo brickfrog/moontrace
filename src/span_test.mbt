@@ -69,6 +69,8 @@ test "span exit is idempotent when already inactive" {
   let s = @moontrace.span("once")
   s.enter()
   s.exit()
+  s.enter()
+  s.exit()
   s.exit()
   @moontrace.clear_subscriber()
   assert_eq(captured.length(), 2)
