@@ -417,7 +417,7 @@ fn TestSubscriber::record_in_span(
   if span_id == None && span_name == None {
     return true
   }
-  let mut inside = false
+  let mut active_matches = 0
   self.lifecycle.each(fn(item) {
     let id_matches = match span_id {
       Some(id) => item.span.span_id == id
@@ -429,14 +429,16 @@ fn TestSubscriber::record_in_span(
     }
     if id_matches && name_matches {
       if item.kind == SpanEntered && item.index < record_index {
-        inside = true
+        active_matches = active_matches + 1
       }
       if item.kind == SpanExited && item.index <= record_index {
-        inside = false
+        if active_matches > 0 {
+          active_matches = active_matches - 1
+        }
       }
     }
   })
-  inside
+  active_matches > 0
 }
 
 ///|

@@ -75,6 +75,59 @@ test "event query helpers match level message source field and span" {
 }
 
 ///|
+test "span-name correlation handles overlapping spans with same name" {
+  let capture = test_subscriber()
+
+  capture.with_install(fn() {
+    let span_a = @moontrace.span("phase")
+    let span_b = @moontrace.span("phase")
+    span_a.enter()
+    span_b.enter()
+    @moontrace.info("both active")
+    span_b.exit()
+    @moontrace.info("a still active")
+    span_a.exit()
+    @moontrace.info("after all")
+  })
+
+  let named_events = capture.events_in_span_named("phase")
+  assert_eq(named_events.length(), 5)
+  assert_eq(named_events[0].message, "span.enter phase")
+  assert_eq(named_events[1].message, "span.enter phase")
+  assert_eq(named_events[2].message, "both active")
+  assert_eq(named_events[3].message, "span.exit phase")
+  assert_eq(named_events[4].message, "a still active")
+  assert_eq(
+    capture
+    .events_matching(event_with_message("both active").with_span_name("phase"))
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      event_with_message("a still active").with_span_name("phase"),
+    )
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      event_with_message("span.exit phase").with_span_name("phase"),
+    )
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(event_with_message("after all").with_span_name("phase"))
+    .length(),
+    0,
+  )
+}
+
+///|
 test "span lifecycle ordering around events" {
   let capture = test_subscriber()
   let spans : Array[@moontrace.Span] = []
