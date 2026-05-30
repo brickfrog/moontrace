@@ -28,6 +28,7 @@ fn assert_field(event : @moontrace.Event, key : String, value : Json) -> Unit {
 ///|
 fn reset_trace_state() -> Unit {
   @moontrace.clear_subscriber()
+  @moontrace.clear_span_observer()
   @moontrace.set_min_level(@moontrace.Trace)
   @moontrace.clear_global_fields()
   @moontrace.clear_module_filters()
@@ -68,6 +69,35 @@ test "with_trace_state restores all globals after normal return" {
   assert_eq(base_events[0].message, "after scope")
   assert_field(base_events[0], "scope", "base".to_json())
   assert_eq(has_field(base_events[0], "inner_only"), false)
+  reset_trace_state()
+}
+
+///|
+test "with_trace_state restores span observer after normal return" {
+  reset_trace_state()
+  let base_observed : Array[String] = []
+  let inner_observed : Array[String] = []
+  @moontrace.set_span_observer(
+    @moontrace.span_lifecycle_observer(on_created=fn(span) {
+      base_observed.push(span.name)
+    }),
+  )
+
+  @moontrace.with_trace_state(fn() {
+    @moontrace.set_span_observer(
+      @moontrace.span_lifecycle_observer(on_created=fn(span) {
+        inner_observed.push(span.name)
+      }),
+    )
+    let _inside = @moontrace.span("inside")
+  })
+
+  let _after = @moontrace.span("after")
+
+  assert_eq(inner_observed.length(), 1)
+  assert_eq(inner_observed[0], "inside")
+  assert_eq(base_observed.length(), 1)
+  assert_eq(base_observed[0], "after")
   reset_trace_state()
 }
 
@@ -115,7 +145,14 @@ test "with_trace_state restores all globals after raised failure" {
   reset_trace_state()
   let base_events = []
   let inner_events = []
+  let base_observed : Array[String] = []
+  let inner_observed : Array[String] = []
   @moontrace.set_subscriber(fn(event) { base_events.push(event) })
+  @moontrace.set_span_observer(
+    @moontrace.span_lifecycle_observer(on_created=fn(span) {
+      base_observed.push(span.name)
+    }),
+  )
   @moontrace.set_min_level(@moontrace.Warn)
   @moontrace.set_global_field("scope", "base")
   @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Error_)
@@ -127,7 +164,13 @@ test "with_trace_state restores all globals after raised failure" {
       @moontrace.set_global_field("scope", "inner")
       @moontrace.set_global_field("inner_only", "yes")
       @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Trace)
+      @moontrace.set_span_observer(
+        @moontrace.span_lifecycle_observer(on_created=fn(span) {
+          inner_observed.push(span.name)
+        }),
+      )
       @moontrace.info("before failure")
+      let _inside = @moontrace.span("before failure span")
       raise ScopedFailure
     })
   }
@@ -138,6 +181,7 @@ test "with_trace_state restores all globals after raised failure" {
   @moontrace.info("blocked after failure")
   @moontrace.warn("blocked by restored module filter after failure")
   @moontrace.error("after failure")
+  let _after = @moontrace.span("after failure span")
 
   assert_eq(@moontrace.get_min_level(), @moontrace.Warn)
   assert_eq(inner_events.length(), 1)
@@ -148,5 +192,9 @@ test "with_trace_state restores all globals after raised failure" {
   assert_eq(base_events[0].message, "after failure")
   assert_field(base_events[0], "scope", "base".to_json())
   assert_eq(has_field(base_events[0], "inner_only"), false)
+  assert_eq(inner_observed.length(), 1)
+  assert_eq(inner_observed[0], "before failure span")
+  assert_eq(base_observed.length(), 1)
+  assert_eq(base_observed[0], "after failure span")
   reset_trace_state()
 }
