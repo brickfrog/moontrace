@@ -76,9 +76,21 @@ pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T) -> 
 
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
+pub fn[V : ToJson, T] with_global_field(String, V, () -> T raise?) -> T raise?
+
+pub fn[T] with_global_fields(Array[Field], () -> T raise?) -> T raise?
+
+pub fn[T] with_min_level(Level, () -> T raise?) -> T raise?
+
+pub fn[T] with_module_filter(String, Level, () -> T raise?) -> T raise?
+
 pub fn[T] with_span(String, fields? : Array[Field], () -> T) -> T
 
 pub fn[T] with_span_ctx(String, fields? : Array[Field], (Span) -> T) -> T
+
+pub fn[T] with_subscriber((Event) -> Unit, () -> T raise?) -> T raise?
+
+pub fn[T] with_trace_state(() -> T raise?) -> T raise?
 
 // Errors
 
