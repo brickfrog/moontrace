@@ -94,6 +94,30 @@ Filter log levels by package:
 
 Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed.
 
+## Scoped State Guards
+
+For tests or temporary overrides, wrap work in a synchronous scope:
+
+```moonbit
+@moontrace.with_subscriber(collecting_subscriber, fn() {
+  @moontrace.with_min_level(@moontrace.Debug, fn() {
+    @moontrace.with_global_field("request_id", "abc", fn() {
+      @moontrace.debug("captured only inside this scope")
+    })
+  })
+})
+```
+
+`with_trace_state(fn() { ... })` snapshots the subscriber, global minimum level,
+global context fields, and module filters, then restores them when the closure
+returns or raises. The convenience helpers `with_subscriber`, `with_min_level`,
+`with_global_field`, `with_global_fields`, and `with_module_filter` use the same
+guard, so state changed inside nested scopes restores in LIFO order and does not
+leak into later tests.
+
+These guards are synchronous call-stack scopes only. They are not task-local
+storage and do not propagate tracing state across async tasks.
+
 ## Spans
 
 Spans track operations with enter/exit lifecycle, duration, and distributed tracing IDs:
@@ -108,6 +132,8 @@ s.record("rows", 42)  // add fields after creation
 s.exit()
 // s.duration() returns elapsed nanoseconds
 ```
+
+Spans are single-use lifecycles: `exit()` closes a span, and later `enter()`/`exit()` calls on the same span are ignored. Create a new child span for repeated or nested work.
 
 Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex chars).
 
@@ -214,7 +240,7 @@ Machine-readable JSON output:
 
 ### OTLP Export
 
-Convert events and spans to OpenTelemetry-compatible JSON:
+Convert events and completed spans to OpenTelemetry-compatible JSON:
 
 ```moonbit
 let exp = @otlp.exporter(
@@ -223,17 +249,16 @@ let exp = @otlp.exporter(
   capacity=100,
 )
 @moontrace.set_subscriber(exp.subscriber())
+@moontrace.set_span_observer(exp.span_observer())
 
-// Spans must be added manually
 let s = @moontrace.span("operation")
 s.enter()
 // ... work ...
 s.exit()
-exp.add_span(@otlp.span_to_otlp(s))
 exp.flush()  // send remaining batched data
 ```
 
-The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
+`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
 
 ### Subscriber Composition
 

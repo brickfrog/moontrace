@@ -12,15 +12,30 @@ pub fn clear_global_fields() -> Unit
 
 pub fn clear_module_filters() -> Unit
 
+pub fn clear_span_observer() -> Unit
+
 pub fn clear_subscriber() -> Unit
 
+pub fn completed_span_observer((Span) -> Unit) -> SpanLifecycleObserver
+
 pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
+
+pub fn compose_span_observers(Array[SpanLifecycleObserver]) -> SpanLifecycleObserver
 
 #callsite(autofill(loc))
 pub fn debug(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 #callsite(autofill(loc))
+pub fn debug_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+#callsite(autofill(loc))
 pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+#callsite(autofill(loc))
+pub fn error_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+#callsite(autofill(loc))
+pub fn event_in_span(Span, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn[T : ToJson] field(String, T) -> Field
 
@@ -42,6 +57,9 @@ pub fn get_min_level() -> Level
 #callsite(autofill(loc))
 pub fn info(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+#callsite(autofill(loc))
+pub fn info_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
 pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
@@ -60,9 +78,15 @@ pub fn set_min_level(Level) -> Unit
 
 pub fn set_module_filter(String, Level) -> Unit
 
+pub fn set_span_observer(SpanLifecycleObserver) -> Unit
+
 pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field], kind? : SpanKind) -> Span
+
+pub fn span_lifecycle_observer(on_created? : (Span) -> Unit, on_entered? : (Span) -> Unit, on_recorded? : (Span, Field) -> Unit, on_exited? : (Span) -> Unit, on_closed? : (Span) -> Unit, on_linked? : (Span, SpanLink) -> Unit) -> SpanLifecycleObserver
+
+pub fn span_link(Span, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
 
 pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind) -> Span
 
@@ -70,15 +94,33 @@ pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind)
 pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 #callsite(autofill(loc))
+pub fn trace_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+#callsite(autofill(loc))
 pub fn warn(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+#callsite(autofill(loc))
+pub fn warn_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T) -> T
 
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
+pub fn[V : ToJson, T] with_global_field(String, V, () -> T raise?) -> T raise?
+
+pub fn[T] with_global_fields(Array[Field], () -> T raise?) -> T raise?
+
+pub fn[T] with_min_level(Level, () -> T raise?) -> T raise?
+
+pub fn[T] with_module_filter(String, Level, () -> T raise?) -> T raise?
+
 pub fn[T] with_span(String, fields? : Array[Field], () -> T) -> T
 
 pub fn[T] with_span_ctx(String, fields? : Array[Field], (Span) -> T) -> T
+
+pub fn[T] with_subscriber((Event) -> Unit, () -> T raise?) -> T raise?
+
+pub fn[T] with_trace_state(() -> T raise?) -> T raise?
 
 // Errors
 
@@ -135,14 +177,28 @@ pub(all) struct Span {
   mut status : SpanStatus
   mut status_message : String
 } derive(@debug.Debug)
+#callsite(autofill(loc))
+pub fn Span::debug(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::duration(Self) -> UInt64
 pub fn Span::enter(Self) -> Unit
+#callsite(autofill(loc))
+pub fn Span::error(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Span::event(Self, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::exit(Self) -> Unit
+pub fn Span::follows_from(Self, Self, fields? : Array[Field]) -> Unit
+#callsite(autofill(loc))
+pub fn Span::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::is_active(Self) -> Bool
+pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
 pub fn Span::to_json(Self) -> Json
+#callsite(autofill(loc))
+pub fn Span::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Span::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn[T : ToJson] Span::with_field(Self, String, T) -> Self
 pub fn Span::with_kind(Self, SpanKind) -> Self
 pub impl Show for Span
@@ -158,6 +214,32 @@ pub fn SpanKind::to_int(Self) -> Int
 pub fn SpanKind::to_json(Self) -> Json
 pub fn SpanKind::to_string(Self) -> String
 pub impl Show for SpanKind
+
+pub(all) struct SpanLifecycleObserver {
+  on_created : (Span) -> Unit
+  on_entered : (Span) -> Unit
+  on_recorded : (Span, Field) -> Unit
+  on_exited : (Span) -> Unit
+  on_closed : (Span) -> Unit
+  on_linked : (Span, SpanLink) -> Unit
+}
+
+pub(all) struct SpanLink {
+  trace_id : String
+  span_id : String
+  kind : SpanLinkKind
+  fields : Array[Field]
+} derive(@debug.Debug)
+pub fn SpanLink::to_json(Self) -> Json
+
+pub(all) enum SpanLinkKind {
+  SpanLinked
+  SpanFollowsFrom
+  SpanChildOf
+} derive(Compare, Eq, @debug.Debug)
+pub fn SpanLinkKind::to_json(Self) -> Json
+pub fn SpanLinkKind::to_string(Self) -> String
+pub impl Show for SpanLinkKind
 
 pub(all) enum SpanStatus {
   Unset
