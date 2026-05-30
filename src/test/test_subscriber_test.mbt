@@ -2,6 +2,55 @@
 suberror ExampleFailure
 
 ///|
+fn assert_record_event(
+  records : Array[CapturedRecord],
+  index : Int,
+  message : String,
+) -> Unit {
+  if records[index].index != index {
+    abort("record index mismatch at index " + "\{index}")
+  }
+  match records[index].event {
+    Some(event) =>
+      if event.message != message {
+        abort("event message mismatch at index " + "\{index}")
+      }
+    None => abort("expected event record at index " + "\{index}")
+  }
+  match records[index].lifecycle {
+    Some(_) => abort("expected no lifecycle record at index " + "\{index}")
+    None => ()
+  }
+}
+
+///|
+fn assert_record_lifecycle(
+  records : Array[CapturedRecord],
+  index : Int,
+  kind : SpanLifecycleKind,
+  span_name : String,
+) -> Unit {
+  if records[index].index != index {
+    abort("record index mismatch at index " + "\{index}")
+  }
+  match records[index].event {
+    Some(_) => abort("expected no event record at index " + "\{index}")
+    None => ()
+  }
+  match records[index].lifecycle {
+    Some(event) => {
+      if event.kind != kind {
+        abort("lifecycle kind mismatch at index " + "\{index}")
+      }
+      if event.span.name != span_name {
+        abort("lifecycle span name mismatch at index " + "\{index}")
+      }
+    }
+    None => abort("expected lifecycle record at index " + "\{index}")
+  }
+}
+
+///|
 test "example capture subscriber replaces manual captured arrays" {
   let capture = test_subscriber()
 
@@ -128,6 +177,71 @@ test "span-name correlation handles overlapping spans with same name" {
 }
 
 ///|
+test "span-name correlation handles crossing spans with same name" {
+  let capture = test_subscriber()
+
+  capture.with_install(fn() {
+    let span_a = @moontrace.span("phase", fields=[@moontrace.field("span", "a")])
+    let span_b = @moontrace.span("phase", fields=[@moontrace.field("span", "b")])
+    span_a.enter()
+    span_b.enter()
+    @moontrace.info("both active")
+    span_a.exit()
+    @moontrace.info("b still active")
+    span_b.exit()
+    @moontrace.info("after all")
+  })
+
+  let named_events = capture.events_in_span_named("phase")
+  assert_eq(named_events.length(), 5)
+  assert_eq(named_events[0].message, "span.enter phase")
+  assert_eq(named_events[1].message, "span.enter phase")
+  assert_eq(named_events[2].message, "both active")
+  assert_eq(named_events[3].message, "span.exit phase")
+  assert_eq(named_events[4].message, "b still active")
+  assert_eq(
+    capture
+    .events_matching(event_with_message("both active").with_span_name("phase"))
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      event_with_message("span.exit phase")
+      .with_field_value("span", "a")
+      .with_span_name("phase"),
+    )
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      event_with_message("b still active").with_span_name("phase"),
+    )
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      event_with_message("span.exit phase")
+      .with_field_value("span", "b")
+      .with_span_name("phase"),
+    )
+    .length(),
+    0,
+  )
+  assert_eq(
+    capture
+    .events_matching(event_with_message("after all").with_span_name("phase"))
+    .length(),
+    0,
+  )
+}
+
+///|
 test "span lifecycle ordering around events" {
   let capture = test_subscriber()
   let spans : Array[@moontrace.Span] = []
@@ -156,6 +270,17 @@ test "span lifecycle ordering around events" {
     event_with_message("inside").with_span(span),
     event_with_message("after record").with_span(span),
   ])
+  let records = capture.captured_records()
+  assert_eq(records.length(), 9)
+  assert_record_lifecycle(records, 0, SpanCreated, "work")
+  assert_record_lifecycle(records, 1, SpanEntered, "work")
+  assert_record_event(records, 2, "span.enter work")
+  assert_record_event(records, 3, "inside")
+  assert_record_lifecycle(records, 4, SpanRecorded, "work")
+  assert_record_event(records, 5, "after record")
+  assert_record_lifecycle(records, 6, SpanExited, "work")
+  assert_record_event(records, 7, "span.exit work")
+  assert_record_lifecycle(records, 8, SpanClosed, "work")
   assert_eq(
     capture
     .events_matching(event_with_message("span.exit work").with_span(span))

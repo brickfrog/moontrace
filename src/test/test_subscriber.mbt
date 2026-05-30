@@ -25,7 +25,7 @@ pub struct CapturedRecord {
 } derive(Debug)
 
 ///|
-pub(all) struct EventQuery {
+pub struct EventQuery {
   level : @moontrace.Level?
   message : String?
   source : String?
@@ -36,7 +36,7 @@ pub(all) struct EventQuery {
 } derive(Debug)
 
 ///|
-pub(all) struct LifecycleQuery {
+pub struct LifecycleQuery {
   kind : SpanLifecycleKind?
   span_id : String?
   span_name : String?

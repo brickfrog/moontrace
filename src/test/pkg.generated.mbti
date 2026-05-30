@@ -40,7 +40,7 @@ pub struct CapturedRecord {
   lifecycle : SpanLifecycleEvent?
 } derive(@debug.Debug)
 
-pub(all) struct EventQuery {
+pub struct EventQuery {
   level : @moontrace.Level?
   message : String?
   source : String?
@@ -57,7 +57,7 @@ pub fn EventQuery::with_source(Self, String) -> Self
 pub fn EventQuery::with_span(Self, @moontrace.Span) -> Self
 pub fn EventQuery::with_span_name(Self, String) -> Self
 
-pub(all) struct LifecycleQuery {
+pub struct LifecycleQuery {
   kind : SpanLifecycleKind?
   span_id : String?
   span_name : String?
