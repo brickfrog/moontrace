@@ -1,0 +1,124 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/test"
+
+import {
+  "brickfrog/moontrace",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn event_in_span(@moontrace.Span) -> EventQuery
+
+pub fn event_in_span_named(String) -> EventQuery
+
+pub fn event_query() -> EventQuery
+
+pub fn event_with_field(String) -> EventQuery
+
+pub fn[V : ToJson] event_with_field_value(String, V) -> EventQuery
+
+pub fn event_with_level(@moontrace.Level) -> EventQuery
+
+pub fn event_with_message(String) -> EventQuery
+
+pub fn event_with_source(String) -> EventQuery
+
+pub fn lifecycle_kind(SpanLifecycleKind) -> LifecycleQuery
+
+pub fn lifecycle_query() -> LifecycleQuery
+
+pub fn test_subscriber() -> TestSubscriber
+
+pub fn[T] with_test_subscriber(TestSubscriber, () -> T raise?) -> T raise?
+
+// Errors
+
+// Types and methods
+pub struct CapturedRecord {
+  index : Int
+  event : @moontrace.Event?
+  lifecycle : SpanLifecycleEvent?
+} derive(@debug.Debug)
+
+pub(all) struct EventQuery {
+  level : @moontrace.Level?
+  message : String?
+  source : String?
+  field_key : String?
+  field_value : Json?
+  span_id : String?
+  span_name : String?
+} derive(@debug.Debug)
+pub fn EventQuery::with_field(Self, String) -> Self
+pub fn[V : ToJson] EventQuery::with_field_value(Self, String, V) -> Self
+pub fn EventQuery::with_level(Self, @moontrace.Level) -> Self
+pub fn EventQuery::with_message(Self, String) -> Self
+pub fn EventQuery::with_source(Self, String) -> Self
+pub fn EventQuery::with_span(Self, @moontrace.Span) -> Self
+pub fn EventQuery::with_span_name(Self, String) -> Self
+
+pub(all) struct LifecycleQuery {
+  kind : SpanLifecycleKind?
+  span_id : String?
+  span_name : String?
+  field_key : String?
+} derive(@debug.Debug)
+pub fn LifecycleQuery::with_kind(Self, SpanLifecycleKind) -> Self
+pub fn LifecycleQuery::with_recorded_field(Self, String) -> Self
+pub fn LifecycleQuery::with_span(Self, @moontrace.Span) -> Self
+pub fn LifecycleQuery::with_span_name(Self, String) -> Self
+
+pub struct SpanLifecycleEvent {
+  index : Int
+  kind : SpanLifecycleKind
+  span : @moontrace.Span
+  field : @moontrace.Field?
+  link : @moontrace.SpanLink?
+} derive(@debug.Debug)
+
+pub(all) enum SpanLifecycleKind {
+  SpanCreated
+  SpanEntered
+  SpanRecorded
+  SpanExited
+  SpanClosed
+  SpanLinked
+} derive(Compare, Eq, @debug.Debug)
+pub fn SpanLifecycleKind::to_string(Self) -> String
+pub impl Show for SpanLifecycleKind
+
+pub struct TestSubscriber {
+  events : Array[@moontrace.Event]
+  lifecycle : Array[SpanLifecycleEvent]
+  records : Array[CapturedRecord]
+} derive(@debug.Debug)
+pub fn TestSubscriber::assert_created_entered_recorded_exited(Self, @moontrace.Span) -> Unit
+pub fn TestSubscriber::assert_event(Self, EventQuery) -> Unit
+pub fn TestSubscriber::assert_events_ordered(Self, Array[EventQuery]) -> Unit
+pub fn TestSubscriber::assert_events_unordered(Self, Array[EventQuery]) -> Unit
+pub fn TestSubscriber::assert_lifecycle_ordered(Self, Array[LifecycleQuery]) -> Unit
+pub fn TestSubscriber::assert_span_lifecycle_ordered(Self, @moontrace.Span, Array[SpanLifecycleKind]) -> Unit
+pub fn TestSubscriber::captured_events(Self) -> Array[@moontrace.Event]
+pub fn TestSubscriber::captured_lifecycle(Self) -> Array[SpanLifecycleEvent]
+pub fn TestSubscriber::captured_records(Self) -> Array[CapturedRecord]
+pub fn TestSubscriber::check_event(Self, EventQuery) -> String?
+pub fn TestSubscriber::check_events_ordered(Self, Array[EventQuery]) -> String?
+pub fn TestSubscriber::check_events_unordered(Self, Array[EventQuery]) -> String?
+pub fn TestSubscriber::check_lifecycle_ordered(Self, Array[LifecycleQuery]) -> String?
+pub fn TestSubscriber::events_by_field(Self, String) -> Array[@moontrace.Event]
+pub fn[V : ToJson] TestSubscriber::events_by_field_value(Self, String, V) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_by_level(Self, @moontrace.Level) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_by_message(Self, String) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_by_source(Self, String) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_in_span(Self, @moontrace.Span) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_in_span_named(Self, String) -> Array[@moontrace.Event]
+pub fn TestSubscriber::events_matching(Self, EventQuery) -> Array[@moontrace.Event]
+pub fn TestSubscriber::lifecycle_matching(Self, LifecycleQuery) -> Array[SpanLifecycleEvent]
+pub fn TestSubscriber::observer(Self) -> @moontrace.SpanLifecycleObserver
+pub fn TestSubscriber::subscriber(Self) -> (@moontrace.Event) -> Unit
+pub fn[T] TestSubscriber::with_install(Self, () -> T raise?) -> T raise?
+
+// Type aliases
+
+// Traits
+
