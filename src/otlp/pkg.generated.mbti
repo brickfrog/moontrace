@@ -41,6 +41,7 @@ pub fn OtlpExporter::add_span(Self, OtlpSpan) -> Unit
 pub fn OtlpExporter::flush(Self) -> Unit
 pub fn OtlpExporter::flush_logs(Self) -> Unit
 pub fn OtlpExporter::flush_spans(Self) -> Unit
+pub fn OtlpExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
 pub fn OtlpExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
 pub(all) struct OtlpLogRecord {

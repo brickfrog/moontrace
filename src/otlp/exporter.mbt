@@ -33,6 +33,15 @@ pub fn OtlpExporter::subscriber(
 }
 
 ///|
+pub fn OtlpExporter::span_observer(
+  self : OtlpExporter,
+) -> @moontrace.SpanLifecycleObserver {
+  @moontrace.completed_span_observer(fn(span) {
+    self.add_span(span_to_otlp(span))
+  })
+}
+
+///|
 pub fn OtlpExporter::add_span(self : OtlpExporter, span : OtlpSpan) -> Unit {
   self.spans.push(span)
   if self.spans.length() >= self.capacity {

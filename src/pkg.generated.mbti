@@ -12,9 +12,15 @@ pub fn clear_global_fields() -> Unit
 
 pub fn clear_module_filters() -> Unit
 
+pub fn clear_span_observer() -> Unit
+
 pub fn clear_subscriber() -> Unit
 
+pub fn completed_span_observer((Span) -> Unit) -> SpanLifecycleObserver
+
 pub fn compose(Array[(Event) -> Unit]) -> (Event) -> Unit
+
+pub fn compose_span_observers(Array[SpanLifecycleObserver]) -> SpanLifecycleObserver
 
 #callsite(autofill(loc))
 pub fn debug(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -60,9 +66,15 @@ pub fn set_min_level(Level) -> Unit
 
 pub fn set_module_filter(String, Level) -> Unit
 
+pub fn set_span_observer(SpanLifecycleObserver) -> Unit
+
 pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field], kind? : SpanKind) -> Span
+
+pub fn span_lifecycle_observer(on_created? : (Span) -> Unit, on_entered? : (Span) -> Unit, on_recorded? : (Span, Field) -> Unit, on_exited? : (Span) -> Unit, on_closed? : (Span) -> Unit, on_linked? : (Span, SpanLink) -> Unit) -> SpanLifecycleObserver
+
+pub fn span_link(Span, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
 
 pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind) -> Span
 
@@ -150,7 +162,9 @@ pub(all) struct Span {
 pub fn Span::duration(Self) -> UInt64
 pub fn Span::enter(Self) -> Unit
 pub fn Span::exit(Self) -> Unit
+pub fn Span::follows_from(Self, Self, fields? : Array[Field]) -> Unit
 pub fn Span::is_active(Self) -> Bool
+pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
@@ -170,6 +184,32 @@ pub fn SpanKind::to_int(Self) -> Int
 pub fn SpanKind::to_json(Self) -> Json
 pub fn SpanKind::to_string(Self) -> String
 pub impl Show for SpanKind
+
+pub(all) struct SpanLifecycleObserver {
+  on_created : (Span) -> Unit
+  on_entered : (Span) -> Unit
+  on_recorded : (Span, Field) -> Unit
+  on_exited : (Span) -> Unit
+  on_closed : (Span) -> Unit
+  on_linked : (Span, SpanLink) -> Unit
+}
+
+pub(all) struct SpanLink {
+  trace_id : String
+  span_id : String
+  kind : SpanLinkKind
+  fields : Array[Field]
+} derive(@debug.Debug)
+pub fn SpanLink::to_json(Self) -> Json
+
+pub(all) enum SpanLinkKind {
+  SpanLinked
+  SpanFollowsFrom
+  SpanChildOf
+} derive(Compare, Eq, @debug.Debug)
+pub fn SpanLinkKind::to_json(Self) -> Json
+pub fn SpanLinkKind::to_string(Self) -> String
+pub impl Show for SpanLinkKind
 
 pub(all) enum SpanStatus {
   Unset
