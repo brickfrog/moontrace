@@ -94,6 +94,30 @@ Filter log levels by package:
 
 Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed.
 
+## Scoped State Guards
+
+For tests or temporary overrides, wrap work in a synchronous scope:
+
+```moonbit
+@moontrace.with_subscriber(collecting_subscriber, fn() {
+  @moontrace.with_min_level(@moontrace.Debug, fn() {
+    @moontrace.with_global_field("request_id", "abc", fn() {
+      @moontrace.debug("captured only inside this scope")
+    })
+  })
+})
+```
+
+`with_trace_state(fn() { ... })` snapshots the subscriber, global minimum level,
+global context fields, and module filters, then restores them when the closure
+returns or raises. The convenience helpers `with_subscriber`, `with_min_level`,
+`with_global_field`, `with_global_fields`, and `with_module_filter` use the same
+guard, so state changed inside nested scopes restores in LIFO order and does not
+leak into later tests.
+
+These guards are synchronous call-stack scopes only. They are not task-local
+storage and do not propagate tracing state across async tasks.
+
 ## Spans
 
 Spans track operations with enter/exit lifecycle, duration, and distributed tracing IDs:
