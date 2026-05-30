@@ -218,8 +218,7 @@ fn notify_span_closed(span : Span) -> Unit {
 ///|
 fn notify_span_linked(span : Span, link : SpanLink) -> Unit {
   match global_span_observer.val {
-    Some(observer) =>
-      (observer.on_linked)(span_snapshot(span), link_snapshot(link))
+    Some(observer) => (observer.on_linked)(span_snapshot(span), link)
     None => ()
   }
 }
