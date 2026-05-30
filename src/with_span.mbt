@@ -32,6 +32,7 @@ pub fn[T] with_child_span(
   f : (Span) -> T,
 ) -> T {
   let s = span_with_ids(name, fields, parent.trace_id, parent.span_id, Internal)
+  notify_span_linked(s, span_link(parent, kind=SpanChildOf))
   s.enter()
   let result = f(s)
   s.exit()

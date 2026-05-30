@@ -19,7 +19,7 @@ pub fn span(
   fields? : Array[Field] = [],
   kind? : SpanKind = Internal,
 ) -> Span {
-  {
+  let s = {
     name,
     fields,
     trace_id: next_trace_id(),
@@ -32,6 +32,8 @@ pub fn span(
     status: Unset,
     status_message: "",
   }
+  notify_span_created(s)
+  s
 }
 
 ///|
@@ -41,7 +43,7 @@ pub fn span_with_trace(
   fields? : Array[Field] = [],
   kind? : SpanKind = Internal,
 ) -> Span {
-  {
+  let s = {
     name,
     fields,
     trace_id,
@@ -54,6 +56,8 @@ pub fn span_with_trace(
     status: Unset,
     status_message: "",
   }
+  notify_span_created(s)
+  s
 }
 
 ///|
@@ -64,7 +68,7 @@ fn span_with_ids(
   parent_span_id : String,
   kind : SpanKind,
 ) -> Span {
-  {
+  let s = {
     name,
     fields,
     trace_id,
@@ -77,6 +81,8 @@ fn span_with_ids(
     status: Unset,
     status_message: "",
   }
+  notify_span_created(s)
+  s
 }
 
 ///|
@@ -87,6 +93,7 @@ pub fn Span::enter(self : Span) -> Unit {
   self.start_time = @env.now()
   self.end_time = (0 : UInt64)
   self.active = true
+  notify_span_entered(self)
   let enter_fields = self.fields.copy()
   emit(Trace, "span.enter \{self.name}", enter_fields)
 }
@@ -98,6 +105,7 @@ pub fn Span::exit(self : Span) -> Unit {
   }
   self.end_time = @env.now()
   self.active = false
+  notify_span_exited(self)
   let duration = self.end_time - self.start_time
   let exit_fields = self.fields.copy()
   exit_fields.push({ key: "duration_ns", value: duration.to_json() })
@@ -111,6 +119,7 @@ pub fn Span::exit(self : Span) -> Unit {
     }
   }
   emit(Trace, "span.exit \{self.name}", exit_fields)
+  notify_span_closed(self)
 }
 
 ///|
@@ -130,7 +139,9 @@ pub fn Span::set_status(
 pub fn Span::record_error(self : Span, msg : String) -> Unit {
   self.status = SpanError
   self.status_message = msg
-  self.fields.push({ key: "error", value: msg.to_json() })
+  let field = { key: "error", value: msg.to_json() }
+  self.fields.push(field)
+  notify_span_recorded(self, field)
 }
 
 ///|
