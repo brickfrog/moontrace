@@ -21,7 +21,20 @@ pub fn clear_module_filters() -> Unit {
 }
 
 ///|
-/// Check if a module+level should be logged based on configured filters
+/// Resolve the effective minimum level for a source package.
+///
+/// A package-specific filter overrides the global minimum level for matching
+/// SourceLoc packages. Sources without a package-specific filter fall back to
+/// the global minimum level.
+fn effective_min(source : String) -> Level {
+  match module_filters.val.get(source) {
+    Some(min) => min
+    None => global_min_level.val
+  }
+}
+
+///|
+/// Check if a module+level should be logged based on the effective threshold.
 ///
 /// Parameters:
 /// * `source` - The package name from SourceLoc
@@ -30,10 +43,7 @@ pub fn clear_module_filters() -> Unit {
 /// Returns true if the event should be logged, false otherwise
 ///
 fn should_log_module(source : String, level : Level) -> Bool {
-  match module_filters.val.get(source) {
-    Some(min) => level >= min
-    None => true // no filter = allow all (global min_level still applies)
-  }
+  level >= effective_min(source)
 }
 
 ///|

@@ -84,9 +84,6 @@ fn emit_with_loc(
   fields : Array[Field],
   loc : SourceLoc,
 ) -> Unit {
-  if level < global_min_level.val {
-    return
-  }
   let source = extract_package(loc)
   if !should_log_module(source, level) {
     return
@@ -128,9 +125,6 @@ fn emit_in_span_with_loc(
   fields : Array[Field],
   loc : SourceLoc,
 ) -> Unit {
-  if level < global_min_level.val {
-    return
-  }
   let source = extract_package(loc)
   if !should_log_module(source, level) {
     return
