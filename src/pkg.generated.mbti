@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn apply_env_filter(ParsedFilter) -> Unit
+
 pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
 
 pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind) -> Span
@@ -66,6 +68,8 @@ pub fn info(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn info_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+pub fn initialize_from_env(env_var? : String) -> Result[Unit, EnvFilterError]
+
 pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
@@ -76,6 +80,8 @@ pub fn next_trace_id() -> String
 
 pub fn noop() -> (Event) -> Unit
 
+pub fn parse_env_filter(String) -> Result[ParsedFilter, EnvFilterError]
+
 pub fn parse_span_context(String, tracestate? : String) -> Result[SpanContext, TraceContextError]
 
 pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
@@ -83,6 +89,8 @@ pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
 pub fn parse_tracestate(String) -> Result[TraceState, TraceContextError]
 
 pub fn remove_global_field(String) -> Unit
+
+pub fn set_filter_from_directives(String) -> Result[Unit, EnvFilterError]
 
 pub fn[T : ToJson] set_global_field(String, T) -> Unit
 
@@ -163,6 +171,13 @@ pub fn[T] with_trace_state(() -> T raise?) -> T raise?
 // Errors
 
 // Types and methods
+pub(all) enum EnvFilterError {
+  InvalidLevel(String)
+  MalformedDirective(String)
+} derive(Compare, Eq, @debug.Debug)
+pub fn EnvFilterError::to_string(Self) -> String
+pub impl Show for EnvFilterError
+
 pub(all) struct Event {
   level : Level
   message : String
@@ -201,6 +216,12 @@ pub fn Level::from_string(String) -> Self?
 pub fn Level::to_json(Self) -> Json
 pub fn Level::to_string(Self) -> String
 pub impl Show for Level
+
+pub(all) struct ParsedFilter {
+  default_level : Level
+  module_filters : Map[String, Level]
+} derive(@debug.Debug)
+pub fn ParsedFilter::apply(Self) -> Unit
 
 pub(all) struct Span {
   name : String

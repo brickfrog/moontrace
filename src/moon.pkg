@@ -6,4 +6,5 @@ import {
 import {
   "moonbitlang/core/debug",
   "moonbitlang/async",
+  "brickfrog/moontrace/test",
 } for "test"
