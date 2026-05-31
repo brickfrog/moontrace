@@ -273,6 +273,21 @@ test "empty and whitespace-only tracestate parse as empty" {
 }
 
 ///|
+test "span context drops malformed tracestate but keeps valid traceparent" {
+  let ctx = expect_context(
+    @moontrace.parse_span_context(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      tracestate="bad header, no equals",
+    ),
+  )
+  assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+  assert_eq(ctx.span_id, "00f067aa0ba902b7")
+  assert_true(ctx.is_remote())
+  assert_true(ctx.is_sampled())
+  assert_true(ctx.trace_state.is_empty())
+}
+
+///|
 test "remote context creates child span and preserves propagation data" {
   let remote = expect_context(
     @moontrace.parse_span_context(

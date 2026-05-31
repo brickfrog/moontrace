@@ -649,18 +649,19 @@ pub fn parse_span_context(
   tracestate? : String = "",
 ) -> Result[SpanContext, TraceContextError] {
   match parse_traceparent(traceparent) {
-    Result::Ok(ctx) =>
-      match parse_tracestate(tracestate) {
-        Result::Ok(state) =>
-          Result::Ok({
-            trace_id: ctx.trace_id,
-            span_id: ctx.span_id,
-            flags: ctx.flags,
-            trace_state: state,
-            is_remote: true,
-          })
-        Result::Err(err) => Result::Err(err)
+    Result::Ok(ctx) => {
+      let state = match parse_tracestate(tracestate) {
+        Result::Ok(state) => state
+        Result::Err(_) => TraceState::empty()
       }
+      Result::Ok({
+        trace_id: ctx.trace_id,
+        span_id: ctx.span_id,
+        flags: ctx.flags,
+        trace_state: state,
+        is_remote: true,
+      })
+    }
     Result::Err(err) => Result::Err(err)
   }
 }
