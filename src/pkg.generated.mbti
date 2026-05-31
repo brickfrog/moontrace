@@ -342,7 +342,7 @@ pub fn TraceId::to_string(Self) -> String
 pub impl Show for TraceId
 
 pub struct TraceState {
-  entries : Array[TraceStateEntry]
+  // private fields
 } derive(@debug.Debug)
 pub fn TraceState::empty() -> Self
 pub fn TraceState::from_entries(Array[TraceStateEntry]) -> Result[Self, TraceContextError]

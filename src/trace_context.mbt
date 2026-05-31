@@ -49,7 +49,7 @@ pub struct TraceStateEntry {
 
 ///|
 pub struct TraceState {
-  entries : Array[TraceStateEntry]
+  priv entries : Array[TraceStateEntry]
 } derive(Debug)
 
 ///|
