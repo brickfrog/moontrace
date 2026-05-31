@@ -57,6 +57,7 @@ pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
   parent_span_id : String
+  flags : Int
   name : String
   kind : Int
   start_time_unix_nano : UInt64

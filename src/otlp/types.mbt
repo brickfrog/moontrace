@@ -19,6 +19,7 @@ pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
   parent_span_id : String
+  flags : Int
   name : String
   kind : Int // 1=INTERNAL, 2=SERVER, 3=CLIENT
   start_time_unix_nano : UInt64
@@ -81,6 +82,7 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   if !self.parent_span_id.is_empty() {
     m.set("parentSpanId", self.parent_span_id.to_json())
   }
+  m.set("flags", self.flags.to_json())
   m.set("name", self.name.to_json())
   m.set("kind", self.kind.to_json())
   m.set("startTimeUnixNano", self.start_time_unix_nano.to_string().to_json())

@@ -15,6 +15,7 @@ test "otlp span to_json has required fields" {
     trace_id: "0000000000000000000000000000000a",
     span_id: "000000000000000b",
     parent_span_id: "",
+    flags: 0,
     name: "test",
     kind: 1,
     start_time_unix_nano: (100 : UInt64),
@@ -28,6 +29,7 @@ test "otlp span to_json has required fields" {
   assert_true(j.contains("\"spanId\":\"000000000000000b\""))
   assert_true(j.contains("\"name\":\"test\""))
   assert_true(j.contains("\"kind\":1"))
+  assert_true(j.contains("\"flags\":0"))
   // parentSpanId should be omitted when empty
   assert_true(!j.contains("parentSpanId"))
 }
@@ -38,6 +40,7 @@ test "otlp span to_json includes parentSpanId when set" {
     trace_id: "0000000000000000000000000000000a",
     span_id: "000000000000000b",
     parent_span_id: "000000000000000c",
+    flags: 1,
     name: "child",
     kind: 1,
     start_time_unix_nano: (100 : UInt64),
@@ -48,6 +51,7 @@ test "otlp span to_json includes parentSpanId when set" {
   }
   let j = span.to_json().stringify()
   assert_true(j.contains("\"parentSpanId\":\"000000000000000c\""))
+  assert_true(j.contains("\"flags\":1"))
 }
 
 ///|

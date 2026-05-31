@@ -90,6 +90,7 @@ pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
     trace_id: span.trace_id,
     span_id: span.span_id,
     parent_span_id: span.parent_span_id,
+    flags: @moontrace.span_trace_flags(span).to_int(),
     name: span.name,
     kind: span.kind.to_int(),
     start_time_unix_nano: span.start_time,

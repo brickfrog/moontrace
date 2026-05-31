@@ -80,7 +80,20 @@ fn span_with_ids(
   parent_span_id : String,
   kind : SpanKind,
 ) -> Span {
-  let s = {
+  let s = span_with_ids_unnotified(name, fields, trace_id, parent_span_id, kind)
+  notify_span_created(s)
+  s
+}
+
+///|
+fn span_with_ids_unnotified(
+  name : String,
+  fields : Array[Field],
+  trace_id : String,
+  parent_span_id : String,
+  kind : SpanKind,
+) -> Span {
+  {
     name,
     fields,
     trace_id,
@@ -93,8 +106,6 @@ fn span_with_ids(
     status: Unset,
     status_message: "",
   }
-  notify_span_created(s)
-  s
 }
 
 ///|
@@ -156,7 +167,7 @@ pub fn Span::set_status(
 pub fn Span::record_error(self : Span, msg : String) -> Unit {
   self.status = SpanError
   self.status_message = msg
-  let field = { key: "error", value: msg.to_json() }
+  let field : Field = { key: "error", value: msg.to_json() }
   self.fields.push(field)
   notify_span_recorded(self, field)
 }

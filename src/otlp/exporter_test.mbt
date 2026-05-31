@@ -48,6 +48,23 @@ test "otlp span conversion" {
 }
 
 ///|
+test "otlp span conversion carries trace flags" {
+  let remote = match
+    @moontrace.parse_traceparent(
+      "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+    ) {
+    Ok(ctx) => ctx
+    Err(err) => abort("expected remote context, got \{err}")
+  }
+  let child = @moontrace.span_from_remote_context(remote, "server")
+  child.enter()
+  child.exit()
+  let otlp_span = @otlp.span_to_otlp(child)
+  assert_eq(otlp_span.flags, 1)
+  assert_true(otlp_span.to_json().stringify().contains("\"flags\":1"))
+}
+
+///|
 test "otlp exporter captures completed spans through observer" {
   let output : Array[String] = []
   let exp = @otlp.exporter(span_output=fn(s) { output.push(s) }, capacity=1)
