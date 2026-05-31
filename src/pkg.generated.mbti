@@ -52,6 +52,10 @@ pub fn format_timestamp_hms(UInt64) -> String
 
 pub fn format_timestamp_utc(UInt64) -> String
 
+pub fn format_traceparent(SpanContext) -> String
+
+pub fn format_tracestate(TraceState) -> String
+
 pub fn get_global_field(String) -> Json?
 
 pub fn get_min_level() -> Level
@@ -72,6 +76,12 @@ pub fn next_trace_id() -> String
 
 pub fn noop() -> (Event) -> Unit
 
+pub fn parse_span_context(String, tracestate? : String) -> Result[SpanContext, TraceContextError]
+
+pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
+
+pub fn parse_tracestate(String) -> Result[TraceState, TraceContextError]
+
 pub fn remove_global_field(String) -> Unit
 
 pub fn[T : ToJson] set_global_field(String, T) -> Unit
@@ -86,17 +96,43 @@ pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn span(String, fields? : Array[Field], kind? : SpanKind) -> Span
 
+pub fn span_context(TraceId, SpanId, flags? : TraceFlags, trace_state? : TraceState, is_remote? : Bool) -> SpanContext
+
+pub fn span_context_from_ids(String, String, flags? : TraceFlags, trace_state? : TraceState, is_remote? : Bool) -> Result[SpanContext, TraceContextError]
+
+pub fn span_context_from_span(Span) -> Result[SpanContext, TraceContextError]
+
+pub fn span_from_remote_context(SpanContext, String, fields? : Array[Field], kind? : SpanKind) -> Span
+
+pub fn span_id(String) -> Result[SpanId, TraceContextError]
+
 pub fn span_lifecycle_observer(on_created? : (Span) -> Unit, on_entered? : (Span) -> Unit, on_recorded? : (Span, Field) -> Unit, on_exited? : (Span) -> Unit, on_closed? : (Span) -> Unit, on_linked? : (Span, SpanLink) -> Unit) -> SpanLifecycleObserver
 
 pub fn span_link(Span, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
+
+pub fn span_trace_flags(Span) -> TraceFlags
+
+pub fn span_trace_state(Span) -> TraceState
 
 pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind) -> Span
 
 #callsite(autofill(loc))
 pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+pub fn trace_flags_sampled() -> TraceFlags
+
+pub fn trace_flags_unsampled() -> TraceFlags
+
+pub fn trace_id(String) -> Result[TraceId, TraceContextError]
+
 #callsite(autofill(loc))
 pub fn trace_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+pub fn trace_state(Array[TraceStateEntry]) -> Result[TraceState, TraceContextError]
+
+pub fn trace_state_entry(String, String) -> Result[TraceStateEntry, TraceContextError]
+
+pub fn traceparent_from_span(Span) -> Result[String, TraceContextError]
 
 #callsite(autofill(loc))
 pub fn warn(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -172,6 +208,8 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
+  mut trace_flags : Int
+  mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
   mut end_time : UInt64
@@ -204,6 +242,25 @@ pub fn Span::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Uni
 pub fn[T : ToJson] Span::with_field(Self, String, T) -> Self
 pub fn Span::with_kind(Self, SpanKind) -> Self
 pub impl Show for Span
+
+pub struct SpanContext {
+  trace_id : String
+  span_id : String
+  flags : TraceFlags
+  trace_state : TraceState
+  is_remote : Bool
+} derive(@debug.Debug)
+pub fn SpanContext::is_remote(Self) -> Bool
+pub fn SpanContext::is_sampled(Self) -> Bool
+pub fn SpanContext::trace_flags_int(Self) -> Int
+pub fn SpanContext::traceparent(Self) -> String
+
+pub struct SpanId {
+  value : String
+} derive(Compare, Eq, @debug.Debug)
+pub fn SpanId::parse(String) -> Result[Self, TraceContextError]
+pub fn SpanId::to_string(Self) -> String
+pub impl Show for SpanId
 
 pub(all) enum SpanKind {
   Internal
@@ -252,6 +309,53 @@ pub fn SpanStatus::to_int(Self) -> Int
 pub fn SpanStatus::to_json(Self) -> Json
 pub fn SpanStatus::to_string(Self) -> String
 pub impl Show for SpanStatus
+
+pub(all) enum TraceContextError {
+  InvalidTraceId(String)
+  InvalidSpanId(String)
+  InvalidTraceFlags(String)
+  InvalidTraceParent(String)
+  UnsupportedTraceParentVersion(String)
+  InvalidTraceState(String)
+} derive(Compare, Eq, @debug.Debug)
+pub fn TraceContextError::to_string(Self) -> String
+pub impl Show for TraceContextError
+
+pub struct TraceFlags {
+  flags : Int
+} derive(Compare, Eq, @debug.Debug)
+pub fn TraceFlags::from_hex(String) -> Result[Self, TraceContextError]
+pub fn TraceFlags::from_int(Int) -> Result[Self, TraceContextError]
+pub fn TraceFlags::is_sampled(Self) -> Bool
+pub fn TraceFlags::sampled() -> Self
+pub fn TraceFlags::to_hex(Self) -> String
+pub fn TraceFlags::to_int(Self) -> Int
+pub fn TraceFlags::unsampled() -> Self
+pub fn TraceFlags::with_sampled(Self, Bool) -> Self
+pub impl Show for TraceFlags
+
+pub struct TraceId {
+  value : String
+} derive(Compare, Eq, @debug.Debug)
+pub fn TraceId::parse(String) -> Result[Self, TraceContextError]
+pub fn TraceId::to_string(Self) -> String
+pub impl Show for TraceId
+
+pub struct TraceState {
+  // private fields
+} derive(@debug.Debug)
+pub fn TraceState::empty() -> Self
+pub fn TraceState::from_entries(Array[TraceStateEntry]) -> Result[Self, TraceContextError]
+pub fn TraceState::get(Self, String) -> String?
+pub fn TraceState::is_empty(Self) -> Bool
+pub fn TraceState::len(Self) -> Int
+pub fn TraceState::set(Self, String, String) -> Result[Self, TraceContextError]
+pub fn TraceState::to_header(Self) -> String
+
+pub struct TraceStateEntry {
+  key : String
+  value : String
+} derive(Compare, Eq, @debug.Debug)
 
 // Type aliases
 

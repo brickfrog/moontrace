@@ -34,6 +34,8 @@ fn span_snapshot(span : Span) -> Span {
     trace_id: span.trace_id,
     span_id: span.span_id,
     parent_span_id: span.parent_span_id,
+    trace_flags: span.trace_flags,
+    trace_state: copy_trace_state(span.trace_state),
     kind: span.kind,
     start_time: span.start_time,
     end_time: span.end_time,

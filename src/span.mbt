@@ -5,6 +5,8 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
+  mut trace_flags : Int
+  mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
   mut end_time : UInt64
@@ -25,6 +27,8 @@ pub fn span(
     trace_id: next_trace_id(),
     span_id: next_span_id(),
     parent_span_id: "",
+    trace_flags: 0,
+    trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
@@ -49,6 +53,8 @@ pub fn span_with_trace(
     trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
+    trace_flags: 0,
+    trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
@@ -67,7 +73,15 @@ pub fn child_span(
   fields? : Array[Field] = [],
   kind? : SpanKind = Internal,
 ) -> Span {
-  let s = span_with_ids(name, fields, parent.trace_id, parent.span_id, kind)
+  let s = span_with_ids(
+    name,
+    fields,
+    parent.trace_id,
+    parent.span_id,
+    kind,
+    trace_flags=parent.trace_flags,
+    trace_state=parent.trace_state,
+  )
   notify_span_linked(s, span_link(parent, kind=SpanChildOf))
   s
 }
@@ -79,13 +93,40 @@ fn span_with_ids(
   trace_id : String,
   parent_span_id : String,
   kind : SpanKind,
+  trace_flags? : Int = 0,
+  trace_state? : TraceState = TraceState::empty(),
 ) -> Span {
-  let s = {
+  let s = span_with_ids_unnotified(
+    name,
+    fields,
+    trace_id,
+    parent_span_id,
+    kind,
+    trace_flags~,
+    trace_state~,
+  )
+  notify_span_created(s)
+  s
+}
+
+///|
+fn span_with_ids_unnotified(
+  name : String,
+  fields : Array[Field],
+  trace_id : String,
+  parent_span_id : String,
+  kind : SpanKind,
+  trace_flags? : Int = 0,
+  trace_state? : TraceState = TraceState::empty(),
+) -> Span {
+  {
     name,
     fields,
     trace_id,
     span_id: next_span_id(),
     parent_span_id,
+    trace_flags,
+    trace_state: copy_trace_state(trace_state),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
@@ -93,8 +134,6 @@ fn span_with_ids(
     status: Unset,
     status_message: "",
   }
-  notify_span_created(s)
-  s
 }
 
 ///|
@@ -156,7 +195,7 @@ pub fn Span::set_status(
 pub fn Span::record_error(self : Span, msg : String) -> Unit {
   self.status = SpanError
   self.status_message = msg
-  let field = { key: "error", value: msg.to_json() }
+  let field : Field = { key: "error", value: msg.to_json() }
   self.fields.push(field)
   notify_span_recorded(self, field)
 }
