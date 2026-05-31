@@ -62,9 +62,6 @@ pub(all) struct SpanContext {
 } derive(Debug)
 
 ///|
-let span_context_cache : Ref[Map[String, SpanContext]] = { val: {} }
-
-///|
 fn is_lower_hex_unit(unit : Int) -> Bool {
   (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102)
 }
@@ -456,20 +453,6 @@ fn copy_trace_state(state : TraceState) -> TraceState {
 }
 
 ///|
-fn copy_span_context(
-  ctx : SpanContext,
-  is_remote? : Bool = ctx.is_remote,
-) -> SpanContext {
-  {
-    trace_id: ctx.trace_id,
-    span_id: ctx.span_id,
-    flags: ctx.flags,
-    trace_state: copy_trace_state(ctx.trace_state),
-    is_remote,
-  }
-}
-
-///|
 pub fn parse_tracestate(
   header : String,
 ) -> Result[TraceState, TraceContextError] {
@@ -575,7 +558,7 @@ pub fn parse_traceparent(
     .split("-")
     .map(part => part.to_owned())
     .collect()
-  if parts.length() != 4 {
+  if parts.length() < 4 {
     return Result::Err(
       InvalidTraceParent("expected version-trace-id-span-id-flags"),
     )
@@ -587,8 +570,10 @@ pub fn parse_traceparent(
   if version == "ff" {
     return Result::Err(InvalidTraceParent("version ff is reserved"))
   }
-  if version != "00" {
-    return Result::Err(UnsupportedTraceParentVersion(version))
+  if version == "00" && parts.length() != 4 {
+    return Result::Err(
+      InvalidTraceParent("version 00 cannot contain extra fields"),
+    )
   }
   match TraceId::parse(parts[1]) {
     Result::Ok(tid) =>
@@ -636,27 +621,16 @@ pub fn parse_span_context(
 }
 
 ///|
-fn remember_span_context(span : Span, ctx : SpanContext) -> Unit {
-  span_context_cache.val.set(
-    span.span_id,
-    copy_span_context(ctx, is_remote=false),
-  )
-}
-
-///|
 pub fn span_trace_flags(span : Span) -> TraceFlags {
-  match span_context_cache.val.get(span.span_id) {
-    Some(ctx) => ctx.flags
-    None => TraceFlags::unsampled()
+  match TraceFlags::from_int(span.trace_flags) {
+    Result::Ok(flags) => flags
+    Result::Err(_) => TraceFlags::unsampled()
   }
 }
 
 ///|
 pub fn span_trace_state(span : Span) -> TraceState {
-  match span_context_cache.val.get(span.span_id) {
-    Some(ctx) => copy_trace_state(ctx.trace_state)
-    None => TraceState::empty()
-  }
+  copy_trace_state(span.trace_state)
 }
 
 ///|
@@ -698,14 +672,8 @@ pub fn span_from_remote_context(
     ctx.span_id,
     kind,
   )
-  let child_ctx = {
-    trace_id: s.trace_id,
-    span_id: s.span_id,
-    flags: ctx.flags,
-    trace_state: copy_trace_state(ctx.trace_state),
-    is_remote: false,
-  }
-  remember_span_context(s, child_ctx)
+  s.trace_flags = ctx.flags.to_int()
+  s.trace_state = copy_trace_state(ctx.trace_state)
   notify_span_created(s)
   notify_span_linked(s, {
     trace_id: ctx.trace_id,

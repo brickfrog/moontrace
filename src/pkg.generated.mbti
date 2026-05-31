@@ -206,6 +206,8 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
+  mut trace_flags : Int
+  mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
   mut end_time : UInt64

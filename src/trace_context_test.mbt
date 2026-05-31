@@ -120,6 +120,36 @@ test "traceparent parses and formats unsampled context" {
 }
 
 ///|
+test "traceparent parses higher versions with extra fields" {
+  let ctx = expect_context(
+    @moontrace.parse_traceparent(
+      "01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-03-extra",
+    ),
+  )
+  assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+  assert_eq(ctx.span_id, "00f067aa0ba902b7")
+  assert_true(ctx.is_sampled())
+  assert_eq(ctx.trace_flags_int(), 3)
+  assert_eq(
+    ctx.traceparent(),
+    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-03",
+  )
+}
+
+///|
+test "traceparent parses higher versions without extra fields" {
+  let ctx = expect_context(
+    @moontrace.parse_traceparent(
+      "02-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00",
+    ),
+  )
+  assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+  assert_eq(ctx.span_id, "00f067aa0ba902b7")
+  assert_true(!ctx.is_sampled())
+  assert_eq(ctx.trace_flags_int(), 0)
+}
+
+///|
 test "invalid traceparent headers are structured errors" {
   assert_context_err(@moontrace.parse_traceparent("00-too-short"))
   assert_context_err(
@@ -145,6 +175,11 @@ test "invalid traceparent headers are structured errors" {
   assert_context_err(
     @moontrace.parse_traceparent(
       "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    ),
+  )
+  assert_context_err(
+    @moontrace.parse_traceparent(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-extra",
     ),
   )
 }

@@ -5,6 +5,8 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
+  mut trace_flags : Int
+  mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
   mut end_time : UInt64
@@ -25,6 +27,8 @@ pub fn span(
     trace_id: next_trace_id(),
     span_id: next_span_id(),
     parent_span_id: "",
+    trace_flags: 0,
+    trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
@@ -49,6 +53,8 @@ pub fn span_with_trace(
     trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
+    trace_flags: 0,
+    trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
@@ -99,6 +105,8 @@ fn span_with_ids_unnotified(
     trace_id,
     span_id: next_span_id(),
     parent_span_id,
+    trace_flags: 0,
+    trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),
