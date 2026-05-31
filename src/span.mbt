@@ -73,7 +73,15 @@ pub fn child_span(
   fields? : Array[Field] = [],
   kind? : SpanKind = Internal,
 ) -> Span {
-  let s = span_with_ids(name, fields, parent.trace_id, parent.span_id, kind)
+  let s = span_with_ids(
+    name,
+    fields,
+    parent.trace_id,
+    parent.span_id,
+    kind,
+    trace_flags=parent.trace_flags,
+    trace_state=parent.trace_state,
+  )
   notify_span_linked(s, span_link(parent, kind=SpanChildOf))
   s
 }
@@ -85,8 +93,18 @@ fn span_with_ids(
   trace_id : String,
   parent_span_id : String,
   kind : SpanKind,
+  trace_flags? : Int = 0,
+  trace_state? : TraceState = TraceState::empty(),
 ) -> Span {
-  let s = span_with_ids_unnotified(name, fields, trace_id, parent_span_id, kind)
+  let s = span_with_ids_unnotified(
+    name,
+    fields,
+    trace_id,
+    parent_span_id,
+    kind,
+    trace_flags~,
+    trace_state~,
+  )
   notify_span_created(s)
   s
 }
@@ -98,6 +116,8 @@ fn span_with_ids_unnotified(
   trace_id : String,
   parent_span_id : String,
   kind : SpanKind,
+  trace_flags? : Int = 0,
+  trace_state? : TraceState = TraceState::empty(),
 ) -> Span {
   {
     name,
@@ -105,8 +125,8 @@ fn span_with_ids_unnotified(
     trace_id,
     span_id: next_span_id(),
     parent_span_id,
-    trace_flags: 0,
-    trace_state: TraceState::empty(),
+    trace_flags,
+    trace_state: copy_trace_state(trace_state),
     kind,
     start_time: @env.now(),
     end_time: (0 : UInt64),

@@ -1,4 +1,35 @@
 ///|
+fn otlp_json_object(json : Json, label : String) -> Map[String, Json] {
+  match json {
+    Object(obj) => obj
+    _ => abort("expected JSON object for \{label}")
+  }
+}
+
+///|
+fn otlp_json_field(obj : Map[String, Json], key : String) -> Json {
+  match obj.get(key) {
+    Some(value) => value
+    None => abort("missing JSON field \{key}")
+  }
+}
+
+///|
+fn assert_otlp_json_eq(actual : Json, expected : Json) -> Unit {
+  if actual.stringify() != expected.stringify() {
+    abort("expected \{expected.stringify()}, got \{actual.stringify()}")
+  }
+}
+
+///|
+fn assert_no_otlp_json_field(obj : Map[String, Json], key : String) -> Unit {
+  match obj.get(key) {
+    Some(_) => abort("unexpected JSON field \{key}")
+    None => ()
+  }
+}
+
+///|
 test "otlp attribute to_json" {
   let attr = @otlp.OtlpAttribute::{
     key: "service",
@@ -24,14 +55,26 @@ test "otlp span to_json has required fields" {
     status_code: 1,
     status_message: "",
   }
-  let j = span.to_json().stringify()
-  assert_true(j.contains("\"traceId\":\"0000000000000000000000000000000a\""))
-  assert_true(j.contains("\"spanId\":\"000000000000000b\""))
-  assert_true(j.contains("\"name\":\"test\""))
-  assert_true(j.contains("\"kind\":1"))
-  assert_true(j.contains("\"flags\":0"))
-  // parentSpanId should be omitted when empty
-  assert_true(!j.contains("parentSpanId"))
+  let obj = otlp_json_object(span.to_json(), "span")
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "traceId"),
+    "0000000000000000000000000000000a".to_json(),
+  )
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "spanId"),
+    "000000000000000b".to_json(),
+  )
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), "test".to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "kind"), (1).to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "flags"), (0).to_json())
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "startTimeUnixNano"),
+    "100".to_json(),
+  )
+  assert_otlp_json_eq(otlp_json_field(obj, "endTimeUnixNano"), "200".to_json())
+  assert_no_otlp_json_field(obj, "parentSpanId")
+  let status = otlp_json_object(otlp_json_field(obj, "status"), "status")
+  assert_otlp_json_eq(otlp_json_field(status, "code"), (1).to_json())
 }
 
 ///|
@@ -49,9 +92,12 @@ test "otlp span to_json includes parentSpanId when set" {
     status_code: 1,
     status_message: "",
   }
-  let j = span.to_json().stringify()
-  assert_true(j.contains("\"parentSpanId\":\"000000000000000c\""))
-  assert_true(j.contains("\"flags\":1"))
+  let obj = otlp_json_object(span.to_json(), "span")
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "parentSpanId"),
+    "000000000000000c".to_json(),
+  )
+  assert_otlp_json_eq(otlp_json_field(obj, "flags"), (1).to_json())
 }
 
 ///|

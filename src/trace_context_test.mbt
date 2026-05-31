@@ -19,6 +19,16 @@ fn expect_state(
 }
 
 ///|
+fn expect_entry(
+  result : Result[@moontrace.TraceStateEntry, @moontrace.TraceContextError],
+) -> @moontrace.TraceStateEntry {
+  match result {
+    Ok(entry) => entry
+    Err(err) => abort("expected TraceStateEntry, got \{err}")
+  }
+}
+
+///|
 fn expect_header(
   result : Result[String, @moontrace.TraceContextError],
 ) -> String {
@@ -79,6 +89,16 @@ fn assert_state_err(
 }
 
 ///|
+fn assert_entry_err(
+  result : Result[@moontrace.TraceStateEntry, @moontrace.TraceContextError],
+) -> Unit {
+  match result {
+    Ok(_) => abort("expected tracestate entry error")
+    Err(_) => ()
+  }
+}
+
+///|
 fn make_tracestate_header(count : Int) -> String {
   let buf = StringBuilder()
   for i in 0..<count {
@@ -129,10 +149,10 @@ test "traceparent parses higher versions with extra fields" {
   assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
   assert_eq(ctx.span_id, "00f067aa0ba902b7")
   assert_true(ctx.is_sampled())
-  assert_eq(ctx.trace_flags_int(), 3)
+  assert_eq(ctx.trace_flags_int(), 1)
   assert_eq(
     ctx.traceparent(),
-    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-03",
+    "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
   )
 }
 
@@ -223,14 +243,16 @@ test "tracestate parses whitespace and duplicate keys with last write winning" {
 test "tracestate constructors preserve order and validate entries" {
   let state = expect_state(
     @moontrace.TraceState::from_entries([
-      @moontrace.TraceStateEntry::{ key: "rojo", value: "first" },
-      @moontrace.TraceStateEntry::{ key: "congo", value: "two" },
-      @moontrace.TraceStateEntry::{ key: "rojo", value: "second" },
+      expect_entry(@moontrace.trace_state_entry("rojo", "first")),
+      expect_entry(@moontrace.trace_state_entry("congo", "two")),
+      expect_entry(@moontrace.trace_state_entry("rojo", "second")),
     ]),
   )
   assert_eq(state.to_header(), "congo=two,rojo=second")
   let updated = expect_state(state.set("tenant@sys", "opaque"))
-  assert_eq(updated.to_header(), "congo=two,rojo=second,tenant@sys=opaque")
+  assert_eq(updated.to_header(), "tenant@sys=opaque,congo=two,rojo=second")
+  let moved = expect_state(updated.set("congo", "three"))
+  assert_eq(moved.to_header(), "congo=three,tenant@sys=opaque,rojo=second")
 }
 
 ///|
@@ -240,11 +262,7 @@ test "invalid tracestate headers are structured errors" {
   assert_state_err(@moontrace.parse_tracestate("ro jo=value"))
   assert_state_err(@moontrace.parse_tracestate("rojo=value=bad"))
   assert_state_err(@moontrace.parse_tracestate("rojo=bad\tvalue"))
-  assert_state_err(
-    @moontrace.TraceState::from_entries([
-      @moontrace.TraceStateEntry::{ key: "rojo", value: "" },
-    ]),
-  )
+  assert_entry_err(@moontrace.trace_state_entry("rojo", ""))
 }
 
 ///|
@@ -303,9 +321,30 @@ test "remote context creates child span and preserves propagation data" {
   assert_eq(outbound.trace_id, remote.trace_id)
   assert_eq(outbound.span_id, child.span_id)
   @debug.assert_eq(outbound.trace_state.get("rojo"), Some("00f067aa0ba902b7"))
+  @debug.assert_eq(outbound.trace_state.get("congo"), Some("t61rcWkgMzE"))
   assert_eq(
     expect_header(@moontrace.traceparent_from_span(child)),
     "00-\{remote.trace_id}-\{child.span_id}-01",
+  )
+
+  let internal = @moontrace.child_span(child, "internal")
+  let internal_context = expect_context(
+    @moontrace.span_context_from_span(internal),
+  )
+  assert_true(internal_context.is_sampled())
+  assert_eq(internal_context.trace_id, remote.trace_id)
+  assert_eq(internal.parent_span_id, child.span_id)
+  @debug.assert_eq(
+    internal_context.trace_state.get("rojo"),
+    Some("00f067aa0ba902b7"),
+  )
+  @debug.assert_eq(
+    internal_context.trace_state.get("congo"),
+    Some("t61rcWkgMzE"),
+  )
+  assert_eq(
+    expect_header(@moontrace.traceparent_from_span(internal)),
+    "00-\{remote.trace_id}-\{internal.span_id}-01",
   )
 }
 

@@ -1,4 +1,27 @@
 ///|
+fn exporter_json_object(json : Json, label : String) -> Map[String, Json] {
+  match json {
+    Object(obj) => obj
+    _ => abort("expected JSON object for \{label}")
+  }
+}
+
+///|
+fn exporter_json_field(obj : Map[String, Json], key : String) -> Json {
+  match obj.get(key) {
+    Some(value) => value
+    None => abort("missing JSON field \{key}")
+  }
+}
+
+///|
+fn assert_exporter_json_eq(actual : Json, expected : Json) -> Unit {
+  if actual.stringify() != expected.stringify() {
+    abort("expected \{expected.stringify()}, got \{actual.stringify()}")
+  }
+}
+
+///|
 test "otlp exporter captures events as log records" {
   let output : Array[String] = []
   let exp = @otlp.exporter(log_output=fn(s) { output.push(s) }, capacity=2)
@@ -61,7 +84,19 @@ test "otlp span conversion carries trace flags" {
   child.exit()
   let otlp_span = @otlp.span_to_otlp(child)
   assert_eq(otlp_span.flags, 1)
-  assert_true(otlp_span.to_json().stringify().contains("\"flags\":1"))
+  let span_json = exporter_json_object(otlp_span.to_json(), "span")
+  assert_exporter_json_eq(
+    exporter_json_field(span_json, "flags"),
+    (1).to_json(),
+  )
+  assert_exporter_json_eq(
+    exporter_json_field(span_json, "traceId"),
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_json(),
+  )
+  assert_exporter_json_eq(
+    exporter_json_field(span_json, "parentSpanId"),
+    "bbbbbbbbbbbbbbbb".to_json(),
+  )
 }
 
 ///|

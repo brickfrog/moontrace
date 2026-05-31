@@ -27,33 +27,33 @@ pub fn TraceContextError::to_string(self : TraceContextError) -> String {
 }
 
 ///|
-pub(all) struct TraceId {
+pub struct TraceId {
   value : String
 } derive(Eq, Compare, Debug)
 
 ///|
-pub(all) struct SpanId {
+pub struct SpanId {
   value : String
 } derive(Eq, Compare, Debug)
 
 ///|
-pub(all) struct TraceFlags {
+pub struct TraceFlags {
   flags : Int
 } derive(Eq, Compare, Debug)
 
 ///|
-pub(all) struct TraceStateEntry {
+pub struct TraceStateEntry {
   key : String
   value : String
 } derive(Eq, Compare, Debug)
 
 ///|
-pub(all) struct TraceState {
+pub struct TraceState {
   entries : Array[TraceStateEntry]
 } derive(Debug)
 
 ///|
-pub(all) struct SpanContext {
+pub struct SpanContext {
   trace_id : String
   span_id : String
   flags : TraceFlags
@@ -261,6 +261,24 @@ pub fn TraceFlags::to_hex(self : TraceFlags) -> String {
 }
 
 ///|
+fn traceparent_flags_hex(flags : TraceFlags) -> String {
+  if flags.is_sampled() {
+    "01"
+  } else {
+    "00"
+  }
+}
+
+///|
+fn traceparent_flags(flags : TraceFlags) -> TraceFlags {
+  if flags.is_sampled() {
+    TraceFlags::sampled()
+  } else {
+    TraceFlags::unsampled()
+  }
+}
+
+///|
 pub impl Show for TraceFlags with fn output(self, logger) {
   logger.write_string(self.to_hex())
 }
@@ -331,7 +349,7 @@ fn validate_trace_state_value(value : String) -> Bool {
 }
 
 ///|
-fn trace_state_entry(
+fn validate_trace_state_entry(
   key : String,
   value : String,
 ) -> Result[TraceStateEntry, TraceContextError] {
@@ -345,7 +363,15 @@ fn trace_state_entry(
 }
 
 ///|
-fn upsert_trace_state_entry(
+pub fn trace_state_entry(
+  key : String,
+  value : String,
+) -> Result[TraceStateEntry, TraceContextError] {
+  validate_trace_state_entry(key, value)
+}
+
+///|
+fn append_trace_state_entry(
   entries : Array[TraceStateEntry],
   entry : TraceStateEntry,
 ) -> Array[TraceStateEntry] {
@@ -356,6 +382,20 @@ fn upsert_trace_state_entry(
     }
   })
   next.push(entry)
+  next
+}
+
+///|
+fn prepend_trace_state_entry(
+  entries : Array[TraceStateEntry],
+  entry : TraceStateEntry,
+) -> Array[TraceStateEntry] {
+  let next : Array[TraceStateEntry] = [entry]
+  entries.each(fn(existing) {
+    if existing.key != entry.key {
+      next.push(existing)
+    }
+  })
   next
 }
 
@@ -373,9 +413,9 @@ pub fn TraceState::from_entries(
   }
   let mut normalized : Array[TraceStateEntry] = []
   for i in 0..<entries.length() {
-    match trace_state_entry(entries[i].key, entries[i].value) {
+    match validate_trace_state_entry(entries[i].key, entries[i].value) {
       Result::Ok(entry) =>
-        normalized = upsert_trace_state_entry(normalized, entry)
+        normalized = append_trace_state_entry(normalized, entry)
       Result::Err(err) => return Result::Err(err)
     }
   }
@@ -415,9 +455,9 @@ pub fn TraceState::set(
   key : String,
   value : String,
 ) -> Result[TraceState, TraceContextError] {
-  match trace_state_entry(key, value) {
+  match validate_trace_state_entry(key, value) {
     Result::Ok(entry) => {
-      let entries = upsert_trace_state_entry(self.entries, entry)
+      let entries = prepend_trace_state_entry(self.entries, entry)
       if entries.length() > 32 {
         Result::Err(InvalidTraceState("expected at most 32 entries"))
       } else {
@@ -473,9 +513,9 @@ pub fn parse_tracestate(
         Some((key_view, value_view)) => {
           let key = key_view.to_owned()
           let value = value_view.to_owned()
-          match trace_state_entry(key, value) {
+          match validate_trace_state_entry(key, value) {
             Result::Ok(entry) =>
-              parsed_entries = upsert_trace_state_entry(parsed_entries, entry)
+              parsed_entries = append_trace_state_entry(parsed_entries, entry)
             Result::Err(err) => return Result::Err(err)
           }
         }
@@ -547,7 +587,12 @@ pub fn SpanContext::traceparent(self : SpanContext) -> String {
 
 ///|
 pub fn format_traceparent(ctx : SpanContext) -> String {
-  "00-" + ctx.trace_id + "-" + ctx.span_id + "-" + ctx.flags.to_hex()
+  "00-" +
+  ctx.trace_id +
+  "-" +
+  ctx.span_id +
+  "-" +
+  traceparent_flags_hex(ctx.flags)
 }
 
 ///|
@@ -585,7 +630,7 @@ pub fn parse_traceparent(
                 span_context(
                   tid,
                   sid,
-                  flags~,
+                  flags=traceparent_flags(flags),
                   trace_state=TraceState::empty(),
                   is_remote=true,
                 ),
@@ -671,9 +716,9 @@ pub fn span_from_remote_context(
     ctx.trace_id,
     ctx.span_id,
     kind,
+    trace_flags=ctx.flags.to_int(),
+    trace_state=ctx.trace_state,
   )
-  s.trace_flags = ctx.flags.to_int()
-  s.trace_state = copy_trace_state(ctx.trace_state)
   notify_span_created(s)
   notify_span_linked(s, {
     trace_id: ctx.trace_id,

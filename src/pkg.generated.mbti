@@ -130,6 +130,8 @@ pub fn trace_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> 
 
 pub fn trace_state(Array[TraceStateEntry]) -> Result[TraceState, TraceContextError]
 
+pub fn trace_state_entry(String, String) -> Result[TraceStateEntry, TraceContextError]
+
 pub fn traceparent_from_span(Span) -> Result[String, TraceContextError]
 
 #callsite(autofill(loc))
@@ -241,7 +243,7 @@ pub fn[T : ToJson] Span::with_field(Self, String, T) -> Self
 pub fn Span::with_kind(Self, SpanKind) -> Self
 pub impl Show for Span
 
-pub(all) struct SpanContext {
+pub struct SpanContext {
   trace_id : String
   span_id : String
   flags : TraceFlags
@@ -253,7 +255,7 @@ pub fn SpanContext::is_sampled(Self) -> Bool
 pub fn SpanContext::trace_flags_int(Self) -> Int
 pub fn SpanContext::traceparent(Self) -> String
 
-pub(all) struct SpanId {
+pub struct SpanId {
   value : String
 } derive(Compare, Eq, @debug.Debug)
 pub fn SpanId::parse(String) -> Result[Self, TraceContextError]
@@ -319,7 +321,7 @@ pub(all) enum TraceContextError {
 pub fn TraceContextError::to_string(Self) -> String
 pub impl Show for TraceContextError
 
-pub(all) struct TraceFlags {
+pub struct TraceFlags {
   flags : Int
 } derive(Compare, Eq, @debug.Debug)
 pub fn TraceFlags::from_hex(String) -> Result[Self, TraceContextError]
@@ -332,14 +334,14 @@ pub fn TraceFlags::unsampled() -> Self
 pub fn TraceFlags::with_sampled(Self, Bool) -> Self
 pub impl Show for TraceFlags
 
-pub(all) struct TraceId {
+pub struct TraceId {
   value : String
 } derive(Compare, Eq, @debug.Debug)
 pub fn TraceId::parse(String) -> Result[Self, TraceContextError]
 pub fn TraceId::to_string(Self) -> String
 pub impl Show for TraceId
 
-pub(all) struct TraceState {
+pub struct TraceState {
   entries : Array[TraceStateEntry]
 } derive(@debug.Debug)
 pub fn TraceState::empty() -> Self
@@ -350,7 +352,7 @@ pub fn TraceState::len(Self) -> Int
 pub fn TraceState::set(Self, String, String) -> Result[Self, TraceContextError]
 pub fn TraceState::to_header(Self) -> String
 
-pub(all) struct TraceStateEntry {
+pub struct TraceStateEntry {
   key : String
   value : String
 } derive(Compare, Eq, @debug.Debug)
