@@ -31,8 +31,7 @@ pub fn[T] with_child_span(
   fields? : Array[Field] = [],
   f : (Span) -> T,
 ) -> T {
-  let s = span_with_ids(name, fields, parent.trace_id, parent.span_id, Internal)
-  notify_span_linked(s, span_link(parent, kind=SpanChildOf))
+  let s = child_span(parent, name, fields~)
   s.enter()
   let result = f(s)
   s.exit()

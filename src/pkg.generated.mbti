@@ -8,6 +8,8 @@ import {
 // Values
 pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
 
+pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind) -> Span
+
 pub fn clear_global_fields() -> Unit
 
 pub fn clear_module_filters() -> Unit

@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/span_async"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub async fn[T] with_child_span_async(@moontrace.Span, String, fields? : Array[@moontrace.Field], async (@moontrace.Span) -> T) -> T
+
+pub async fn[T] with_span_async(String, fields? : Array[@moontrace.Field], async (@moontrace.Span) -> T) -> T
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
