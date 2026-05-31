@@ -197,6 +197,30 @@ pub async fn async_work(parent : @moontrace.Span) -> Unit {
 }
 ```
 
+For async closures that should keep a span active across `@async.sleep`,
+`@async.pause`, or task-group cancellation, use the optional
+`brickfrog/moontrace/span_async` package. It intentionally avoids the package
+name `async` so applications can still import `moonbitlang/async` as `@async`.
+
+```moonbit
+pub async fn handle_request() -> Unit {
+  @span_async.with_span_async("request", parent => {
+    @async.sleep(1)
+    @span_async.with_child_span_async(parent, "async_step", child => {
+      child.record("phase", "load")
+      @async.pause()
+    })
+  })
+}
+```
+
+`with_span_async` and `with_child_span_async` enter before the async closure
+runs and exit when it returns or raises. Errors, including structured
+cancellation delivered through MoonBit async error/catch paths, record
+`SpanError` before exit and are re-raised. This is best-effort structured
+cancellation instrumentation, not Rust Drop-guard semantics; out-of-band
+abort/kill is out of scope.
+
 ## Subscribers
 
 Subscribers receive events. Set one globally:

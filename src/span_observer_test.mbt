@@ -116,6 +116,32 @@ test "with_child_span emits child parent link observer event" {
 }
 
 ///|
+test "child_span creates linked child span without entering it" {
+  let source_names : Array[String] = []
+  let link_kinds : Array[String] = []
+  let target_span_ids : Array[String] = []
+  @moontrace.set_span_observer(
+    @moontrace.span_lifecycle_observer(on_linked=fn(span, link) {
+      source_names.push(span.name)
+      link_kinds.push(link.kind.to_string())
+      target_span_ids.push(link.span_id)
+    }),
+  )
+
+  let parent = @moontrace.span("parent")
+  let child = @moontrace.child_span(parent, "child")
+  @moontrace.clear_span_observer()
+
+  assert_eq(child.trace_id, parent.trace_id)
+  assert_eq(child.parent_span_id, parent.span_id)
+  assert_eq(child.active, false)
+  assert_eq(source_names.length(), 1)
+  assert_eq(source_names[0], "child")
+  assert_eq(link_kinds[0], "CHILD_OF")
+  assert_eq(target_span_ids[0], parent.span_id)
+}
+
+///|
 test "span link and follows_from notify observer with records" {
   let link_kinds : Array[String] = []
   let target_span_ids : Array[String] = []

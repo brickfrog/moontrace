@@ -61,6 +61,18 @@ pub fn span_with_trace(
 }
 
 ///|
+pub fn child_span(
+  parent : Span,
+  name : String,
+  fields? : Array[Field] = [],
+  kind? : SpanKind = Internal,
+) -> Span {
+  let s = span_with_ids(name, fields, parent.trace_id, parent.span_id, kind)
+  notify_span_linked(s, span_link(parent, kind=SpanChildOf))
+  s
+}
+
+///|
 fn span_with_ids(
   name : String,
   fields : Array[Field],
