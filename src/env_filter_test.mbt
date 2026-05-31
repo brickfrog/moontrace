@@ -96,6 +96,20 @@ test "apply replaces filter state and source package matches parent package" {
 }
 
 ///|
+test "apply package filter can be more verbose than default" {
+  let capture = @test.test_subscriber()
+  capture.with_install(() => {
+    assert_set_filter_ok("info,brickfrog/moontrace=debug")
+    @moontrace.debug("allowed by verbose package filter")
+    let events = capture.captured_events()
+    assert_eq(events.length(), 1)
+    assert_eq(events[0].level, @moontrace.Debug)
+    assert_eq(events[0].message, "allowed by verbose package filter")
+    assert_eq(events[0].source, "brickfrog/moontrace")
+  })
+}
+
+///|
 test "apply clears stale module filters" {
   let capture = @test.test_subscriber()
   capture.with_install(() => {

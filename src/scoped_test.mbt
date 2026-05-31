@@ -89,7 +89,7 @@ test "scoped helpers restore nested state in LIFO order" {
             )
           })
           @moontrace.with_min_level(@moontrace.Error_, fn() {
-            @moontrace.warn("blocked by inner min")
+            @moontrace.warn("allowed by module override")
           })
           @moontrace.debug("blocked after inner filter")
           @moontrace.warn("outer after")
@@ -100,13 +100,15 @@ test "scoped helpers restore nested state in LIFO order" {
 
   @moontrace.warn("after all scopes")
 
-  assert_eq(captured.length(), 3)
+  assert_eq(captured.length(), 4)
   assert_eq(captured[0].message, "outer before")
   assert_eq(captured[1].message, "inner")
-  assert_eq(captured[2].message, "outer after")
+  assert_eq(captured[2].message, "allowed by module override")
+  assert_eq(captured[3].message, "outer after")
   assert_field(captured[0], "scope", "outer".to_json())
   assert_field(captured[1], "scope", "inner".to_json())
   assert_field(captured[2], "scope", "outer".to_json())
+  assert_field(captured[3], "scope", "outer".to_json())
   reset_trace_state()
 }
 
