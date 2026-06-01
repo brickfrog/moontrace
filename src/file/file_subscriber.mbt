@@ -40,8 +40,6 @@ pub fn FileSubscriberConfig::new(
 }
 
 ///|
-
-///|
 #cfg(target="native")
 struct FileSubscriber {
   config : FileSubscriberConfig
@@ -59,8 +57,13 @@ struct FileSubscriber {
 ///|
 #cfg(not(target="native"))
 struct FileSubscriber {
-  mut dropped_count : Int
-  mut is_shut_down : Bool
+  marker : Unit
+}
+
+///|
+#cfg(not(target="native"))
+let _non_native_file_subscriber_marker : FileSubscriber = FileSubscriber::{
+  marker: (),
 }
 
 ///|
@@ -111,7 +114,7 @@ pub fn FileSubscriber::new(config : FileSubscriberConfig) -> FileSubscriber {
 ///|
 #cfg(not(target="native"))
 pub fn FileSubscriber::new(_config : FileSubscriberConfig) -> FileSubscriber {
-  { dropped_count: 0, is_shut_down: false }
+  abort(unsupported_target_message())
 }
 
 ///|
@@ -139,15 +142,13 @@ pub fn FileSubscriber::subscriber(
 pub fn FileSubscriber::subscriber(
   self : FileSubscriber,
 ) -> (@moontrace.Event) -> Unit {
-  fn(_event) {
-    ignore(self.is_shut_down)
-    self.dropped_count += 1
-  }
+  ignore(self.marker)
+  fn(_event) { abort(unsupported_target_message()) }
 }
 
 ///|
 pub fn FileSubscriber::dropped(self : FileSubscriber) -> Int {
-  self.dropped_count
+  self.dropped_count_impl()
 }
 
 ///|
@@ -159,6 +160,19 @@ pub fn FileSubscriber::written(self : FileSubscriber) -> Int {
 ///|
 #cfg(not(target="native"))
 pub fn FileSubscriber::written(_self : FileSubscriber) -> Int {
+  0
+}
+
+///|
+#cfg(target="native")
+fn FileSubscriber::dropped_count_impl(self : FileSubscriber) -> Int {
+  self.dropped_count
+}
+
+///|
+#cfg(not(target="native"))
+fn FileSubscriber::dropped_count_impl(_self : FileSubscriber) -> Int {
+  ignore(_self.marker)
   0
 }
 
@@ -188,8 +202,8 @@ pub async fn FileSubscriber::run(self : FileSubscriber) -> Unit {
 ///|
 #cfg(not(target="native"))
 pub async fn FileSubscriber::run(self : FileSubscriber) -> Unit {
+  ignore(self.marker)
   @async.sleep(0)
-  self.is_shut_down = true
   raise Failure::Failure(unsupported_target_message())
 }
 
@@ -198,19 +212,25 @@ pub async fn FileSubscriber::run(self : FileSubscriber) -> Unit {
 pub async fn FileSubscriber::flush(self : FileSubscriber) -> Unit {
   let target = self.enqueued_count
   if self.worker_running {
-    while self.written_count < target {
+    while self.worker_running && self.written_count < target {
       @async.sleep(0)
     }
-  } else {
+  }
+  if self.written_count < target {
     self.drain_without_worker()
+  }
+  if self.written_count < target {
+    raise Failure::Failure(
+      "moontrace file subscriber flush could not write all accepted events",
+    )
   }
 }
 
 ///|
 #cfg(not(target="native"))
 pub async fn FileSubscriber::flush(self : FileSubscriber) -> Unit {
+  ignore(self.marker)
   @async.sleep(0)
-  self.is_shut_down = true
   raise Failure::Failure(unsupported_target_message())
 }
 
@@ -230,8 +250,8 @@ pub async fn FileSubscriber::shutdown(self : FileSubscriber) -> Unit {
 ///|
 #cfg(not(target="native"))
 pub async fn FileSubscriber::shutdown(self : FileSubscriber) -> Unit {
+  ignore(self.marker)
   @async.sleep(0)
-  self.is_shut_down = true
   raise Failure::Failure(unsupported_target_message())
 }
 

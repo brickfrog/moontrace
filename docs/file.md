@@ -37,5 +37,5 @@ renamed to `path.1`, older rotated files are shifted up, and files beyond
 `path.N.gz` and the temporary uncompressed rotation is removed.
 
 The file subscriber uses `moonbitlang/async/fs` and is only supported on the
-native target. Calling its async lifecycle methods on other targets raises a
-clear unsupported-target error.
+native target. Constructing it on other targets aborts immediately with a clear
+unsupported-target error instead of returning a subscriber that drops events.

@@ -62,6 +62,25 @@ async test "append writes json lines in order after flush" {
 
 ///|
 #cfg(target="native")
+async test "flush without worker drains queued lines" {
+  @async.with_timeout(1000, () => {
+    with_temp_log(path => {
+      let subscriber = @file.file_subscriber(path, max_batch=1)
+      let sink = subscriber.subscriber()
+      sink(test_event("no-worker-one"))
+      sink(test_event("no-worker-two"))
+      subscriber.flush()
+      assert_eq(
+        @fs.read_file(path).text(),
+        lines(["no-worker-one", "no-worker-two"]),
+      )
+      assert_eq(subscriber.written(), 2)
+    })
+  })
+}
+
+///|
+#cfg(target="native")
 async test "rotation creates rotated file and fresh active file" {
   @async.with_timeout(1000, () => {
     with_temp_log(path => {
@@ -184,6 +203,45 @@ async test "bounded batches drain bursts and overflow counts drops" {
         @fs.read_file(overflow_path).text(),
         lines(["keep-one", "keep-two"]),
       )
+    })
+  })
+}
+
+///|
+#cfg(target="native")
+async test "shutdown without worker drains queued lines and returns" {
+  @async.with_timeout(1000, () => {
+    with_temp_log(path => {
+      let subscriber = @file.file_subscriber(path, max_batch=2)
+      let sink = subscriber.subscriber()
+      sink(test_event("shutdown-no-worker"))
+      subscriber.shutdown()
+      assert_eq(@fs.read_file(path).text(), lines(["shutdown-no-worker"]))
+      assert_eq(subscriber.written(), 1)
+    })
+  })
+}
+
+///|
+#cfg(target="native")
+async test "flush after stopped worker returns without spinning" {
+  @async.with_timeout(1000, () => {
+    @async.with_task_group(group => {
+      let dir = @fs.tmpdir(prefix="moontrace-file")
+      group.add_defer(() => {
+        @async.protect_from_cancel(() => @fs.rmdir(dir, recursive=true))
+      })
+      let subscriber = @file.file_subscriber(dir, max_batch=1)
+      let sink = subscriber.subscriber()
+      sink(test_event("lost-to-failed-worker"))
+      let worker = group.spawn(allow_failure=true, () => subscriber.run())
+      assert_true((try? worker.wait()) is Err(_))
+      try @async.with_timeout(200, () => subscriber.flush()) catch {
+        @async.TimeoutError => assert_true(false)
+        _ => ()
+      } noraise {
+        _ => assert_true(false)
+      }
     })
   })
 }
