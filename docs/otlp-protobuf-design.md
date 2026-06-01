@@ -18,8 +18,8 @@ variant of the current path:
 - Log export uses the
   `opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest` message,
   whose top-level field is repeated `ResourceLogs`.
-- The existing `.7.1` resource/scope envelope maps directly to
-  `ResourceSpans.resource`, `ResourceSpans.scope_spans`,
+- The existing resource and instrumentation-scope envelope builders map
+  directly to `ResourceSpans.resource`, `ResourceSpans.scope_spans`,
   `ResourceLogs.resource`, and `ResourceLogs.scope_logs`.
 
 The important boundary for this bead is that protobuf support needs a future

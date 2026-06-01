@@ -49,11 +49,11 @@ fn assert_json_eq(actual : Json, expected : Json) -> Unit {
 }
 
 ///|
-test "json encoder encodes spans as application/json bytes" {
+test "json encoder encodes spans with JSON content type bytes" {
   let span = encoding_test_span("work")
   match @transport.json_encoder().encode_spans([span]) {
     Ok(payload) => {
-      assert_eq(payload.content_type, "application/json")
+      assert_eq(payload.content_type, @transport.otlp_json_content_type())
       assert_true(payload.body.length() > 0)
       assert_json_eq(parse_payload_json(payload), @otlp.wrap_spans([span]))
     }
@@ -62,11 +62,11 @@ test "json encoder encodes spans as application/json bytes" {
 }
 
 ///|
-test "json encoder encodes logs as application/json bytes" {
+test "json encoder encodes logs with JSON content type bytes" {
   let record = encoding_test_log_record("hello")
   match @transport.json_encoder().encode_logs([record]) {
     Ok(payload) => {
-      assert_eq(payload.content_type, "application/json")
+      assert_eq(payload.content_type, @transport.otlp_json_content_type())
       assert_true(payload.body.length() > 0)
       assert_json_eq(
         parse_payload_json(payload),
