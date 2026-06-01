@@ -33,22 +33,20 @@ pub fn FlameExporter::reset(self : FlameExporter) -> Unit {
 ///|
 pub fn fold_spans(spans : Array[@moontrace.Span]) -> String {
   let spans_by_id : Map[String, @moontrace.Span] = {}
-  spans.each(fn(span) { spans_by_id.set(span.span_id, span) })
+  spans.each(fn(span) {
+    spans_by_id.set(span_key(span.trace_id, span.span_id), span)
+  })
   let direct_child_duration_by_parent : Map[String, UInt64] = {}
   spans.each(fn(span) {
-    if !span.parent_span_id.is_empty() &&
-      spans_by_id.contains(span.parent_span_id) {
-      add_weight(
-        direct_child_duration_by_parent,
-        span.parent_span_id,
-        span.duration(),
-      )
+    let parent = span_key(span.trace_id, span.parent_span_id)
+    if valid_parent_edge(span, spans_by_id, spans.length()) {
+      add_weight(direct_child_duration_by_parent, parent, span.duration())
     }
   })
   let folded_weights : Map[String, UInt64] = {}
   spans.each(fn(span) {
     let child_duration = direct_child_duration_by_parent.get_or_default(
-      span.span_id,
+      span_key(span.trace_id, span.span_id),
       (0 : UInt64),
     )
     let duration = span.duration()
@@ -96,14 +94,65 @@ fn stack_string(
         remaining = remaining - 1
         current = if s.parent_span_id.is_empty() {
           None
+        } else if !valid_parent_edge(s, spans_by_id, span_count) {
+          None
         } else {
-          spans_by_id.get(s.parent_span_id)
+          spans_by_id.get(span_key(s.trace_id, s.parent_span_id))
         }
       }
       None => remaining = 0
     }
   }
   frames.rev().join(";")
+}
+
+///|
+fn span_key(trace_id : String, span_id : String) -> String {
+  trace_id + "|" + span_id
+}
+
+///|
+fn valid_parent_edge(
+  span : @moontrace.Span,
+  spans_by_id : Map[String, @moontrace.Span],
+  span_count : Int,
+) -> Bool {
+  if span.parent_span_id.is_empty() {
+    return false
+  }
+  let origin = span_key(span.trace_id, span.span_id)
+  let parent = span_key(span.trace_id, span.parent_span_id)
+  if parent == origin {
+    return false
+  }
+  let mut current = match spans_by_id.get(parent) {
+    Some(parent_span) => Some(parent_span)
+    None => return false
+  }
+  let visited : Map[String, Bool] = {}
+  visited.set(origin, true)
+  let mut remaining = span_count
+  while remaining > 0 {
+    match current {
+      Some(s) => {
+        let key = span_key(s.trace_id, s.span_id)
+        if visited.contains(key) {
+          return false
+        }
+        visited.set(key, true)
+        remaining = remaining - 1
+        if s.parent_span_id.is_empty() {
+          return true
+        }
+        match spans_by_id.get(span_key(s.trace_id, s.parent_span_id)) {
+          Some(parent_span) => current = Some(parent_span)
+          None => return true
+        }
+      }
+      None => return true
+    }
+  }
+  false
 }
 
 ///|

@@ -6,11 +6,26 @@ fn test_span(
   start_time : UInt64,
   end_time : UInt64,
 ) -> @moontrace.Span {
+  test_span_with_trace(
+    name, "00000000000000000000000000000001", span_id, parent_span_id, start_time,
+    end_time,
+  )
+}
+
+///|
+fn test_span_with_trace(
+  name : String,
+  trace_id : String,
+  span_id : String,
+  parent_span_id : String,
+  start_time : UInt64,
+  end_time : UInt64,
+) -> @moontrace.Span {
   @moontrace.Span::{
     name,
     fields: [],
     links: [],
-    trace_id: "00000000000000000000000000000001",
+    trace_id,
     span_id,
     parent_span_id,
     trace_flags: 0,
@@ -108,6 +123,63 @@ test "fold spans treats missing parents as roots" {
     (14 : UInt64),
   )
   assert_eq(@flame.fold_spans([orphan]), "orphan 4")
+}
+
+///|
+test "fold spans treats self parent as root" {
+  let self_parent = test_span(
+    "self",
+    "0000000000000080",
+    "0000000000000080",
+    (0 : UInt64),
+    (10 : UInt64),
+  )
+  assert_eq(@flame.fold_spans([self_parent]), "self 10")
+}
+
+///|
+test "fold spans treats parent cycles as roots" {
+  let a = test_span(
+    "a",
+    "0000000000000081",
+    "0000000000000082",
+    (0 : UInt64),
+    (20 : UInt64),
+  )
+  let b = test_span(
+    "b",
+    "0000000000000082",
+    a.span_id,
+    (0 : UInt64),
+    (5 : UInt64),
+  )
+  assert_eq(@flame.fold_spans([a, b]), "a 20\nb 5")
+}
+
+///|
+test "fold spans does not link parent ids across traces" {
+  let trace_a = "0000000000000000000000000000000a"
+  let trace_b = "0000000000000000000000000000000b"
+  let parent_a = test_span_with_trace(
+    "trace-a-parent",
+    trace_a,
+    "0000000000000100",
+    "",
+    (0 : UInt64),
+    (10 : UInt64),
+  )
+  let cross_trace_child = test_span_with_trace(
+    "cross-trace-child",
+    trace_b,
+    "0000000000000101",
+    parent_a.span_id,
+    (0 : UInt64),
+    (4 : UInt64),
+  )
+  assert_eq(
+    @flame.fold_spans([parent_a, cross_trace_child]),
+    "cross-trace-child 4\ntrace-a-parent 10",
+  )
 }
 
 ///|
