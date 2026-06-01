@@ -97,9 +97,12 @@ Module names are extracted automatically from `SourceLoc` at each call site. No 
 EnvFilter-style directives configure the same state from a string:
 
 ```moonbit
-let _ = @moontrace.set_filter_from_directives(
+match @moontrace.set_filter_from_directives(
   "info,my/db/package=debug,my/http/package=warn",
-)
+) {
+  Ok(_) => ()
+  Err(err) => println(err)
+}
 
 match @moontrace.parse_env_filter("warn,my/queue/package=trace") {
   Ok(filter) => filter.apply()
@@ -375,16 +378,26 @@ exp.shutdown()  // flush buffered records, then close intake
 
 `span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, and links.
 
-For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async and owns the HTTP client, retry classification, backoff, and shutdown:
+For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
 
 ```mbt
-let client = @transport.async_http_client(timeout_ms=5000)
-let tx = @transport.transport(client, "http://collector:4318")
-let spans = [@otlp.span_to_otlp(s)]
-
-let _ = tx.export_spans(spans, resource~, scope~)
-tx.shutdown()
-client.shutdown()
+pub async fn export_batch(
+  spans : Array[@otlp.OtlpSpan],
+  resource : @otlp.Resource,
+  scope : @otlp.InstrumentationScope,
+) -> Unit {
+  let client = @transport.async_http_client(timeout_ms=5000)
+  let tx = @transport.transport(client, "http://collector:4318")
+  match tx.export_spans(spans, resource~, scope~) {
+    Ok(outcome) =>
+      if !outcome.success {
+        println("OTLP export failed after \{outcome.attempts} attempts")
+      }
+    Err(err) => println(err)
+  }
+  tx.shutdown()
+  client.shutdown()
+}
 ```
 
 ### Subscriber Composition
