@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2026-06-01
 
-A native, production-grade file subscriber. Additive — no changes to existing APIs.
+Adds the native buffered file subscriber package.
 
 ### Added
 
@@ -17,7 +17,7 @@ A native, production-grade file subscriber. Additive — no changes to existing 
 
 ## [0.11.0] - 2026-06-01
 
-Composable output-side layers: field redaction, sampling, and a flamegraph exporter. All additive — no behavior changes to existing APIs.
+Adds output-side subscriber layers for field redaction and sampling, plus a folded-stack flame exporter.
 
 ### Added
 
@@ -27,8 +27,9 @@ Composable output-side layers: field redaction, sampling, and a flamegraph expor
 
 ## [0.10.0] - 2026-06-01
 
-Distributed tracing, environment-driven configuration, and a real OTLP export
-stack. All additive except one filtering-semantics change (see Migration).
+Adds distributed tracing support, environment-driven filtering, and the OTLP
+export/transport stack. Includes one filtering-semantics change covered in
+Migration.
 
 ### Added
 
