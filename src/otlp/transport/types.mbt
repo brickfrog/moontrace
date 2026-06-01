@@ -34,6 +34,9 @@ pub(all) enum RetryClass {
 } derive(Eq, Compare, Debug)
 
 ///|
+const MAX_RETRY_AFTER_MS : Int = 300000
+
+///|
 pub fn classify_status(status_code : Int) -> RetryClass {
   if status_code >= 200 && status_code < 300 {
     Success
@@ -93,9 +96,13 @@ fn parse_retry_after_value_ms(value : String) -> Int? {
   if trimmed.is_empty() {
     None
   } else {
+    // Only the delay-seconds Retry-After form is supported here. HTTP-date or
+    // otherwise unparseable values safely fall back to exponential backoff.
     let seconds = @string.parse_int(trimmed, base=10) catch { _ => return None }
     if seconds < 0 {
       None
+    } else if seconds > MAX_RETRY_AFTER_MS / 1000 {
+      Some(MAX_RETRY_AFTER_MS)
     } else {
       Some(seconds * 1000)
     }
@@ -127,7 +134,7 @@ fn retry_delay_ms(
   match response {
     Some(resp) =>
       match resp.retry_after_ms {
-        Some(delay) => if delay < 0 { 0 } else { delay }
+        Some(delay) => clamp_retry_delay_ms(delay)
         None => exponential_backoff_ms(base_backoff_ms, attempts)
       }
     None => exponential_backoff_ms(base_backoff_ms, attempts)
@@ -139,13 +146,24 @@ fn exponential_backoff_ms(base_backoff_ms : Int, attempts : Int) -> Int {
   if base_backoff_ms <= 0 {
     0
   } else {
-    let mut delay = base_backoff_ms
+    let mut delay = clamp_retry_delay_ms(base_backoff_ms)
     for _ in 1..<attempts {
-      if delay > 1073741823 {
-        return delay
+      if delay >= MAX_RETRY_AFTER_MS / 2 {
+        return MAX_RETRY_AFTER_MS
       }
       delay = delay * 2
     }
-    delay
+    clamp_retry_delay_ms(delay)
+  }
+}
+
+///|
+fn clamp_retry_delay_ms(delay_ms : Int) -> Int {
+  if delay_ms < 0 {
+    0
+  } else if delay_ms > MAX_RETRY_AFTER_MS {
+    MAX_RETRY_AFTER_MS
+  } else {
+    delay_ms
   }
 }

@@ -4,7 +4,18 @@ fn assert_retry_class(
   expected : @transport.RetryClass,
 ) -> Unit {
   if actual != expected {
-    abort("unexpected retry class")
+    abort(
+      "unexpected retry class: expected \{retry_class_name(expected)}, got \{retry_class_name(actual)}",
+    )
+  }
+}
+
+///|
+fn retry_class_name(class : @transport.RetryClass) -> String {
+  match class {
+    @transport.Success => "Success"
+    @transport.Retryable => "Retryable"
+    @transport.NonRetryable => "NonRetryable"
   }
 }
 
@@ -41,6 +52,23 @@ test "classify_error follows transport retry matrix" {
 }
 
 ///|
+test "retry-after seconds clamp before millisecond conversion" {
+  assert_true(
+    @transport.parse_retry_after_ms({ "Retry-After": "2" }) == Some(2000),
+  )
+  assert_true(
+    @transport.parse_retry_after_ms({ "Retry-After": "2147484" }) ==
+    Some(300000),
+  )
+  assert_true(
+    @transport.parse_retry_after_ms({
+      "Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT",
+    }) ==
+    None,
+  )
+}
+
+///|
 test "transport error has manual show text" {
   assert_eq(@transport.Network("reset").to_string(), "network error: reset")
   assert_eq("\{@transport.Timeout("slow")}", "timeout: slow")
@@ -65,6 +93,15 @@ pub(all) struct FakeClient {
   replies : Array[FakeReply]
   calls : Array[FakeCall]
   mut next : Int
+}
+
+///|
+pub(all) struct ShutdownAfterPostClient {
+  replies : Array[FakeReply]
+  calls : Array[FakeCall]
+  mut next : Int
+  shutdown_on_call : Int
+  after_post : () -> Unit
 }
 
 ///|
@@ -102,6 +139,28 @@ pub impl @transport.OtlpHttpClient for FakeClient with fn post(
   }
   let reply = self.replies[self.next]
   self.next = self.next + 1
+  match reply {
+    FakeResponse(resp) => Ok(resp)
+    FakeError(err) => Err(err)
+  }
+}
+
+///|
+pub impl @transport.OtlpHttpClient for ShutdownAfterPostClient with fn post(
+  self,
+  url,
+  body,
+  headers,
+) {
+  self.calls.push({ url, body, headers: headers.copy() })
+  if self.next >= self.replies.length() {
+    return Err(@transport.Request("fake client exhausted"))
+  }
+  let reply = self.replies[self.next]
+  self.next = self.next + 1
+  if self.next == self.shutdown_on_call {
+    (self.after_post)()
+  }
   match reply {
     FakeResponse(resp) => Ok(resp)
     FakeError(err) => Err(err)
@@ -221,6 +280,46 @@ async test "export_json retries network error then succeeds" {
   )
   assert_eq(outcome.success, true)
   assert_eq(outcome.attempts, 2)
+  assert_eq(client.calls.length(), 2)
+}
+
+///|
+async test "shutdown during retry stops before next attempt" {
+  let mut tx_ref : @transport.OtlpHttpTransport? = None
+  let client = ShutdownAfterPostClient::{
+    replies: [
+      FakeResponse(response(503)),
+      FakeResponse(response(503)),
+      FakeResponse(response(200)),
+    ],
+    calls: [],
+    next: 0,
+    shutdown_on_call: 2,
+    after_post: fn() {
+      match tx_ref {
+        Some(tx) => tx.shutdown()
+        None => abort("transport not installed")
+      }
+    },
+  }
+  let tx = @transport.transport(
+    client,
+    "http://collector:4318",
+    max_retries=3,
+    base_backoff_ms=0,
+  )
+  tx_ref = Some(tx)
+  match
+    @async.with_timeout(1000, () => {
+      tx.export_json("http://collector/v1/traces", "{}")
+    }) {
+    Ok(_) => abort("expected shutdown error")
+    Err(err) =>
+      assert_eq(
+        err.to_string(),
+        "request error: OTLP HTTP transport is shut down",
+      )
+  }
   assert_eq(client.calls.length(), 2)
 }
 

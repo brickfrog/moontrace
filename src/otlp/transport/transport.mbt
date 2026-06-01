@@ -46,16 +46,59 @@ pub fn OtlpHttpTransport::shutdown(self : OtlpHttpTransport) -> Unit {
 }
 
 ///|
+fn shutdown_error() -> TransportError {
+  Request("OTLP HTTP transport is shut down")
+}
+
+///|
+fn OtlpHttpTransport::ensure_open(
+  self : OtlpHttpTransport,
+) -> Result[Unit, TransportError] {
+  if self.is_shut_down {
+    Err(shutdown_error())
+  } else {
+    Ok(())
+  }
+}
+
+///|
+async fn OtlpHttpTransport::wait_before_retry(
+  self : OtlpHttpTransport,
+  delay_ms : Int,
+) -> Result[Unit, TransportError] {
+  match self.ensure_open() {
+    Err(err) => return Err(err)
+    Ok(_) => ()
+  }
+  if delay_ms <= 0 {
+    @async.pause()
+    return self.ensure_open()
+  }
+  for remaining = delay_ms; remaining > 0; {
+    let chunk = if remaining > 50 { 50 } else { remaining }
+    @async.sleep(chunk)
+    match self.ensure_open() {
+      Err(err) => return Err(err)
+      Ok(_) => ()
+    }
+    continue remaining - chunk
+  } nobreak {
+    Ok(())
+  }
+}
+
+///|
 pub async fn OtlpHttpTransport::export_json(
   self : OtlpHttpTransport,
   url : String,
   payload : String,
 ) -> Result[ExportOutcome, TransportError] {
-  if self.is_shut_down {
-    return Err(Request("OTLP HTTP transport is shut down"))
-  }
   let max_attempts = self.max_retries + 1
   for attempts = 1; attempts <= max_attempts; {
+    match self.ensure_open() {
+      Err(err) => return Err(err)
+      Ok(_) => ()
+    }
     let result = self.client.post(url, payload, copy_headers(self.headers))
     match result {
       Ok(response) => {
@@ -92,10 +135,9 @@ pub async fn OtlpHttpTransport::export_json(
                 self.base_backoff_ms,
                 attempts,
               )
-              if delay > 0 {
-                @async.sleep(delay)
-              } else {
-                @async.pause()
+              match self.wait_before_retry(delay) {
+                Err(err) => return Err(err)
+                Ok(_) => ()
               }
             }
         }
@@ -116,10 +158,9 @@ pub async fn OtlpHttpTransport::export_json(
               })
             } else {
               let delay = retry_delay_ms(None, self.base_backoff_ms, attempts)
-              if delay > 0 {
-                @async.sleep(delay)
-              } else {
-                @async.pause()
+              match self.wait_before_retry(delay) {
+                Err(err) => return Err(err)
+                Ok(_) => ()
               }
             }
         }

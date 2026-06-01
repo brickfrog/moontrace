@@ -5,3 +5,5 @@ import {
   "moonbitlang/async/io",
   "moonbitlang/core/string",
 }
+
+warnings = "-unused_package"
