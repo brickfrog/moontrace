@@ -1,0 +1,7 @@
+import {
+  "brickfrog/moontrace/otlp",
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/io",
+  "moonbitlang/core/string",
+}
