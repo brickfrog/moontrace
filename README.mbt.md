@@ -92,13 +92,38 @@ Filter log levels by package:
 @moontrace.set_module_filter("my/http/package", @moontrace.Warn)
 ```
 
-Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed.
+Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed. A package filter overrides the global minimum level for matching packages, so it can be more verbose or stricter than the default.
+
+EnvFilter-style directives configure the same state from a string:
+
+```moonbit
+match @moontrace.set_filter_from_directives(
+  "info,my/db/package=debug,my/http/package=warn",
+) {
+  Ok(_) => ()
+  Err(err) => println(err)
+}
+
+match @moontrace.parse_env_filter("warn,my/queue/package=trace") {
+  Ok(filter) => filter.apply()
+  Err(err) => println(err)
+}
+```
+
+`initialize_from_env()` reads `MOONTRACE_LOG` by default. Use it during application startup:
+
+```mbt
+match @moontrace.initialize_from_env() {
+  Ok(_) => ()
+  Err(err) => println(err)
+}
+```
 
 ## Scoped State Guards
 
 For tests or temporary overrides, wrap work in a synchronous scope:
 
-```moonbit
+```mbt
 @moontrace.with_subscriber(collecting_subscriber, fn() {
   @moontrace.with_min_level(@moontrace.Debug, fn() {
     @moontrace.with_global_field("request_id", "abc", fn() {
@@ -139,7 +164,7 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 ### Error Handling on Spans
 
-```moonbit
+```mbt
 @moontrace.with_span_ctx("db_query", fn(s) {
   match run_query() {
     Ok(result) => s.set_status(@moontrace.Ok)
@@ -175,17 +200,76 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 ### Cross-Process Trace Correlation
 
-For distributed tracing across process boundaries, inject an existing trace ID:
+For simple propagation, inject an existing trace ID:
 
 ```moonbit
-let s = @moontrace.span_with_trace("handle_request", external_trace_id)
+let s = @moontrace.span_with_trace(
+  "handle_request",
+  "4bf92f3577b34da6a3ce929d0e0e4736",
+)
 ```
+
+For HTTP or RPC boundaries, parse and format W3C trace-context headers:
+
+```moonbit
+let incoming = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+match @moontrace.parse_traceparent(incoming) {
+  Ok(remote) => {
+    let server = @moontrace.span_from_remote_context(
+      remote,
+      "handle_request",
+      kind=@moontrace.Server,
+    )
+    match @moontrace.span_context_from_span(server) {
+      Ok(local) => {
+        let _outgoing = @moontrace.format_traceparent(local)
+        ()
+      }
+      Err(_) => ()
+    }
+  }
+  Err(err) => println(err)
+}
+
+match @moontrace.parse_tracestate("rojo=00f067aa0ba902b7,congo=t61rcWkgMzE") {
+  Ok(state) => {
+    let _header = @moontrace.format_tracestate(state)
+    ()
+  }
+  Err(err) => println(err)
+}
+```
+
+`SpanContext` keeps the remote trace ID, span ID, sampled flag, tracestate, and remote/local marker. `span_from_remote_context` creates a local child span while preserving the incoming sampled flag for downstream export.
+
+### Span Links
+
+Parent/child spans model ownership. Links model causal edges that should not change the parent relationship, such as retries, queued work, or fan-in.
+
+```moonbit
+let enqueue = @moontrace.span("enqueue")
+let retry = @moontrace.span("retry")
+
+retry.link(enqueue, fields=[@moontrace.field("edge", "same trace")])
+retry.follows_from(enqueue, fields=[@moontrace.field("reason", "retry")])
+
+match @moontrace.parse_traceparent(
+  "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+) {
+  Ok(remote) => retry.link_context(remote, fields=[
+    @moontrace.field("edge", "remote"),
+  ])
+  Err(_) => ()
+}
+```
+
+Use `link_context` and `follows_from_context` when the related operation came from a remote `SpanContext`. OTLP export includes these span links separately from `parent_span_id`.
 
 ### Async Span Propagation
 
 MoonBit has no task-local storage, so spans must be passed explicitly across async boundaries:
 
-```moonbit
+```mbt
 @moontrace.with_span_ctx("request", fn(parent) {
   async_work(parent)
 })
@@ -202,7 +286,7 @@ For async closures that should keep a span active across `@async.sleep`,
 `brickfrog/moontrace/span_async` package. It intentionally avoids the package
 name `async` so applications can still import `moonbitlang/async` as `@async`.
 
-```moonbit
+```mbt
 pub async fn handle_request() -> Unit {
   @span_async.with_span_async("request", parent => {
     @async.sleep(1)
@@ -267,10 +351,20 @@ Machine-readable JSON output:
 Convert events and completed spans to OpenTelemetry-compatible JSON:
 
 ```moonbit
+let resource = @otlp.resource(
+  service_name="checkout-api",
+  service_version="1.2.3",
+)
+let scope = @otlp.instrumentation_scope(
+  name="checkout-worker",
+  version="0.12.0",
+)
 let exp = @otlp.exporter(
-  log_output=fn(json) { send_to_collector(json) },
-  span_output=fn(json) { send_to_collector(json) },
+  log_output=fn(_json) { () },
+  span_output=fn(_json) { () },
   capacity=100,
+  resource~,
+  scope~,
 )
 @moontrace.set_subscriber(exp.subscriber())
 @moontrace.set_span_observer(exp.span_observer())
@@ -279,10 +373,32 @@ let s = @moontrace.span("operation")
 s.enter()
 // ... work ...
 s.exit()
-exp.flush()  // send remaining batched data
+exp.shutdown()  // stop accepting new events, then flush buffered records
 ```
 
-`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion (events to log records, spans to OTLP spans with proper severity codes and attributes). You provide the transport.
+`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, and links.
+
+For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
+
+```mbt
+pub async fn export_batch(
+  spans : Array[@otlp.OtlpSpan],
+  resource : @otlp.Resource,
+  scope : @otlp.InstrumentationScope,
+) -> Unit {
+  let client = @transport.async_http_client(timeout_ms=5000)
+  let tx = @transport.transport(client, "http://collector:4318")
+  match tx.export_spans(spans, resource~, scope~) {
+    Ok(outcome) =>
+      if !outcome.success {
+        println("OTLP export failed after \{outcome.attempts} attempts")
+      }
+    Err(err) => println(err)
+  }
+  tx.shutdown()
+  client.shutdown()
+}
+```
 
 ### Subscriber Composition
 
@@ -305,7 +421,7 @@ Filter events for any subscriber:
 
 ### Utility Subscribers
 
-```moonbit
+```mbt
 // No-op (for benchmarks/testing)
 @moontrace.set_subscriber(@moontrace.noop())
 
@@ -327,6 +443,76 @@ let buf = @moontrace.buffer(@json.subscriber(), capacity=100)
 buf.flush()  // send all buffered events
 ```
 
+### Sampling and Redaction
+
+Sampling and redaction are subscriber wrappers. They compose with console, JSON, OTLP, buffers, and fan-out:
+
+```moonbit
+let policy = @moontrace.redaction_policy(
+  deny=["password", "authorization", "token"],
+  placeholder="[redacted]",
+)
+let redacted = @moontrace.redact(@json.subscriber(), policy~)
+let ratio = @moontrace.ratio_sampler(redacted, 0.10)
+let limited = @moontrace.rate_limiter(
+  ratio.subscriber(),
+  100,
+  1_000_000_000UL,
+)
+let traced = @moontrace.trace_sampler(limited.subscriber(), 0.25)
+
+@moontrace.set_subscriber(traced.subscriber())
+```
+
+`ratio_sampler`, `rate_limiter`, and `trace_sampler` each expose `subscriber()`, `kept()`, and `dropped()`. `should_sample_trace(trace_id, ratio)` is available when you need the deterministic trace sampling decision without installing a subscriber.
+
+`redact(inner, policy?)` builds a redacted copy of the event for that subscriber. The default policy redacts fields whose names contain `password`, `token`, or `secret`; `redaction_policy(...)` can switch between replacing values and dropping fields.
+
+See [docs/sampling.md](docs/sampling.md) for the sampling model.
+
+### Flame Export
+
+`brickfrog/moontrace/flame` observes completed spans and writes folded-stack output for flamegraph tools. It reconstructs stacks from span IDs and sums identical collapsed stacks.
+
+```mbt
+let flame = @flame.flame_exporter(output=fn(folded) { println(folded) })
+@moontrace.set_span_observer(flame.span_observer())
+
+@moontrace.with_span("request", fn() {
+  @moontrace.with_span("db query", fn() { () })
+})
+
+flame.flush()
+@moontrace.clear_span_observer()
+```
+
+See [docs/flame.md](docs/flame.md) for rendering with `inferno-flamegraph` or `flamegraph.pl`.
+
+### File Subscriber
+
+`brickfrog/moontrace/file` provides a native-only buffered JSONL file subscriber. The synchronous subscriber enqueues without blocking the logging call site; an async worker drains, rotates, optionally gzips rotated files, and tracks written/dropped counts.
+
+```mbt
+pub async fn install_file_subscriber() -> Unit {
+  let files = @file.file_subscriber(
+    "logs/moontrace.jsonl",
+    max_size_bytes=10 * 1024 * 1024,
+    max_files=5,
+    gzip=true,
+  )
+
+  @moontrace.set_subscriber(files.subscriber())
+  @async.with_task_group(group => {
+    group.spawn_bg(() => files.run())
+    @moontrace.info("service started")
+    files.flush()
+    files.shutdown()
+  })
+}
+```
+
+See [docs/file.md](docs/file.md) for worker ownership, rotation, retention, and native-target behavior.
+
 ## Performance
 
 Set a global minimum level to skip event allocation entirely:
@@ -342,23 +528,23 @@ Global context fields use a fast path — zero allocation overhead when no conte
 
 Events, spans, and fields all support JSON serialization:
 
-```moonbit
+```mbt
 let event_json = event.to_json().stringify()
 let span_json = span.to_json().stringify()
 ```
 
-Span JSON includes trace_id, span_id, parent_span_id, status, and duration.
+Span JSON includes trace_id, span_id, parent_span_id, status, duration, and links.
 
-Human-readable formatting with the new pipe-separated style:
+Human-readable formatting uses pipe-separated columns:
 
-```moonbit
+```mbt
 let plain = event.format()           // no color
 let colored = event.format(color=true) // ANSI colored
 ```
 
 All types implement `Show` for `println` and string interpolation:
 
-```moonbit
+```mbt
 println(event)       // human-readable output
 let s = "\{span}"    // string interpolation works
 ```
@@ -370,13 +556,18 @@ let s = "\{span}"    // string interpolation works
 @moontrace/json      # JSON subscriber (structured output)
 @moontrace/console   # console subscriber (colored, human-readable)
 @moontrace/otlp      # OpenTelemetry JSON format conversion
+@moontrace/otlp/transport # async OTLP HTTP JSON transport
+@moontrace/test      # test subscriber and assertion helpers
+@moontrace/span_async # async span wrappers
+@moontrace/flame     # folded-stack flamegraph export
+@moontrace/file      # native buffered JSONL file subscriber
 ```
 
 Libraries instrument with `@moontrace`. Applications choose subscribers.
 
 ## Contributing
 
-Contributions welcome! Please:
+Contributions are welcome. Please:
 
 1. `moon fmt` before committing
 2. `moon test --target native` must pass
