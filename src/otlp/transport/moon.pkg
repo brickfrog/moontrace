@@ -3,7 +3,12 @@ import {
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/io",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",
 }
+
+import {
+  "moonbitlang/core/json",
+} for "test"
 
 warnings = "-unused_package"
