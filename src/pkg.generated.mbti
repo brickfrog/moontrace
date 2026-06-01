@@ -90,11 +90,17 @@ pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
 
 pub fn parse_tracestate(String) -> Result[TraceState, TraceContextError]
 
+pub fn rate_limiter((Event) -> Unit, Int, UInt64, clock? : () -> UInt64) -> RateLimiter
+
+pub fn ratio_sampler((Event) -> Unit, Double, rand? : () -> Double) -> RatioSampler
+
 pub fn redact((Event) -> Unit, policy? : RedactionPolicy) -> (Event) -> Unit
 
 pub fn redaction_policy(deny? : Array[String], allow? : Array[String]?, mode? : RedactionMode, placeholder? : String) -> RedactionPolicy
 
 pub fn remove_global_field(String) -> Unit
+
+pub fn sample_trace_decision(TraceFlags?, String, Double) -> Bool
 
 pub fn set_filter_from_directives(String) -> Result[Unit, EnvFilterError]
 
@@ -107,6 +113,8 @@ pub fn set_module_filter(String, Level) -> Unit
 pub fn set_span_observer(SpanLifecycleObserver) -> Unit
 
 pub fn set_subscriber((Event) -> Unit) -> Unit
+
+pub fn should_sample_trace(String, Double) -> Bool
 
 pub fn span(String, fields? : Array[Field], kind? : SpanKind) -> Span
 
@@ -143,6 +151,8 @@ pub fn trace_id(String) -> Result[TraceId, TraceContextError]
 
 #callsite(autofill(loc))
 pub fn trace_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+
+pub fn trace_sampler((Event) -> Unit, Double) -> TraceSampler
 
 pub fn trace_state(Array[TraceStateEntry]) -> Result[TraceState, TraceContextError]
 
@@ -230,6 +240,31 @@ pub(all) struct ParsedFilter {
   module_filters : Map[String, Level]
 } derive(@debug.Debug)
 pub fn ParsedFilter::apply(Self) -> Unit
+
+pub(all) struct RateLimiter {
+  inner : (Event) -> Unit
+  limit : Int
+  window_ns : UInt64
+  clock : () -> UInt64
+  mut window_start : UInt64
+  mut count : Int
+  mut kept : Int
+  mut dropped : Int
+}
+pub fn RateLimiter::dropped(Self) -> Int
+pub fn RateLimiter::kept(Self) -> Int
+pub fn RateLimiter::subscriber(Self) -> (Event) -> Unit
+
+pub(all) struct RatioSampler {
+  inner : (Event) -> Unit
+  ratio : Double
+  rand : () -> Double
+  mut kept : Int
+  mut dropped : Int
+}
+pub fn RatioSampler::dropped(Self) -> Int
+pub fn RatioSampler::kept(Self) -> Int
+pub fn RatioSampler::subscriber(Self) -> (Event) -> Unit
 
 pub(all) enum RedactionMode {
   Redact
@@ -387,6 +422,16 @@ pub struct TraceId {
 pub fn TraceId::parse(String) -> Result[Self, TraceContextError]
 pub fn TraceId::to_string(Self) -> String
 pub impl Show for TraceId
+
+pub(all) struct TraceSampler {
+  inner : (Event) -> Unit
+  ratio : Double
+  mut kept : Int
+  mut dropped : Int
+}
+pub fn TraceSampler::dropped(Self) -> Int
+pub fn TraceSampler::kept(Self) -> Int
+pub fn TraceSampler::subscriber(Self) -> (Event) -> Unit
 
 pub struct TraceState {
   // private fields
