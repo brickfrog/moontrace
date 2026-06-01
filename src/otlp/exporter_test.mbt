@@ -196,6 +196,14 @@ fn assert_exporter_attribute_string(
 }
 
 ///|
+fn assert_no_exporter_attribute(attributes : Array[Json], key : String) -> Unit {
+  match exporter_attribute_string(attributes, key) {
+    Some(actual) => abort("unexpected attribute \{key}=\{actual}")
+    None => ()
+  }
+}
+
+///|
 fn exporter_test_span(name : String) -> @otlp.OtlpSpan {
   @otlp.OtlpSpan::{
     trace_id: "0000000000000000000000000000000a",
@@ -581,6 +589,84 @@ test "otlp exporter shutdown drops reentrant output callback events" {
   assert_eq(log_records.length(), 1)
   let span_records = exporter_spans(parse_exporter_json(span_output[0]))
   assert_eq(span_records.length(), 1)
+}
+
+///|
+test "otlp exporter shutdown drops reentrant log output before later flush" {
+  let log_output : Array[String] = []
+  let exp = @otlp.exporter(
+    log_output=fn(s) {
+      log_output.push(s)
+      @moontrace.info("reentrant log from output callback")
+    },
+    capacity=10,
+  )
+  @moontrace.set_subscriber(exp.subscriber())
+  @moontrace.info("before shutdown")
+  exp.shutdown()
+  exp.flush()
+  @moontrace.clear_subscriber()
+
+  assert_eq(log_output.length(), 1)
+  let log_records = exporter_log_records(parse_exporter_json(log_output[0]))
+  assert_eq(log_records.length(), 1)
+}
+
+///|
+test "otlp exporter snapshots resource attributes at construction" {
+  let output : Array[String] = []
+  let res = @otlp.resource(attributes=[
+    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes") },
+  ])
+  let exp = @otlp.exporter(
+    log_output=fn(s) { output.push(s) },
+    capacity=1,
+    resource=res,
+  )
+  res.attributes.push(@otlp.OtlpAttribute::{
+    key: "late",
+    value: @otlp.StringVal("no"),
+  })
+  @moontrace.set_subscriber(exp.subscriber())
+  @moontrace.info("snapshot resource")
+  @moontrace.clear_subscriber()
+
+  assert_eq(output.length(), 1)
+  let attributes = exporter_log_resource_attributes(
+    parse_exporter_json(output[0]),
+  )
+  assert_exporter_attribute_string(attributes, "kept", "yes")
+  assert_no_exporter_attribute(attributes, "late")
+}
+
+///|
+test "otlp exporter snapshots scope attributes at construction" {
+  let output : Array[String] = []
+  let scope = @otlp.instrumentation_scope(name="snapshot-scope", attributes=[
+    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes") },
+  ])
+  let exp = @otlp.exporter(
+    log_output=fn(s) { output.push(s) },
+    capacity=1,
+    scope~,
+  )
+  scope.attributes.push(@otlp.OtlpAttribute::{
+    key: "late",
+    value: @otlp.StringVal("no"),
+  })
+  @moontrace.set_subscriber(exp.subscriber())
+  @moontrace.info("snapshot scope")
+  @moontrace.clear_subscriber()
+
+  assert_eq(output.length(), 1)
+  let scope_obj = exporter_log_scope(parse_exporter_json(output[0]))
+  assert_exporter_json_eq(
+    exporter_json_field(scope_obj, "name"),
+    "snapshot-scope".to_json(),
+  )
+  let attributes = exporter_scope_attributes(scope_obj)
+  assert_exporter_attribute_string(attributes, "kept", "yes")
+  assert_no_exporter_attribute(attributes, "late")
 }
 
 ///|

@@ -13,6 +13,16 @@ pub(all) struct OtlpExporter {
 }
 
 ///|
+fn copy_resource(resource : Resource) -> Resource {
+  { attributes: resource.attributes.copy() }
+}
+
+///|
+fn copy_scope(scope : InstrumentationScope) -> InstrumentationScope {
+  { ..scope, attributes: scope.attributes.copy() }
+}
+
+///|
 pub fn exporter(
   log_output? : (String) -> Unit = fn(s) { println(s) },
   span_output? : (String) -> Unit = fn(s) { println(s) },
@@ -27,8 +37,8 @@ pub fn exporter(
     log_output,
     span_output,
     capacity: cap,
-    resource,
-    scope,
+    resource: copy_resource(resource),
+    scope: copy_scope(scope),
     is_shut_down: false,
   }
 }
