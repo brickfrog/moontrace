@@ -130,14 +130,16 @@ fn valid_parent_edge(
     None => return false
   }
   let visited : Map[String, Bool] = {}
-  visited.set(origin, true)
   let mut remaining = span_count
   while remaining > 0 {
     match current {
       Some(s) => {
         let key = span_key(s.trace_id, s.span_id)
-        if visited.contains(key) {
+        if key == origin {
           return false
+        }
+        if visited.contains(key) {
+          return true
         }
         visited.set(key, true)
         remaining = remaining - 1
@@ -152,7 +154,7 @@ fn valid_parent_edge(
       None => return true
     }
   }
-  false
+  true
 }
 
 ///|

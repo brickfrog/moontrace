@@ -138,6 +138,25 @@ test "fold spans treats self parent as root" {
 }
 
 ///|
+test "fold spans keeps real children under self parent roots" {
+  let self_parent = test_span(
+    "self",
+    "0000000000000080",
+    "0000000000000080",
+    (0 : UInt64),
+    (10 : UInt64),
+  )
+  let child = test_span(
+    "child",
+    "0000000000000083",
+    self_parent.span_id,
+    (1 : UInt64),
+    (4 : UInt64),
+  )
+  assert_eq(@flame.fold_spans([self_parent, child]), "self 7\nself;child 3")
+}
+
+///|
 test "fold spans treats parent cycles as roots" {
   let a = test_span(
     "a",
@@ -154,6 +173,32 @@ test "fold spans treats parent cycles as roots" {
     (5 : UInt64),
   )
   assert_eq(@flame.fold_spans([a, b]), "a 20\nb 5")
+}
+
+///|
+test "fold spans keeps children under cyclic roots" {
+  let a = test_span(
+    "a",
+    "0000000000000081",
+    "0000000000000082",
+    (0 : UInt64),
+    (20 : UInt64),
+  )
+  let b = test_span(
+    "b",
+    "0000000000000082",
+    a.span_id,
+    (0 : UInt64),
+    (5 : UInt64),
+  )
+  let c = test_span(
+    "c",
+    "0000000000000084",
+    a.span_id,
+    (2 : UInt64),
+    (6 : UInt64),
+  )
+  assert_eq(@flame.fold_spans([a, b, c]), "a 16\na;c 4\nb 5")
 }
 
 ///|
