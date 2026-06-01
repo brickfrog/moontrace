@@ -554,6 +554,36 @@ test "otlp exporter shutdown flushes then drops later events" {
 }
 
 ///|
+test "otlp exporter shutdown drops reentrant output callback events" {
+  let log_output : Array[String] = []
+  let span_output : Array[String] = []
+  let exp = @otlp.exporter(
+    log_output=fn(s) {
+      log_output.push(s)
+      @moontrace.info("reentrant log from log output")
+    },
+    span_output=fn(s) {
+      span_output.push(s)
+      @moontrace.info("reentrant log from span output")
+    },
+    capacity=10,
+  )
+  @moontrace.set_subscriber(exp.subscriber())
+  @moontrace.info("before shutdown")
+  exp.add_span(exporter_test_span("before shutdown span"))
+  exp.shutdown()
+  exp.flush()
+  @moontrace.clear_subscriber()
+
+  assert_eq(log_output.length(), 1)
+  assert_eq(span_output.length(), 1)
+  let log_records = exporter_log_records(parse_exporter_json(log_output[0]))
+  assert_eq(log_records.length(), 1)
+  let span_records = exporter_spans(parse_exporter_json(span_output[0]))
+  assert_eq(span_records.length(), 1)
+}
+
+///|
 test "otlp level severity mapping" {
   assert_eq(@otlp.level_to_severity(@moontrace.Trace), 1)
   assert_eq(@otlp.level_to_severity(@moontrace.Debug), 5)

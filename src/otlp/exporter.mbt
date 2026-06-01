@@ -105,11 +105,12 @@ pub fn OtlpExporter::flush(self : OtlpExporter) -> Unit {
 }
 
 ///|
-// Shutdown flushes queued telemetry once, then drops future subscriber and span
-// observer events. Explicit flush remains safe and idempotent after shutdown.
+// Shutdown first closes intake, then flushes queued telemetry once. Events
+// generated re-entrantly by output callbacks are dropped instead of buffered.
+// Explicit flush remains safe and idempotent after shutdown.
 pub fn OtlpExporter::shutdown(self : OtlpExporter) -> Unit {
-  self.flush()
   self.is_shut_down = true
+  self.flush()
 }
 
 // Helper: create an OtlpSpan from a completed moontrace Span
