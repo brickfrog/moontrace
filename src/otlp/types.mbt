@@ -38,6 +38,58 @@ pub(all) struct OtlpLogRecord {
   attributes : Array[OtlpAttribute]
 } derive(Debug)
 
+///|
+pub(all) struct Resource {
+  attributes : Array[OtlpAttribute]
+} derive(Debug)
+
+///|
+pub(all) struct InstrumentationScope {
+  name : String
+  version : String
+  attributes : Array[OtlpAttribute]
+} derive(Debug)
+
+///|
+const SERVICE_NAME_KEY : String = "service.name"
+
+///|
+const SERVICE_VERSION_KEY : String = "service.version"
+
+///|
+pub fn resource(
+  service_name? : String = "",
+  service_version? : String = "",
+  attributes? : Array[OtlpAttribute] = [],
+) -> Resource {
+  let resource_attributes : Array[OtlpAttribute] = []
+  if !service_name.is_empty() {
+    resource_attributes.push({
+      key: SERVICE_NAME_KEY,
+      value: StringVal(service_name),
+    })
+  }
+  if !service_version.is_empty() {
+    resource_attributes.push({
+      key: SERVICE_VERSION_KEY,
+      value: StringVal(service_version),
+    })
+  }
+  for attribute in attributes {
+    resource_attributes.push(attribute)
+  }
+  { attributes: resource_attributes }
+}
+
+///|
+pub fn instrumentation_scope(
+  name? : String = "moontrace",
+  version? : String = "",
+  attributes? : Array[OtlpAttribute] = [],
+) -> InstrumentationScope {
+  { name, version, attributes: attributes.copy() }
+}
+
 // Convert OtlpValue to Json
 
 ///|
@@ -106,6 +158,24 @@ pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
   let body : Map[String, Json] = {}
   body.set("stringValue", self.body.to_json())
   m.set("body", body.to_json())
+  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
+  m.to_json()
+}
+
+///|
+pub fn Resource::to_json(self : Resource) -> Json {
+  let m : Map[String, Json] = {}
+  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
+  m.to_json()
+}
+
+///|
+pub fn InstrumentationScope::to_json(self : InstrumentationScope) -> Json {
+  let m : Map[String, Json] = {}
+  m.set("name", self.name.to_json())
+  if !self.version.is_empty() {
+    m.set("version", self.version.to_json())
+  }
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
   m.to_json()
 }

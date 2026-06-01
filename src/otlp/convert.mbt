@@ -50,17 +50,16 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
 // Wrap log records in OTLP resourceLogs envelope
 
 ///|
-pub fn wrap_log_records(records : Array[OtlpLogRecord]) -> Json {
-  let scope : Map[String, Json] = {}
-  scope.set("name", "moontrace".to_json())
-
+pub fn wrap_log_records(
+  records : Array[OtlpLogRecord],
+  resource? : Resource = resource(),
+  scope? : InstrumentationScope = instrumentation_scope(),
+) -> Json {
   let scope_logs : Map[String, Json] = {}
   scope_logs.set("scope", scope.to_json())
   scope_logs.set("logRecords", records.map(fn(r) { r.to_json() }).to_json())
 
   let resource_logs : Map[String, Json] = {}
-  let resource : Map[String, Json] = {}
-  resource.set("attributes", ([] : Array[Json]).to_json())
   resource_logs.set("resource", resource.to_json())
   resource_logs.set("scopeLogs", [scope_logs.to_json()].to_json())
 
@@ -72,17 +71,16 @@ pub fn wrap_log_records(records : Array[OtlpLogRecord]) -> Json {
 // Wrap spans in OTLP resourceSpans envelope
 
 ///|
-pub fn wrap_spans(spans : Array[OtlpSpan]) -> Json {
-  let scope : Map[String, Json] = {}
-  scope.set("name", "moontrace".to_json())
-
+pub fn wrap_spans(
+  spans : Array[OtlpSpan],
+  resource? : Resource = resource(),
+  scope? : InstrumentationScope = instrumentation_scope(),
+) -> Json {
   let scope_spans : Map[String, Json] = {}
   scope_spans.set("scope", scope.to_json())
   scope_spans.set("spans", spans.map(fn(s) { s.to_json() }).to_json())
 
   let resource_spans : Map[String, Json] = {}
-  let resource : Map[String, Json] = {}
-  resource.set("attributes", ([] : Array[Json]).to_json())
   resource_spans.set("resource", resource.to_json())
   resource_spans.set("scopeSpans", [scope_spans.to_json()].to_json())
 

@@ -9,21 +9,32 @@ import {
 // Values
 pub fn event_to_log_record(@moontrace.Event) -> OtlpLogRecord
 
-pub fn exporter(log_output? : (String) -> Unit, span_output? : (String) -> Unit, capacity? : Int) -> OtlpExporter
+pub fn exporter(log_output? : (String) -> Unit, span_output? : (String) -> Unit, capacity? : Int, resource? : Resource, scope? : InstrumentationScope) -> OtlpExporter
 
 pub fn field_to_attribute(@moontrace.Field) -> OtlpAttribute
 
+pub fn instrumentation_scope(name? : String, version? : String, attributes? : Array[OtlpAttribute]) -> InstrumentationScope
+
 pub fn level_to_severity(@moontrace.Level) -> Int
+
+pub fn resource(service_name? : String, service_version? : String, attributes? : Array[OtlpAttribute]) -> Resource
 
 pub fn span_to_otlp(@moontrace.Span) -> OtlpSpan
 
-pub fn wrap_log_records(Array[OtlpLogRecord]) -> Json
+pub fn wrap_log_records(Array[OtlpLogRecord], resource? : Resource, scope? : InstrumentationScope) -> Json
 
-pub fn wrap_spans(Array[OtlpSpan]) -> Json
+pub fn wrap_spans(Array[OtlpSpan], resource? : Resource, scope? : InstrumentationScope) -> Json
 
 // Errors
 
 // Types and methods
+pub(all) struct InstrumentationScope {
+  name : String
+  version : String
+  attributes : Array[OtlpAttribute]
+} derive(@debug.Debug)
+pub fn InstrumentationScope::to_json(Self) -> Json
+
 pub(all) struct OtlpAttribute {
   key : String
   value : OtlpValue
@@ -36,11 +47,15 @@ pub(all) struct OtlpExporter {
   log_output : (String) -> Unit
   span_output : (String) -> Unit
   capacity : Int
+  resource : Resource
+  scope : InstrumentationScope
+  mut is_shut_down : Bool
 }
 pub fn OtlpExporter::add_span(Self, OtlpSpan) -> Unit
 pub fn OtlpExporter::flush(Self) -> Unit
 pub fn OtlpExporter::flush_logs(Self) -> Unit
 pub fn OtlpExporter::flush_spans(Self) -> Unit
+pub fn OtlpExporter::shutdown(Self) -> Unit
 pub fn OtlpExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
 pub fn OtlpExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
@@ -75,6 +90,11 @@ pub(all) enum OtlpValue {
   DoubleVal(Double)
 } derive(@debug.Debug)
 pub fn OtlpValue::to_json(Self) -> Json
+
+pub(all) struct Resource {
+  attributes : Array[OtlpAttribute]
+} derive(@debug.Debug)
+pub fn Resource::to_json(Self) -> Json
 
 // Type aliases
 
