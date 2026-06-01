@@ -127,6 +127,48 @@ test "rate limiter keeps limit per fixed window then resets" {
 }
 
 ///|
+test "rate limiter clamps negative limit to zero and zero window to one" {
+  let captured : Array[@moontrace.Event] = []
+  let mut now = 100UL
+  let limiter = @moontrace.rate_limiter(
+    fn(event) { captured.push(event) },
+    -5,
+    0UL,
+    clock=fn() { now },
+  )
+  let subscriber = limiter.subscriber()
+
+  subscriber(sample_test_event("drop-with-zero-limit"))
+  now = 101UL
+  subscriber(sample_test_event("drop-next-window-too"))
+
+  assert_eq(captured.length(), 0)
+  assert_eq(limiter.kept(), 0)
+  assert_eq(limiter.dropped(), 2)
+
+  let window_output : Array[@moontrace.Event] = []
+  let mut window_now = 200UL
+  let zero_window = @moontrace.rate_limiter(
+    fn(event) { window_output.push(event) },
+    1,
+    0UL,
+    clock=fn() { window_now },
+  )
+  let window_subscriber = zero_window.subscriber()
+
+  window_subscriber(sample_test_event("first"))
+  window_subscriber(sample_test_event("same-window-drop"))
+  window_now = 201UL
+  window_subscriber(sample_test_event("next-window"))
+
+  assert_eq(window_output.length(), 2)
+  assert_eq(window_output[0].message, "first")
+  assert_eq(window_output[1].message, "next-window")
+  assert_eq(zero_window.kept(), 2)
+  assert_eq(zero_window.dropped(), 1)
+}
+
+///|
 test "trace sampling predicate is deterministic and clamps edges" {
   let trace_id = "4bf92f3577b34da6a3ce929d0e0e4736"
   assert_true(!@moontrace.should_sample_trace(trace_id, 0.0))
@@ -179,6 +221,26 @@ test "trace sampler drops unsampled traced events and passes untraced events" {
   assert_eq(captured.length(), 1)
   assert_eq(captured[0].message, "untraced")
   assert_eq(sampler.kept(), 1)
+  assert_eq(sampler.dropped(), 1)
+}
+
+///|
+test "trace sampler scans past non-string trace id fields" {
+  let captured : Array[@moontrace.Event] = []
+  let sampler = @moontrace.trace_sampler(
+    fn(event) { captured.push(event) },
+    0.0,
+  )
+
+  sampler.subscriber()(
+    sample_test_event("duplicate trace ids", fields=[
+      @moontrace.field("trace_id", 42),
+      @moontrace.field("trace_id", "4bf92f3577b34da6a3ce929d0e0e4736"),
+    ]),
+  )
+
+  assert_eq(captured.length(), 0)
+  assert_eq(sampler.kept(), 0)
   assert_eq(sampler.dropped(), 1)
 }
 

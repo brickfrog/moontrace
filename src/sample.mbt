@@ -103,8 +103,14 @@ pub fn rate_limiter(
 ) -> RateLimiter {
   {
     inner,
-    limit,
-    window_ns,
+    limit: match limit < 0 {
+      true => 0
+      false => limit
+    },
+    window_ns: match window_ns == 0UL {
+      true => 1UL
+      false => window_ns
+    },
     clock,
     window_start: clock(),
     count: 0,
@@ -158,19 +164,6 @@ pub fn RateLimiter::dropped(self : RateLimiter) -> Int {
 }
 
 ///|
-fn hex_value_for_sampling(unit : Int) -> UInt64 {
-  if unit >= 48 && unit <= 57 {
-    (unit - 48).to_uint64()
-  } else if unit >= 65 && unit <= 70 {
-    (unit - 55).to_uint64()
-  } else if unit >= 97 && unit <= 102 {
-    (unit - 87).to_uint64()
-  } else {
-    0UL
-  }
-}
-
-///|
 fn trace_id_hash(trace_id : String) -> UInt64 {
   let mut hash = 14695981039346656037UL
   for i in 0..<trace_id.length() {
@@ -182,12 +175,7 @@ fn trace_id_hash(trace_id : String) -> UInt64 {
 
 ///|
 fn trace_id_unit(trace_id : String) -> Double {
-  let mut hash = trace_id_hash(trace_id)
-  let limit = if trace_id.length() >= 16 { 16 } else { trace_id.length() }
-  for i in 0..<limit {
-    hash = (hash << 4) ^
-      hex_value_for_sampling(trace_id.code_unit_at(i).to_int())
-  }
+  let hash = trace_id_hash(trace_id)
   Double::convert_uint64(hash << 11 >> 11) / Double::convert_uint64(1UL << 53)
 }
 
@@ -219,7 +207,7 @@ fn trace_id_field(event : Event) -> String? {
     if field.key == "trace_id" {
       match field.value {
         String(trace_id) => return Some(trace_id)
-        _ => return None
+        _ => ()
       }
     }
   }
