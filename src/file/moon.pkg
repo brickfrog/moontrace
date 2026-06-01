@@ -1,0 +1,10 @@
+import {
+  "brickfrog/moontrace",
+  "moonbitlang/async",
+  "moonbitlang/async/aqueue",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/gzip",
+  "moonbitlang/async/io",
+}
+
+warnings = "-unused_package"

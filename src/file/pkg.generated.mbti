@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/file"
+
+import {
+  "brickfrog/moontrace",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn file_subscriber(String, max_size_bytes? : Int, max_files? : Int, gzip? : Bool, max_batch? : Int, queue_capacity? : Int) -> FileSubscriber
+
+// Errors
+
+// Types and methods
+type FileSubscriber
+pub fn FileSubscriber::dropped(Self) -> Int
+pub async fn FileSubscriber::flush(Self) -> Unit
+pub fn FileSubscriber::new(FileSubscriberConfig) -> Self
+pub async fn FileSubscriber::run(Self) -> Unit
+pub async fn FileSubscriber::shutdown(Self) -> Unit
+pub fn FileSubscriber::subscriber(Self) -> (@moontrace.Event) -> Unit
+pub fn FileSubscriber::written(Self) -> Int
+
+pub(all) struct FileSubscriberConfig {
+  path : String
+  max_size_bytes : Int
+  max_files : Int
+  gzip : Bool
+  max_batch : Int
+  queue_capacity : Int
+} derive(Compare, Eq, @debug.Debug)
+pub fn FileSubscriberConfig::new(String, max_size_bytes? : Int, max_files? : Int, gzip? : Bool, max_batch? : Int, queue_capacity? : Int) -> Self
+
+// Type aliases
+
+// Traits
+
