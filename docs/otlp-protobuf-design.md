@@ -43,6 +43,14 @@ Generated code uses `@protobuf.Sized`, `@protobuf.Read`, `@protobuf.Write`,
 and `moonbitlang/async` at `0.16.6`, while moontrace currently uses
 `moonbitlang/async@0.19.0`.
 
+For `moontrace-cg9.7.4`, `moon add moonbitlang/protobuf` resolved
+`moonbitlang/protobuf@0.1.1`; the local registry index contained `0.1.0` and
+`0.1.1`, making `0.1.1` the latest available runtime at implementation time.
+A spike that wrote and read length-delimited bytes/string, varint, fixed64,
+and fixed32 values through the official runtime passed
+`moon build --target native --release` and `moon test --target native` against
+moontrace's current `moonbitlang/async@0.19.0`.
+
 That makes the protobuf ecosystem promising but still immature for direct
 adoption here. There is a real runtime package and generated bindings can emit
 OTLP collector request messages, but the generator is custom, the generated
@@ -125,25 +133,40 @@ Cons and risks:
 
 ## Recommendation
 
-Use option 1, but do it as a follow-up implementation bead rather than inside
-this design bead.
+The long-term preference remains an official generated-binding layer from
+OpenTelemetry's `.proto` definitions, backed by `moonbitlang/protobuf`, once
+the MoonBit protobuf generator and generated package surface are mature enough
+for moontrace to own confidently.
 
-The recommended path is to introduce an official generated-binding layer from
-OpenTelemetry's `.proto` definitions, backed by `moonbitlang/protobuf`, and
-keep moontrace's own hand-written code limited to mapping existing
-`@otlp.OtlpSpan`, `@otlp.OtlpLogRecord`, `Resource`, and
-`InstrumentationScope` values into the generated request messages.
+For `moontrace-cg9.7.4`, the chosen implemented path is option 2 with an
+important constraint: moontrace hand-rolls only the minimal OTLP trace and log
+messages it emits, but delegates all primitive protobuf writing to the official
+`moonbitlang/protobuf@0.1.1` runtime. It does not vendor or depend on
+`ryota0624/opentelemetry_proto_mbt`, and it does not introduce a codegen step.
 
-This keeps moontrace aligned with OTLP, avoids local wire-format ownership, and
-preserves the current JSON path. The risk is dependency maturity, so the next
-bead should first prove the current `moonbitlang/protobuf` package and generator
-against moontrace's current toolchain before committing to generated code in
-the main package.
+The implementation writes:
 
-Hand-rolling is tempting because moontrace currently emits a small subset of
-OTLP, but it creates the exact long-term maintenance trap protobuf codegen is
-supposed to avoid. Vendoring moonbit_otel is useful as a reference, but its
-older-stack pinning and broad generated surface make it a risky default.
+- Traces:
+  `ExportTraceServiceRequest.resource_spans`,
+  `ResourceSpans.resource`, `ResourceSpans.scope_spans`,
+  `ScopeSpans.scope`, `ScopeSpans.spans`, `Span`, `Span.Link`, and `Status`.
+- Logs:
+  `ExportLogsServiceRequest.resource_logs`, `ResourceLogs.resource`,
+  `ResourceLogs.scope_logs`, `ScopeLogs.scope`, `ScopeLogs.log_records`, and
+  `LogRecord`.
+- Supporting messages:
+  `Resource`, `InstrumentationScope`, `KeyValue`, and `AnyValue` for the
+  current moontrace value variants: string, bool, int64, and double.
+
+Field numbers and wire types are copied from the read-only generated
+moonbit_otel bindings. Trace IDs and span IDs are decoded from hex strings to
+protobuf bytes. Span timestamps and log timestamps are fixed64. Span flags are
+field 16 with fixed32 wire type. Enum-valued Moontrace integers are encoded as
+varints after rejecting negative values. Nested messages are written into a
+temporary buffer, then length-prefixed into their parent.
+
+The JSON encoder path remains unchanged and still delegates to
+`@otlp.wrap_spans` and `@otlp.wrap_log_records`.
 
 ## Integration Points
 
@@ -153,10 +176,13 @@ This bead adds the non-invasive slot:
 - `OtlpEncoder` chooses JSON or protobuf.
 - JSON encoding delegates to `@otlp.wrap_spans` and
   `@otlp.wrap_log_records`, then UTF-8 encodes the stringified JSON into bytes.
-- Protobuf encoding is intentionally stubbed with
-  `EncodingError::ProtobufNotImplemented`.
+- Protobuf encoding now returns `application/x-protobuf` with binary
+  `ExportTraceServiceRequest` or `ExportLogsServiceRequest` bytes.
+- Protobuf encoding can return `EncodingError::ProtobufEncodeFailed` if an ID
+  is not valid hex, an enum-like integer is negative, or the runtime writer
+  raises an error.
 
-The follow-up protobuf bead should wire these pieces into transport without
+Future transport work can wire these pieces into the send path without
 rewriting today's JSON code:
 
 - Add a bytes-capable HTTP client method or body variant, for example a
@@ -169,38 +195,35 @@ rewriting today's JSON code:
 - Keep JSON envelope builders as the source of truth for JSON; do not route JSON
   through generated protobuf JSON helpers.
 
-Span flags need a dedicated mapping check. moontrace currently stores
-`OtlpSpan.flags` as an `Int` and JSON emits it as `flags`. OTLP protobuf's
-`Span.flags` is field 16 and is written as fixed32 in the generated
-moonbit_otel bindings. The follow-up must define the conversion from
-moontrace's span trace flags to the OTLP fixed32 value and test sampled versus
-unsampled spans explicitly.
+Span flags now have the dedicated mapping check this design called out.
+moontrace stores `OtlpSpan.flags` as an `Int`; protobuf rejects negative values
+and writes non-zero flags as `Span.flags` field 16 with fixed32 wire type.
 
-## Proposed Follow-up Bead
+## Implemented Bead
 
-`moontrace-cg9.7.4`: implement OTLP protobuf export behind the encoder seam.
+`moontrace-cg9.7.4` implements OTLP protobuf export behind the encoder seam.
 
 Scope:
 
-- Evaluate the current `moonbitlang/protobuf` release with moontrace's toolchain
-  and `moonbitlang/async@0.19.0`.
-- Generate or import only the OTLP packages needed for traces and logs:
-  collector trace/logs, trace/logs, resource, and common.
-- Add generated bindings in a contained package or dependency; do not place
-  generated code inside `src/otlp/transport`.
-- Implement protobuf `encode_spans` and `encode_logs` by mapping moontrace OTLP
-  structs into generated `ExportTraceServiceRequest` and
-  `ExportLogsServiceRequest` messages.
-- Add a bytes-capable transport send path with `application/x-protobuf`, while
-  keeping the existing string JSON client path intact.
-- Verify against golden protobuf bytes generated by a known-good implementation
-  or by decoding the produced bytes through generated `@protobuf.Read`.
-- Include collector-level integration smoke tests if a lightweight local
-  collector fixture is practical.
+- Evaluated `moonbitlang/protobuf@0.1.1` with moontrace's toolchain and
+  `moonbitlang/async@0.19.0`.
+- Added `moonbitlang/protobuf@0.1.1` as a dependency.
+- Implemented protobuf `encode_spans` and `encode_logs` by hand-writing the
+  minimal OTLP messages moontrace emits with official runtime writer
+  primitives.
+- Kept the existing string JSON client path intact.
+- Added round-trip decoder tests that inspect key trace, log, resource, scope,
+  status, attributes, timestamps, IDs, and flags.
+- Added a golden-byte test for one representative `ExportTraceServiceRequest`.
+  The golden fixture was produced from a Python `google.protobuf` 7.34.1 dynamic
+  descriptor for the same OTLP subset. This checks field numbers, wire types,
+  nested length prefixes, and canonical field ordering for the representative
+  trace request.
 
 Dependencies and exit criteria:
 
-- No protobuf dependency is added until codegen compiles and native tests pass.
+- No dependency is taken on `ryota0624/opentelemetry_proto_mbt`, and no
+  `protoc-gen-mbt` or `buf` codegen toolchain is wired into moontrace.
 - `moon info && moon fmt` must leave generated interfaces clean.
 - `moon test --target native` and `moon build --target native --release` must
   pass.
