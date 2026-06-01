@@ -373,7 +373,7 @@ let s = @moontrace.span("operation")
 s.enter()
 // ... work ...
 s.exit()
-exp.shutdown()  // flush buffered records, then close intake
+exp.shutdown()  // stop accepting new events, then flush buffered records
 ```
 
 `span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, and links.
@@ -493,20 +493,22 @@ See [docs/flame.md](docs/flame.md) for rendering with `inferno-flamegraph` or `f
 `brickfrog/moontrace/file` provides a native-only buffered JSONL file subscriber. The synchronous subscriber enqueues without blocking the logging call site; an async worker drains, rotates, optionally gzips rotated files, and tracks written/dropped counts.
 
 ```mbt
-let files = @file.file_subscriber(
-  "logs/moontrace.jsonl",
-  max_size_bytes=10 * 1024 * 1024,
-  max_files=5,
-  gzip=true,
-)
+pub async fn install_file_subscriber() -> Unit {
+  let files = @file.file_subscriber(
+    "logs/moontrace.jsonl",
+    max_size_bytes=10 * 1024 * 1024,
+    max_files=5,
+    gzip=true,
+  )
 
-@moontrace.set_subscriber(files.subscriber())
-@async.with_task_group(group => {
-  group.spawn_bg(() => files.run())
-  @moontrace.info("service started")
-  files.flush()
-  files.shutdown()
-})
+  @moontrace.set_subscriber(files.subscriber())
+  @async.with_task_group(group => {
+    group.spawn_bg(() => files.run())
+    @moontrace.info("service started")
+    files.flush()
+    files.shutdown()
+  })
+}
 ```
 
 See [docs/file.md](docs/file.md) for worker ownership, rotation, retention, and native-target behavior.
@@ -531,7 +533,7 @@ let event_json = event.to_json().stringify()
 let span_json = span.to_json().stringify()
 ```
 
-Span JSON includes trace_id, span_id, parent_span_id, status, duration, flags, and links.
+Span JSON includes trace_id, span_id, parent_span_id, status, duration, and links.
 
 Human-readable formatting uses pipe-separated columns:
 
