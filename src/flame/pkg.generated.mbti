@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/flame"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub fn flame_exporter(output? : (String) -> Unit) -> FlameExporter
+
+pub fn fold_spans(Array[@moontrace.Span]) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct FlameExporter {
+  mut spans : Array[@moontrace.Span]
+  output : (String) -> Unit
+}
+pub fn FlameExporter::flush(Self) -> Unit
+pub fn FlameExporter::reset(Self) -> Unit
+pub fn FlameExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
+
+// Type aliases
+
+// Traits
+
