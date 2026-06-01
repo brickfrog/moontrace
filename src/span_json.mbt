@@ -19,5 +19,6 @@ pub fn Span::to_json(self : Span) -> Json {
     }
   }
   m.set("fields", fields_to_json(self.fields))
+  m.set("links", self.links.map(fn(link) { link.to_json() }).to_json())
   m.to_json()
 }

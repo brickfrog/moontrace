@@ -162,6 +162,13 @@ test "span link and follows_from notify observer with records" {
   current.follows_from(predecessor, fields=[@moontrace.field("reason", "retry")])
   @moontrace.clear_span_observer()
 
+  assert_eq(current.links.length(), 2)
+  assert_eq(current.links[0].kind.to_string(), "LINK")
+  assert_eq(current.links[1].kind.to_string(), "FOLLOWS_FROM")
+  assert_eq(current.links[0].span_id, predecessor.span_id)
+  assert_eq(current.links[1].span_id, predecessor.span_id)
+  assert_eq(current.links[0].fields[0].key, "edge")
+  assert_eq(current.links[1].fields[0].key, "reason")
   assert_eq(link_kinds.length(), 2)
   assert_eq(link_kinds[0], "LINK")
   assert_eq(link_kinds[1], "FOLLOWS_FROM")
@@ -169,6 +176,64 @@ test "span link and follows_from notify observer with records" {
   assert_eq(target_span_ids[1], predecessor.span_id)
   assert_eq(field_keys[0], "edge")
   assert_eq(field_keys[1], "reason")
+}
+
+///|
+test "child parent edge is not retained as a span link" {
+  let parent = @moontrace.span("parent")
+  let explicit = @moontrace.span("explicit")
+  let child = @moontrace.child_span(parent, "child")
+  child.link(explicit, fields=[@moontrace.field("edge", "explicit")])
+
+  assert_eq(child.parent_span_id, parent.span_id)
+  assert_eq(child.links.length(), 1)
+  assert_eq(child.links[0].kind.to_string(), "LINK")
+  assert_eq(child.links[0].span_id, explicit.span_id)
+  assert_eq(child.links[0].fields[0].key, "edge")
+}
+
+///|
+fn observer_expect_context(
+  result : Result[@moontrace.SpanContext, @moontrace.TraceContextError],
+) -> @moontrace.SpanContext {
+  match result {
+    Ok(ctx) => ctx
+    Err(err) => abort("expected SpanContext, got \{err}")
+  }
+}
+
+///|
+test "span link_context retains remote context identity and tracestate" {
+  let remote = observer_expect_context(
+    @moontrace.parse_span_context(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      tracestate="rojo=00f067aa0ba902b7,congo=t61rcWkgMzE",
+    ),
+  )
+  let link_kinds : Array[String] = []
+  let trace_states : Array[String] = []
+  @moontrace.set_span_observer(
+    @moontrace.span_lifecycle_observer(on_linked=fn(_span, link) {
+      link_kinds.push(link.kind.to_string())
+      trace_states.push(link.trace_state)
+    }),
+  )
+
+  let current = @moontrace.span("current")
+  current.link_context(remote, fields=[@moontrace.field("edge", "remote")])
+  @moontrace.clear_span_observer()
+
+  assert_eq(current.links.length(), 1)
+  assert_eq(current.links[0].trace_id, remote.trace_id)
+  assert_eq(current.links[0].span_id, remote.span_id)
+  assert_eq(
+    current.links[0].trace_state,
+    "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE",
+  )
+  assert_eq(current.links[0].fields[0].key, "edge")
+  assert_eq(link_kinds.length(), 1)
+  assert_eq(link_kinds[0], "LINK")
+  assert_eq(trace_states[0], "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE")
 }
 
 ///|

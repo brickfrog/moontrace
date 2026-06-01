@@ -123,6 +123,32 @@ pub fn OtlpExporter::shutdown(self : OtlpExporter) -> Unit {
   self.flush()
 }
 
+///|
+fn link_to_otlp(link : @moontrace.SpanLink) -> OtlpLink? {
+  match link.kind {
+    @moontrace.SpanChildOf => None
+    _ =>
+      Some({
+        trace_id: link.trace_id,
+        span_id: link.span_id,
+        trace_state: link.trace_state,
+        attributes: link.fields.map(fn(f) { field_to_attribute(f) }),
+      })
+  }
+}
+
+///|
+fn links_to_otlp(links : Array[@moontrace.SpanLink]) -> Array[OtlpLink] {
+  let converted : Array[OtlpLink] = []
+  links.each(fn(link) {
+    match link_to_otlp(link) {
+      Some(otlp_link) => converted.push(otlp_link)
+      None => ()
+    }
+  })
+  converted
+}
+
 // Helper: create an OtlpSpan from a completed moontrace Span
 
 ///|
@@ -142,6 +168,7 @@ pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
     start_time_unix_nano: span.start_time,
     end_time_unix_nano: span.end_time,
     attributes: span.fields.map(fn(f) { field_to_attribute(f) }),
+    links: links_to_otlp(span.links),
     status_code,
     status_message: span.status_message,
   }

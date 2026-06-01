@@ -11,6 +11,7 @@ pub(all) struct SpanLink {
   span_id : String
   kind : SpanLinkKind
   fields : Array[Field]
+  trace_state : String
 } derive(Debug)
 
 ///|
@@ -31,6 +32,7 @@ fn span_snapshot(span : Span) -> Span {
   {
     name: span.name,
     fields: span.fields.copy(),
+    links: span.links.map(fn(link) { link_snapshot(link) }),
     trace_id: span.trace_id,
     span_id: span.span_id,
     parent_span_id: span.parent_span_id,
@@ -52,6 +54,7 @@ fn link_snapshot(link : SpanLink) -> SpanLink {
     span_id: link.span_id,
     kind: link.kind,
     fields: link.fields.copy(),
+    trace_state: link.trace_state,
   }
 }
 
@@ -127,6 +130,22 @@ pub fn span_link(
     span_id: target.span_id,
     kind,
     fields: fields.copy(),
+    trace_state: "",
+  }
+}
+
+///|
+pub fn span_link_from_context(
+  ctx : SpanContext,
+  kind? : SpanLinkKind = SpanLinked,
+  fields? : Array[Field] = [],
+) -> SpanLink {
+  {
+    trace_id: ctx.trace_id,
+    span_id: ctx.span_id,
+    kind,
+    fields: fields.copy(),
+    trace_state: ctx.trace_state.to_header(),
   }
 }
 
@@ -136,7 +155,9 @@ pub fn Span::link(
   target : Span,
   fields? : Array[Field] = [],
 ) -> Unit {
-  notify_span_linked(self, span_link(target, fields~))
+  let link = span_link(target, fields~)
+  self.links.push(link)
+  notify_span_linked(self, link)
 }
 
 ///|
@@ -145,7 +166,31 @@ pub fn Span::follows_from(
   target : Span,
   fields? : Array[Field] = [],
 ) -> Unit {
-  notify_span_linked(self, span_link(target, kind=SpanFollowsFrom, fields~))
+  let link = span_link(target, kind=SpanFollowsFrom, fields~)
+  self.links.push(link)
+  notify_span_linked(self, link)
+}
+
+///|
+pub fn Span::link_context(
+  self : Span,
+  ctx : SpanContext,
+  fields? : Array[Field] = [],
+) -> Unit {
+  let link = span_link_from_context(ctx, fields~)
+  self.links.push(link)
+  notify_span_linked(self, link)
+}
+
+///|
+pub fn Span::follows_from_context(
+  self : Span,
+  ctx : SpanContext,
+  fields? : Array[Field] = [],
+) -> Unit {
+  let link = span_link_from_context(ctx, kind=SpanFollowsFrom, fields~)
+  self.links.push(link)
+  notify_span_linked(self, link)
 }
 
 ///|
@@ -174,6 +219,9 @@ pub fn SpanLink::to_json(self : SpanLink) -> Json {
   m.set("span_id", self.span_id.to_json())
   m.set("kind", self.kind.to_json())
   m.set("fields", fields_to_json(self.fields))
+  if !self.trace_state.is_empty() {
+    m.set("trace_state", self.trace_state.to_json())
+  }
   m.to_json()
 }
 
@@ -220,7 +268,8 @@ fn notify_span_closed(span : Span) -> Unit {
 ///|
 fn notify_span_linked(span : Span, link : SpanLink) -> Unit {
   match global_span_observer.val {
-    Some(observer) => (observer.on_linked)(span_snapshot(span), link)
+    Some(observer) =>
+      (observer.on_linked)(span_snapshot(span), link_snapshot(link))
     None => ()
   }
 }

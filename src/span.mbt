@@ -2,6 +2,7 @@
 pub(all) struct Span {
   name : String
   fields : Array[Field]
+  links : Array[SpanLink]
   trace_id : String
   span_id : String
   parent_span_id : String
@@ -24,6 +25,7 @@ pub fn span(
   let s = {
     name,
     fields,
+    links: [],
     trace_id: next_trace_id(),
     span_id: next_span_id(),
     parent_span_id: "",
@@ -50,6 +52,7 @@ pub fn span_with_trace(
   let s = {
     name,
     fields,
+    links: [],
     trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
@@ -122,6 +125,7 @@ fn span_with_ids_unnotified(
   {
     name,
     fields,
+    links: [],
     trace_id,
     span_id: next_span_id(),
     parent_span_id,

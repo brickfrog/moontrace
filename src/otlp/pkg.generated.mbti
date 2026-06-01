@@ -59,6 +59,14 @@ pub fn OtlpExporter::shutdown(Self) -> Unit
 pub fn OtlpExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
 pub fn OtlpExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
+pub(all) struct OtlpLink {
+  trace_id : String
+  span_id : String
+  trace_state : String
+  attributes : Array[OtlpAttribute]
+} derive(@debug.Debug)
+pub fn OtlpLink::to_json(Self) -> Json
+
 pub(all) struct OtlpLogRecord {
   time_unix_nano : UInt64
   severity_number : Int
@@ -78,6 +86,7 @@ pub(all) struct OtlpSpan {
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[OtlpAttribute]
+  links : Array[OtlpLink]
   status_code : Int
   status_message : String
 } derive(@debug.Debug)

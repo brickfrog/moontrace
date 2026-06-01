@@ -215,6 +215,7 @@ fn exporter_test_span(name : String) -> @otlp.OtlpSpan {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    links: [],
     status_code: 1,
     status_message: "",
   }
@@ -322,6 +323,85 @@ test "otlp span conversion carries trace flags" {
     exporter_json_field(span_json, "parentSpanId"),
     "bbbbbbbbbbbbbbbb".to_json(),
   )
+}
+
+///|
+test "otlp span conversion keeps parentSpanId separate from links" {
+  let parent = @moontrace.span("parent")
+  let predecessor = @moontrace.span("predecessor")
+  let child = @moontrace.child_span(parent, "child")
+  child.link(predecessor, fields=[@moontrace.field("edge", "explicit")])
+  child.enter()
+  child.exit()
+
+  let otlp_span = @otlp.span_to_otlp(child)
+  assert_eq(otlp_span.parent_span_id, parent.span_id)
+  assert_eq(otlp_span.links.length(), 1)
+  let span_json = exporter_json_object(otlp_span.to_json(), "span")
+  assert_exporter_json_eq(
+    exporter_json_field(span_json, "parentSpanId"),
+    parent.span_id.to_json(),
+  )
+  let links = exporter_json_array(
+    exporter_json_field(span_json, "links"),
+    "links",
+  )
+  assert_eq(links.length(), 1)
+  let link = exporter_json_object(links[0], "link")
+  assert_exporter_json_eq(
+    exporter_json_field(link, "traceId"),
+    predecessor.trace_id.to_json(),
+  )
+  assert_exporter_json_eq(
+    exporter_json_field(link, "spanId"),
+    predecessor.span_id.to_json(),
+  )
+  let attributes = exporter_json_array(
+    exporter_json_field(link, "attributes"),
+    "link.attributes",
+  )
+  assert_exporter_attribute_string(attributes, "edge", "explicit")
+}
+
+///|
+test "otlp span conversion exports remote context links with tracestate" {
+  let remote = match
+    @moontrace.parse_span_context(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      tracestate="rojo=00f067aa0ba902b7,congo=t61rcWkgMzE",
+    ) {
+    Ok(ctx) => ctx
+    Err(err) => abort("expected remote context, got \{err}")
+  }
+  let current = @moontrace.span("current")
+  current.link_context(remote, fields=[@moontrace.field("edge", "remote")])
+
+  let otlp_span = @otlp.span_to_otlp(current)
+  assert_eq(otlp_span.links.length(), 1)
+  let span_json = exporter_json_object(otlp_span.to_json(), "span")
+  let links = exporter_json_array(
+    exporter_json_field(span_json, "links"),
+    "links",
+  )
+  assert_eq(links.length(), 1)
+  let link = exporter_json_object(links[0], "link")
+  assert_exporter_json_eq(
+    exporter_json_field(link, "traceId"),
+    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+  )
+  assert_exporter_json_eq(
+    exporter_json_field(link, "spanId"),
+    "00f067aa0ba902b7".to_json(),
+  )
+  assert_exporter_json_eq(
+    exporter_json_field(link, "traceState"),
+    "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".to_json(),
+  )
+  let attributes = exporter_json_array(
+    exporter_json_field(link, "attributes"),
+    "link.attributes",
+  )
+  assert_exporter_attribute_string(attributes, "edge", "remote")
 }
 
 ///|

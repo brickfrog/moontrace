@@ -726,6 +726,7 @@ pub fn span_from_remote_context(
     span_id: ctx.span_id,
     kind: SpanChildOf,
     fields: [],
+    trace_state: ctx.trace_state.to_header(),
   })
   s
 }
