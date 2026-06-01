@@ -7,6 +7,9 @@ pub(all) struct OtlpExporter {
   log_output : (String) -> Unit
   span_output : (String) -> Unit
   capacity : Int
+  resource : Resource
+  scope : InstrumentationScope
+  mut is_shut_down : Bool
 }
 
 ///|
@@ -14,9 +17,20 @@ pub fn exporter(
   log_output? : (String) -> Unit = fn(s) { println(s) },
   span_output? : (String) -> Unit = fn(s) { println(s) },
   capacity? : Int = 10,
+  resource? : Resource = resource(),
+  scope? : InstrumentationScope = instrumentation_scope(),
 ) -> OtlpExporter {
   let cap = if capacity < 1 { 1 } else { capacity }
-  { log_records: [], spans: [], log_output, span_output, capacity: cap }
+  {
+    log_records: [],
+    spans: [],
+    log_output,
+    span_output,
+    capacity: cap,
+    resource,
+    scope,
+    is_shut_down: false,
+  }
 }
 
 ///|
@@ -24,6 +38,9 @@ pub fn OtlpExporter::subscriber(
   self : OtlpExporter,
 ) -> (@moontrace.Event) -> Unit {
   fn(event) {
+    if self.is_shut_down {
+      return
+    }
     let record = event_to_log_record(event)
     self.log_records.push(record)
     if self.log_records.length() >= self.capacity {
@@ -37,12 +54,18 @@ pub fn OtlpExporter::span_observer(
   self : OtlpExporter,
 ) -> @moontrace.SpanLifecycleObserver {
   @moontrace.completed_span_observer(fn(span) {
+    if self.is_shut_down {
+      return
+    }
     self.add_span(span_to_otlp(span))
   })
 }
 
 ///|
 pub fn OtlpExporter::add_span(self : OtlpExporter, span : OtlpSpan) -> Unit {
+  if self.is_shut_down {
+    return
+  }
   self.spans.push(span)
   if self.spans.length() >= self.capacity {
     self.flush_spans()
@@ -56,7 +79,11 @@ pub fn OtlpExporter::flush_logs(self : OtlpExporter) -> Unit {
   }
   let to_flush = self.log_records
   self.log_records = []
-  let json = wrap_log_records(to_flush)
+  let json = wrap_log_records(
+    to_flush,
+    resource=self.resource,
+    scope=self.scope,
+  )
   (self.log_output)(json.stringify())
 }
 
@@ -67,7 +94,7 @@ pub fn OtlpExporter::flush_spans(self : OtlpExporter) -> Unit {
   }
   let to_flush = self.spans
   self.spans = []
-  let json = wrap_spans(to_flush)
+  let json = wrap_spans(to_flush, resource=self.resource, scope=self.scope)
   (self.span_output)(json.stringify())
 }
 
@@ -75,6 +102,14 @@ pub fn OtlpExporter::flush_spans(self : OtlpExporter) -> Unit {
 pub fn OtlpExporter::flush(self : OtlpExporter) -> Unit {
   self.flush_logs()
   self.flush_spans()
+}
+
+///|
+// Shutdown flushes queued telemetry once, then drops future subscriber and span
+// observer events. Explicit flush remains safe and idempotent after shutdown.
+pub fn OtlpExporter::shutdown(self : OtlpExporter) -> Unit {
+  self.flush()
+  self.is_shut_down = true
 }
 
 // Helper: create an OtlpSpan from a completed moontrace Span

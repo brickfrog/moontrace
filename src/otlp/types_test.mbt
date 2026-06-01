@@ -15,6 +15,22 @@ fn otlp_json_field(obj : Map[String, Json], key : String) -> Json {
 }
 
 ///|
+fn otlp_json_array(json : Json, label : String) -> Array[Json] {
+  match json {
+    Array(items) => items
+    _ => abort("expected JSON array for \{label}")
+  }
+}
+
+///|
+fn otlp_json_string(json : Json, label : String) -> String {
+  match json {
+    String(value) => value
+    _ => abort("expected JSON string for \{label}")
+  }
+}
+
+///|
 fn assert_otlp_json_eq(actual : Json, expected : Json) -> Unit {
   if actual.stringify() != expected.stringify() {
     abort("expected \{expected.stringify()}, got \{actual.stringify()}")
@@ -26,6 +42,40 @@ fn assert_no_otlp_json_field(obj : Map[String, Json], key : String) -> Unit {
   match obj.get(key) {
     Some(_) => abort("unexpected JSON field \{key}")
     None => ()
+  }
+}
+
+///|
+fn otlp_attribute_string(attributes : Array[Json], key : String) -> String? {
+  for attribute_json in attributes {
+    let attribute = otlp_json_object(attribute_json, "attribute")
+    if otlp_json_string(otlp_json_field(attribute, "key"), "key") == key {
+      let value = otlp_json_object(
+        otlp_json_field(attribute, "value"),
+        "attribute.value",
+      )
+      match value.get("stringValue") {
+        Some(string_value) =>
+          return Some(otlp_json_string(string_value, "stringValue"))
+        None => abort("attribute \{key} is not a string attribute")
+      }
+    }
+  }
+  None
+}
+
+///|
+fn assert_otlp_attribute_string(
+  attributes : Array[Json],
+  key : String,
+  expected : String,
+) -> Unit {
+  match otlp_attribute_string(attributes, key) {
+    Some(actual) =>
+      if actual != expected {
+        abort("expected attribute \{key}=\{expected}, got \{actual}")
+      }
+    None => abort("missing attribute \{key}")
   }
 }
 
@@ -113,4 +163,55 @@ test "otlp log record to_json" {
   assert_true(j.contains("\"severityNumber\":9"))
   assert_true(j.contains("\"severityText\":\"INFO\""))
   assert_true(j.contains("\"stringValue\":\"hello\""))
+}
+
+///|
+test "otlp resource constructor maps service metadata to attributes" {
+  let res = @otlp.resource(service_name="checkout", service_version="2026.06", attributes=[
+    @otlp.OtlpAttribute::{
+      key: "deployment.environment",
+      value: @otlp.StringVal("prod"),
+    },
+  ])
+  let obj = otlp_json_object(res.to_json(), "resource")
+  let attributes = otlp_json_array(
+    otlp_json_field(obj, "attributes"),
+    "attributes",
+  )
+  assert_eq(attributes.length(), 3)
+  assert_otlp_attribute_string(attributes, "service.name", "checkout")
+  assert_otlp_attribute_string(attributes, "service.version", "2026.06")
+  assert_otlp_attribute_string(attributes, "deployment.environment", "prod")
+}
+
+///|
+test "otlp instrumentation scope to_json omits empty version" {
+  let scope = @otlp.instrumentation_scope()
+  let obj = otlp_json_object(scope.to_json(), "scope")
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), "moontrace".to_json())
+  assert_no_otlp_json_field(obj, "version")
+  assert_eq(
+    otlp_json_array(otlp_json_field(obj, "attributes"), "attributes").length(),
+    0,
+  )
+}
+
+///|
+test "otlp instrumentation scope to_json includes version and attributes" {
+  let scope = @otlp.instrumentation_scope(
+    name="moontrace-test",
+    version="0.9.3",
+    attributes=[
+      @otlp.OtlpAttribute::{ key: "scope.role", value: @otlp.StringVal("test") },
+    ],
+  )
+  let obj = otlp_json_object(scope.to_json(), "scope")
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), "moontrace-test".to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "version"), "0.9.3".to_json())
+  let attributes = otlp_json_array(
+    otlp_json_field(obj, "attributes"),
+    "attributes",
+  )
+  assert_eq(attributes.length(), 1)
+  assert_otlp_attribute_string(attributes, "scope.role", "test")
 }
