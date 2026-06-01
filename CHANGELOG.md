@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-01
+
+Composable output-side layers: field redaction, sampling, and a flamegraph exporter. All additive — no behavior changes to existing APIs.
+
+### Added
+
+- Field redaction: a composable `redact(inner, policy?)` subscriber wrapper with `RedactionPolicy` (case-insensitive substring deny, case-insensitive exact allowlist, `Redact`/`Drop` modes; defaults deny `password`/`token`/`secret`). Builds a fresh redacted event without mutating the original, so other composed subscribers still see unredacted fields (#56).
+- `@moontrace/flame` folded/flame exporter: `fold_spans(Array[Span]) -> String` produces deterministic collapsed-stack output (per-span self-time, identical stacks summed, trace-scoped, cycle-safe, names sanitized) plus a `FlameExporter` driven by the span lifecycle observer. `docs/flame.md` shows piping the output to inferno / flamegraph.pl (#57).
+- Composable sampling layers: `RatioSampler` (percentage, injectable random), `RateLimiter` (fixed-window, injectable clock), and `TraceSampler` plus the pure `should_sample_trace(trace_id, ratio)` predicate and `sample_trace_decision` (honors a parent `TraceFlags` sampled bit). Each exposes kept/dropped counts; decisions are deterministic via injected sources. Tail sampling is deferred (see `docs/sampling.md`) (#58).
+
 ## [0.10.0] - 2026-06-01
 
 Distributed tracing, environment-driven configuration, and a real OTLP export
