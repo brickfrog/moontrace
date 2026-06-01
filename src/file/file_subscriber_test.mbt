@@ -235,7 +235,12 @@ async test "flush after stopped worker returns without spinning" {
       let sink = subscriber.subscriber()
       sink(test_event("lost-to-failed-worker"))
       let worker = group.spawn(allow_failure=true, () => subscriber.run())
-      assert_true((try? worker.wait()) is Err(_))
+      try {
+        worker.wait()
+        assert_true(false)
+      } catch {
+        _ => ()
+      }
       try @async.with_timeout(200, () => subscriber.flush()) catch {
         @async.TimeoutError => assert_true(false)
         _ => ()
