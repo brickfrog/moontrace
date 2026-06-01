@@ -118,6 +118,8 @@ pub fn span_lifecycle_observer(on_created? : (Span) -> Unit, on_entered? : (Span
 
 pub fn span_link(Span, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
 
+pub fn span_link_from_context(SpanContext, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
+
 pub fn span_trace_flags(Span) -> TraceFlags
 
 pub fn span_trace_state(Span) -> TraceState
@@ -226,6 +228,7 @@ pub fn ParsedFilter::apply(Self) -> Unit
 pub(all) struct Span {
   name : String
   fields : Array[Field]
+  links : Array[SpanLink]
   trace_id : String
   span_id : String
   parent_span_id : String
@@ -248,10 +251,12 @@ pub fn Span::error(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Un
 pub fn Span::event(Self, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::exit(Self) -> Unit
 pub fn Span::follows_from(Self, Self, fields? : Array[Field]) -> Unit
+pub fn Span::follows_from_context(Self, SpanContext, fields? : Array[Field]) -> Unit
 #callsite(autofill(loc))
 pub fn Span::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::is_active(Self) -> Bool
 pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
+pub fn Span::link_context(Self, SpanContext, fields? : Array[Field]) -> Unit
 pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
@@ -309,6 +314,7 @@ pub(all) struct SpanLink {
   span_id : String
   kind : SpanLinkKind
   fields : Array[Field]
+  trace_state : String
 } derive(@debug.Debug)
 pub fn SpanLink::to_json(Self) -> Json
 

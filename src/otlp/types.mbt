@@ -15,6 +15,14 @@ pub(all) struct OtlpAttribute {
 } derive(Debug)
 
 ///|
+pub(all) struct OtlpLink {
+  trace_id : String
+  span_id : String
+  trace_state : String
+  attributes : Array[OtlpAttribute]
+} derive(Debug)
+
+///|
 pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
@@ -25,6 +33,7 @@ pub(all) struct OtlpSpan {
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[OtlpAttribute]
+  links : Array[OtlpLink]
   status_code : Int // 0=UNSET, 1=OK, 2=ERROR
   status_message : String
 } derive(Debug)
@@ -127,6 +136,18 @@ pub fn OtlpAttribute::to_json(self : OtlpAttribute) -> Json {
 }
 
 ///|
+pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
+  let m : Map[String, Json] = {}
+  m.set("traceId", self.trace_id.to_json())
+  m.set("spanId", self.span_id.to_json())
+  if !self.trace_state.is_empty() {
+    m.set("traceState", self.trace_state.to_json())
+  }
+  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
+  m.to_json()
+}
+
+///|
 pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   let m : Map[String, Json] = {}
   m.set("traceId", self.trace_id.to_json())
@@ -140,6 +161,7 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   m.set("startTimeUnixNano", self.start_time_unix_nano.to_string().to_json())
   m.set("endTimeUnixNano", self.end_time_unix_nano.to_string().to_json())
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
+  m.set("links", self.links.map(fn(link) { link.to_json() }).to_json())
   let status : Map[String, Json] = {}
   status.set("code", self.status_code.to_json())
   if !self.status_message.is_empty() {

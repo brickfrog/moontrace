@@ -102,6 +102,7 @@ test "otlp span to_json has required fields" {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    links: [],
     status_code: 1,
     status_message: "",
   }
@@ -123,6 +124,7 @@ test "otlp span to_json has required fields" {
   )
   assert_otlp_json_eq(otlp_json_field(obj, "endTimeUnixNano"), "200".to_json())
   assert_no_otlp_json_field(obj, "parentSpanId")
+  assert_eq(otlp_json_array(otlp_json_field(obj, "links"), "links").length(), 0)
   let status = otlp_json_object(otlp_json_field(obj, "status"), "status")
   assert_otlp_json_eq(otlp_json_field(status, "code"), (1).to_json())
 }
@@ -139,6 +141,7 @@ test "otlp span to_json includes parentSpanId when set" {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    links: [],
     status_code: 1,
     status_message: "",
   }
@@ -148,6 +151,37 @@ test "otlp span to_json includes parentSpanId when set" {
     "000000000000000c".to_json(),
   )
   assert_otlp_json_eq(otlp_json_field(obj, "flags"), (1).to_json())
+}
+
+///|
+test "otlp link to_json includes tracestate and attributes" {
+  let link = @otlp.OtlpLink::{
+    trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
+    span_id: "00f067aa0ba902b7",
+    trace_state: "rojo=00f067aa0ba902b7",
+    attributes: [
+      @otlp.OtlpAttribute::{ key: "edge", value: @otlp.StringVal("remote") },
+    ],
+  }
+  let obj = otlp_json_object(link.to_json(), "link")
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "traceId"),
+    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+  )
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "spanId"),
+    "00f067aa0ba902b7".to_json(),
+  )
+  assert_otlp_json_eq(
+    otlp_json_field(obj, "traceState"),
+    "rojo=00f067aa0ba902b7".to_json(),
+  )
+  let attributes = otlp_json_array(
+    otlp_json_field(obj, "attributes"),
+    "attributes",
+  )
+  assert_eq(attributes.length(), 1)
+  assert_otlp_attribute_string(attributes, "edge", "remote")
 }
 
 ///|
