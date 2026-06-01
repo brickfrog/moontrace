@@ -32,6 +32,8 @@ pub fn debug(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn debug_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+pub fn default_redaction_policy() -> RedactionPolicy
+
 #callsite(autofill(loc))
 pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
@@ -87,6 +89,10 @@ pub fn parse_span_context(String, tracestate? : String) -> Result[SpanContext, T
 pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
 
 pub fn parse_tracestate(String) -> Result[TraceState, TraceContextError]
+
+pub fn redact((Event) -> Unit, policy? : RedactionPolicy) -> (Event) -> Unit
+
+pub fn redaction_policy(deny? : Array[String], allow? : Array[String]?, mode? : RedactionMode, placeholder? : String) -> RedactionPolicy
 
 pub fn remove_global_field(String) -> Unit
 
@@ -224,6 +230,20 @@ pub(all) struct ParsedFilter {
   module_filters : Map[String, Level]
 } derive(@debug.Debug)
 pub fn ParsedFilter::apply(Self) -> Unit
+
+pub(all) enum RedactionMode {
+  Redact
+  Drop
+} derive(Compare, Eq, @debug.Debug)
+pub fn RedactionMode::to_string(Self) -> String
+pub impl Show for RedactionMode
+
+pub(all) struct RedactionPolicy {
+  deny : Array[String]
+  allow : Array[String]?
+  mode : RedactionMode
+  placeholder : String
+} derive(@debug.Debug)
 
 pub(all) struct Span {
   name : String
