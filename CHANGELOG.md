@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-01
+
+### Added
+
+- OTLP protobuf export: the `ProtobufEncoder` in `@moontrace/otlp/transport` now encodes `ExportTraceServiceRequest` / `ExportLogsServiceRequest` to protobuf wire bytes (`application/x-protobuf`), hand-rolled against the `moonbitlang/protobuf` runtime — no codegen or external OTLP bindings. Trace/span IDs are written as bytes, timestamps as fixed64, span flags as fixed32; the wire format is checked by round-trip decode and a golden fixture generated from `google.protobuf`. Select the encoding via `OtlpEncoder`; the JSON path is unchanged (#63).
+
 ## [0.12.0] - 2026-06-01
 
 Adds the native buffered file subscriber package.
