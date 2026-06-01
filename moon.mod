@@ -1,6 +1,6 @@
 name = "brickfrog/moontrace"
 
-version = "0.10.0"
+version = "0.11.0"
 
 import {
   "moonbitlang/async@0.19.0",
