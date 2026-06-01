@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/otlp/transport"
+
+import {
+  "brickfrog/moontrace/otlp",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn async_http_client(timeout_ms? : Int) -> AsyncHttpClient
+
+pub fn classify_error(TransportError) -> RetryClass
+
+pub fn classify_status(Int) -> RetryClass
+
+pub fn default_headers() -> Map[String, String]
+
+pub fn parse_retry_after_ms(Map[String, String]) -> Int?
+
+pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int, base_backoff_ms? : Int) -> OtlpHttpTransport
+
+// Errors
+
+// Types and methods
+pub(all) struct AsyncHttpClient {
+  timeout_ms : Int
+  mut is_shut_down : Bool
+}
+pub fn AsyncHttpClient::shutdown(Self) -> Unit
+pub impl OtlpHttpClient for AsyncHttpClient
+
+pub(all) struct ExportOutcome {
+  success : Bool
+  attempts : Int
+  status_code : Int?
+  error : TransportError?
+  retry_class : RetryClass
+} derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct HttpResponse {
+  status_code : Int
+  body : String
+  retry_after_ms : Int?
+} derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct OtlpHttpTransport {
+  client : &OtlpHttpClient
+  endpoint : String
+  traces_path : String
+  logs_path : String
+  headers : Map[String, String]
+  max_retries : Int
+  base_backoff_ms : Int
+  mut is_shut_down : Bool
+}
+pub async fn OtlpHttpTransport::export_json(Self, String, String) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_logs(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_spans(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
+pub fn OtlpHttpTransport::shutdown(Self) -> Unit
+
+pub(all) enum RetryClass {
+  Success
+  Retryable
+  NonRetryable
+} derive(Compare, Eq, @debug.Debug)
+
+pub(all) enum TransportError {
+  Network(String)
+  Timeout(String)
+  Request(String)
+} derive(Compare, Eq, @debug.Debug)
+pub fn TransportError::to_string(Self) -> String
+pub impl Show for TransportError
+
+// Type aliases
+
+// Traits
+pub(open) trait OtlpHttpClient {
+  async fn post(Self, String, String, Map[String, String]) -> Result[HttpResponse, TransportError]
+}
+
