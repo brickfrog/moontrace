@@ -39,6 +39,7 @@ pub impl OtlpHttpClient for AsyncHttpClient
 
 pub(all) enum EncodingError {
   ProtobufNotImplemented(OtlpSignal)
+  ProtobufEncodeFailed(OtlpSignal, String)
 } derive(Compare, Eq, @debug.Debug)
 pub fn EncodingError::to_string(Self) -> String
 pub impl Show for EncodingError
