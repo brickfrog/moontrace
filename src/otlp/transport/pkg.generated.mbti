@@ -78,3 +78,4 @@ pub impl Show for TransportError
 pub(open) trait OtlpHttpClient {
   async fn post(Self, String, String, Map[String, String]) -> Result[HttpResponse, TransportError]
 }
+
