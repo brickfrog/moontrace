@@ -32,7 +32,15 @@ pub fn redaction_policy(
   mode? : RedactionMode = Redact,
   placeholder? : String = "[REDACTED]",
 ) -> RedactionPolicy {
-  { deny, allow, mode, placeholder }
+  {
+    deny: deny.copy(),
+    allow: match allow {
+      Some(allowed) => Some(allowed.copy())
+      None => None
+    },
+    mode,
+    placeholder,
+  }
 }
 
 ///|
@@ -41,32 +49,26 @@ pub fn default_redaction_policy() -> RedactionPolicy {
 }
 
 ///|
-fn case_insensitive_key_eq(left : String, right : String) -> Bool {
-  left.to_lower() == right.to_lower()
-}
-
-///|
 fn key_matches_allow(key : String, allow : Array[String]) -> Bool {
-  let mut matched = false
-  allow.each(fn(allowed) {
-    if case_insensitive_key_eq(key, allowed) {
-      matched = true
+  let lower_key = key.to_lower()
+  for allowed in allow {
+    if lower_key == allowed.to_lower() {
+      return true
     }
-  })
-  matched
+  }
+  false
 }
 
 ///|
 fn key_matches_deny(key : String, deny : Array[String]) -> Bool {
   let lower_key = key.to_lower()
-  let mut matched = false
-  deny.each(fn(pattern) {
+  for pattern in deny {
     let lower_pattern = pattern.to_lower()
     if lower_key.contains(lower_pattern) {
-      matched = true
+      return true
     }
-  })
-  matched
+  }
+  false
 }
 
 ///|
