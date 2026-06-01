@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-01
+
+A native, production-grade file subscriber. Additive — no changes to existing APIs.
+
+### Added
+
+- `@moontrace/file` native buffered file subscriber (#60): a synchronous, non-blocking subscriber that enqueues into a bounded queue (drops + counts on overflow, never blocks the logging call site) paired with an async worker that drains in bounded batches and yields cooperatively. Supports append, size-based rotation, retention cleanup, and optional gzip of rotated files (via `moonbitlang/async/gzip`). Explicit async `flush()` / `shutdown()` that always terminate (falling back to a direct drain if the worker has stopped) and expose `dropped()` / `written()` counts. Native-only — non-native targets fail loudly with a clear error rather than silently dropping. See `docs/file.md`.
+
 ## [0.11.0] - 2026-06-01
 
 Composable output-side layers: field redaction, sampling, and a flamegraph exporter. All additive — no behavior changes to existing APIs.
