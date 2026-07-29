@@ -259,7 +259,7 @@ fn optional_hex_id_bytes(
   expected_bytes : Int,
 ) -> Bytes raise {
   if value.is_empty() {
-    Bytes::default()
+    b""
   } else {
     hex_id_bytes(field, value, expected_bytes)
   }

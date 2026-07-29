@@ -23,6 +23,6 @@ keywords = [
 
 description = "Structured tracing for MoonBit with spans, structured fields, pluggable subscribers."
 
-options(
-  source: "src",
-)
+preferred_target = "native"
+
+source = "src"

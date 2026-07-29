@@ -18,6 +18,9 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
+      - name: Report MoonBit toolchain
+        run: moon version --all --json
+
       - name: Install dependencies
         run: moon update
 
