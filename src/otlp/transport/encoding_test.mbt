@@ -182,7 +182,7 @@ fn read_bytes_field(reader : @protobuf.BytesReader, context : String) -> Bytes {
   (reader |> @protobuf.read_bytes()) catch {
     err => {
       decode_fail(context, "\{err}")
-      Bytes::default()
+      b""
     }
   }
 }
@@ -457,9 +457,9 @@ fn decode_status(body : Bytes) -> DecodedStatus {
 ///|
 fn decode_span(body : Bytes) -> DecodedSpan {
   let reader = @protobuf.BytesReader::from_bytes(body)
-  let mut trace_id = Bytes::default()
-  let mut span_id = Bytes::default()
-  let mut parent_span_id = Bytes::default()
+  let mut trace_id = b""
+  let mut span_id = b""
+  let mut parent_span_id = b""
   let mut flags = 0U
   let mut name = ""
   let mut kind = 0U

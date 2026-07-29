@@ -92,7 +92,7 @@ span.exit()
 ### Testing
 - `moon test --target native` for unit tests
 - `moon build --target native --release` for release binary (symlinks may point to release path)
-- `moon build` alone targets debug — don't forget `--release` if binary path matters
+- Always pass `--target native` when a native binary or native build path is intended; backend and debug/release mode are separate choices
 - Test files (`*_test.mbt`) are auto-discovered as black-box tests
 - `assert_eq(a, b)` not `assert_eq!(a, b)`
 
@@ -123,7 +123,7 @@ span.exit()
 ## Development Rules
 
 - `moon fmt` before committing
-- `moon test` must pass
+- `moon test --target native` must pass
 - Immutable by default, explicit `mut` only where needed
 - Pattern matching over conditionals
 - No hand-rolled JSON — use `.to_json().stringify()`

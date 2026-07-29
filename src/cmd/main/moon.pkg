@@ -3,6 +3,4 @@ import {
   "brickfrog/moontrace/console",
 }
 
-options(
-  "is-main": true,
-)
+pkgtype(kind: "executable")
