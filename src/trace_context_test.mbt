@@ -181,6 +181,36 @@ test "traceparent parses higher versions without extra fields" {
 }
 
 ///|
+test "traceparent bounds future-version extensions" {
+  let base = "01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00"
+  let max_header = base + "-" + "x".repeat(456)
+  assert_eq(max_header.length(), 512)
+  let ctx = expect_context(@moontrace.parse_traceparent(max_header))
+  assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+  assert_context_err(@moontrace.parse_traceparent(max_header + "x"))
+  assert_context_err(@moontrace.parse_traceparent(base + "x"))
+}
+
+///|
+test "traceparent validates fixed field separators" {
+  assert_context_err(
+    @moontrace.parse_traceparent(
+      "00x4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    ),
+  )
+  assert_context_err(
+    @moontrace.parse_traceparent(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736x00f067aa0ba902b7-01",
+    ),
+  )
+  assert_context_err(
+    @moontrace.parse_traceparent(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7x01",
+    ),
+  )
+}
+
+///|
 test "invalid traceparent headers are structured errors" {
   assert_context_err(@moontrace.parse_traceparent("00-too-short"))
   assert_context_err(
@@ -235,16 +265,14 @@ test "id and flag constructors reject invalid values" {
 }
 
 ///|
-test "tracestate parses whitespace and duplicate keys with last write winning" {
+test "tracestate parses whitespace and preserves wire order" {
   let state = expect_state(
-    @moontrace.parse_tracestate(
-      " rojo=00f067aa0ba902b7,\tcongo=t61rcWkgMzE ,rojo=latest",
-    ),
+    @moontrace.parse_tracestate(" rojo=00f067aa0ba902b7,\tcongo=t61rcWkgMzE "),
   )
   assert_eq(state.len(), 2)
-  @debug.assert_eq(state.get("rojo"), Some("latest"))
+  @debug.assert_eq(state.get("rojo"), Some("00f067aa0ba902b7"))
   @debug.assert_eq(state.get("congo"), Some("t61rcWkgMzE"))
-  assert_eq(state.to_header(), "congo=t61rcWkgMzE,rojo=latest")
+  assert_eq(state.to_header(), "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE")
 
   let reparsed = expect_state(@moontrace.parse_tracestate(state.to_header()))
   assert_eq(reparsed.to_header(), state.to_header())
@@ -269,11 +297,21 @@ test "tracestate constructors preserve order and validate entries" {
 ///|
 test "invalid tracestate headers are structured errors" {
   assert_state_err(@moontrace.parse_tracestate(make_tracestate_header(33)))
+  assert_state_err(@moontrace.parse_tracestate("rojo=first,rojo=second"))
   assert_state_err(@moontrace.parse_tracestate("Rojo=value"))
   assert_state_err(@moontrace.parse_tracestate("ro jo=value"))
   assert_state_err(@moontrace.parse_tracestate("rojo=value=bad"))
   assert_state_err(@moontrace.parse_tracestate("rojo=bad\tvalue"))
   assert_entry_err(@moontrace.trace_state_entry("rojo", ""))
+}
+
+///|
+test "tracestate bounds input before parsing" {
+  let max_header = "a".repeat(255) + "=" + "v".repeat(256)
+  assert_eq(max_header.length(), 512)
+  let state = expect_state(@moontrace.parse_tracestate(max_header))
+  assert_eq(state.len(), 1)
+  assert_state_err(@moontrace.parse_tracestate(max_header + "x"))
 }
 
 ///|
@@ -296,6 +334,22 @@ test "span context drops malformed tracestate but keeps valid traceparent" {
   assert_true(ctx.is_remote())
   assert_true(ctx.is_sampled())
   assert_true(ctx.trace_state.is_empty())
+}
+
+///|
+test "span context drops duplicate and oversized tracestate" {
+  let traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+  let duplicate = expect_context(
+    @moontrace.parse_span_context(
+      traceparent,
+      tracestate="rojo=first,rojo=second",
+    ),
+  )
+  assert_true(duplicate.trace_state.is_empty())
+  let oversized = expect_context(
+    @moontrace.parse_span_context(traceparent, tracestate="a".repeat(513)),
+  )
+  assert_true(oversized.trace_state.is_empty())
 }
 
 ///|
