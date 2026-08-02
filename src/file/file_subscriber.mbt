@@ -11,6 +11,10 @@ const DEFAULT_MAX_BATCH : Int = 128
 const DEFAULT_QUEUE_CAPACITY : Int = 1024
 
 ///|
+#cfg(target="native")
+const FILE_PERMISSION : Int = 0o600
+
+///|
 pub(all) struct FileSubscriberConfig {
   path : String
   max_size_bytes : Int
@@ -351,6 +355,7 @@ async fn FileSubscriber::write_batch(
     self.config.path,
     payload,
     create_mode=@fs.CreateMode::OpenOrCreate,
+    permission=FILE_PERMISSION,
     append=true,
   )
   self.current_size += payload_bytes
@@ -396,6 +401,7 @@ async fn FileSubscriber::ensure_active_file(self : FileSubscriber) -> Unit {
     self.config.path,
     "",
     create_mode=@fs.CreateMode::OpenOrCreate,
+    permission=FILE_PERMISSION,
     append=true,
   )
 }
@@ -496,7 +502,7 @@ async fn FileSubscriber::gzip_file(
     destination,
     mode=@fs.Mode::WriteOnly,
     create_mode=@fs.CreateMode::CreateOrTruncate,
-    permission=0o600,
+    permission=FILE_PERMISSION,
   )
   defer writer.close()
   let encoder = @gzip.Encoder(writer)
