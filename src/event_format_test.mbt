@@ -93,6 +93,19 @@ test "event format two spaces before fields one between" {
 }
 
 ///|
+test "event format escapes control characters in messages and field keys" {
+  let event = sample_event(
+    @moontrace.Info,
+    "line1\nline2\r\t\u001b\u007f\u009f",
+    fields=@moontrace.fields([("key\n\u001b", "printable 汉字 \\n".to_json())]),
+  )
+  assert_eq(
+    event.format(),
+    "14:31:43.903 | INFO  | choir/server — line1\\nline2\\r\\t\\u{001b}\\u{007f}\\u{009f}  key\\n\\u{001b}=\"printable 汉字 \\\\n\"",
+  )
+}
+
+///|
 test "format timestamp utc at zero" {
   assert_eq(@moontrace.format_timestamp_utc((0 : UInt64)), "00:00:00.000")
 }

@@ -16,13 +16,17 @@ pub impl Show for TraceContextError with fn output(self, logger) {
 ///|
 pub fn TraceContextError::to_string(self : TraceContextError) -> String {
   match self {
-    InvalidTraceId(reason) => "invalid trace id: " + reason
-    InvalidSpanId(reason) => "invalid span id: " + reason
-    InvalidTraceFlags(reason) => "invalid trace flags: " + reason
-    InvalidTraceParent(reason) => "invalid traceparent: " + reason
+    InvalidTraceId(reason) =>
+      "invalid trace id: " + escape_control_chars(reason)
+    InvalidSpanId(reason) => "invalid span id: " + escape_control_chars(reason)
+    InvalidTraceFlags(reason) =>
+      "invalid trace flags: " + escape_control_chars(reason)
+    InvalidTraceParent(reason) =>
+      "invalid traceparent: " + escape_control_chars(reason)
     UnsupportedTraceParentVersion(version) =>
-      "unsupported traceparent version: " + version
-    InvalidTraceState(reason) => "invalid tracestate: " + reason
+      "unsupported traceparent version: " + escape_control_chars(version)
+    InvalidTraceState(reason) =>
+      "invalid tracestate: " + escape_control_chars(reason)
   }
 }
 

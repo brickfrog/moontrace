@@ -114,6 +114,17 @@ fn make_tracestate_header(count : Int) -> String {
 }
 
 ///|
+test "trace context errors escape control characters" {
+  let error = @moontrace.TraceContextError::InvalidTraceState(
+    "bad\nkey\r\t\u001b\u007f\u009f",
+  )
+  assert_eq(
+    error.to_string(),
+    "invalid tracestate: bad\\nkey\\r\\t\\u{001b}\\u{007f}\\u{009f}",
+  )
+}
+
+///|
 test "traceparent parses and formats sampled context" {
   let header = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
   let ctx = expect_context(@moontrace.parse_traceparent(header))
