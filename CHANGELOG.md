@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-01
+
 ### Security
 
 - Human-readable event messages, field keys, and trace-context diagnostics now render C0/C1 control codes as visible escapes, preventing injected line breaks and terminal control sequences while leaving structured JSON unchanged.
