@@ -5,6 +5,31 @@ pub(all) struct AsyncHttpClient {
 }
 
 ///|
+#cfg(any(target="native", target="js"))
+const MAX_RESPONSE_BODY_BYTES : Int = 64 * 1024
+
+///|
+#cfg(any(target="native", target="js"))
+const RESPONSE_READ_CHUNK_BYTES : Int = 8 * 1024
+
+///|
+#cfg(any(target="native", target="js"))
+async fn read_bounded_response_body(
+  client : @http.Client,
+) -> Result[Bytes, TransportError] {
+  let body : Array[Byte] = []
+  while client.read_some(max_len=RESPONSE_READ_CHUNK_BYTES) is Some(chunk) {
+    if body.length() + chunk.length() > MAX_RESPONSE_BODY_BYTES {
+      return Err(Request("HTTP response body exceeds 65536 bytes"))
+    }
+    for byte in chunk.iter() {
+      body.push(byte)
+    }
+  }
+  Ok(Bytes::from_array(body[:]))
+}
+
+///|
 pub fn async_http_client(timeout_ms? : Int = 5000) -> AsyncHttpClient {
   let timeout_ms = if timeout_ms < 1 { 1 } else { timeout_ms }
   { timeout_ms, is_shut_down: false }
@@ -28,12 +53,19 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
   }
   @async.with_timeout(self.timeout_ms, () => {
     let content : &@io.Data = body
-    let (response, data) = @http.post(url, content, headers~)
-    Ok({
-      status_code: response.code,
-      body: data.text(),
-      retry_after_ms: parse_retry_after_ms(response.headers),
-    })
+    let client = @http.post_stream(url, headers~)
+    defer client.close()
+    client.write(content)
+    let response = client.end_request()
+    match read_bounded_response_body(client) {
+      Err(err) => Err(err)
+      Ok(data) =>
+        Ok({
+          status_code: response.code,
+          body: @utf8.decode(data),
+          retry_after_ms: parse_retry_after_ms(response.headers),
+        })
+    }
   }) catch {
     @async.TimeoutError =>
       Err(Timeout("HTTP request timed out after \{self.timeout_ms}ms"))
