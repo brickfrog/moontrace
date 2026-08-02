@@ -54,7 +54,7 @@ pub fn format_event(
     buf.write_string(source)
   }
   buf.write_string(" — ")
-  buf.write_string(event.message)
+  buf.write_string(escape_control_chars(event.message))
   if !event.fields.is_empty() {
     buf.write_string("  ")
     let mut first = true
@@ -64,7 +64,7 @@ pub fn format_event(
       } else {
         buf.write_string(" ")
       }
-      buf.write_string(f.key)
+      buf.write_string(escape_control_chars(f.key))
       buf.write_string("=")
       buf.write_string(f.value.stringify())
     })

@@ -36,6 +36,17 @@ renamed to `path.1`, older rotated files are shifted up, and files beyond
 `max_files` are removed. With `gzip=true`, rotated files are written as
 `path.N.gz` and the temporary uncompressed rotation is removed.
 
+On Unix, every active or gzip file newly created by the subscriber requests
+mode `0600` (owner read/write only). The process umask may make that mode more
+restrictive, but cannot grant group or other access. A raw rotated file is a
+rename of the active file and retains its mode.
+
+The subscriber does not change the permissions of an existing active file. If
+the configured path already exists, its mode and ownership remain the caller's
+responsibility. The caller is also responsible for the ownership and
+permissions of the parent directory. The underlying `moonbitlang/async/fs`
+permission argument is ignored on Windows.
+
 The file subscriber uses `moonbitlang/async/fs` and is only supported on the
 native target. Constructing it on other targets aborts immediately with a clear
 unsupported-target error instead of returning a subscriber that drops events.

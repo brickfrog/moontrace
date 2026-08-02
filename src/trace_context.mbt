@@ -16,13 +16,17 @@ pub impl Show for TraceContextError with fn output(self, logger) {
 ///|
 pub fn TraceContextError::to_string(self : TraceContextError) -> String {
   match self {
-    InvalidTraceId(reason) => "invalid trace id: " + reason
-    InvalidSpanId(reason) => "invalid span id: " + reason
-    InvalidTraceFlags(reason) => "invalid trace flags: " + reason
-    InvalidTraceParent(reason) => "invalid traceparent: " + reason
+    InvalidTraceId(reason) =>
+      "invalid trace id: " + escape_control_chars(reason)
+    InvalidSpanId(reason) => "invalid span id: " + escape_control_chars(reason)
+    InvalidTraceFlags(reason) =>
+      "invalid trace flags: " + escape_control_chars(reason)
+    InvalidTraceParent(reason) =>
+      "invalid traceparent: " + escape_control_chars(reason)
     UnsupportedTraceParentVersion(version) =>
-      "unsupported traceparent version: " + version
-    InvalidTraceState(reason) => "invalid tracestate: " + reason
+      "unsupported traceparent version: " + escape_control_chars(version)
+    InvalidTraceState(reason) =>
+      "invalid tracestate: " + escape_control_chars(reason)
   }
 }
 
@@ -60,6 +64,12 @@ pub struct SpanContext {
   trace_state : TraceState
   is_remote : Bool
 } derive(Debug)
+
+///|
+const TRACEPARENT_MAX_LENGTH : Int = 512
+
+///|
+const TRACESTATE_MAX_LENGTH : Int = 512
 
 ///|
 fn is_lower_hex_unit(unit : Int) -> Bool {
@@ -496,14 +506,14 @@ fn copy_trace_state(state : TraceState) -> TraceState {
 pub fn parse_tracestate(
   header : String,
 ) -> Result[TraceState, TraceContextError] {
-  let mut parsed_entries : Array[TraceStateEntry] = []
+  if header.length() > TRACESTATE_MAX_LENGTH {
+    return Result::Err(InvalidTraceState("header exceeds 512 characters"))
+  }
+  let parsed_entries : Array[TraceStateEntry] = []
+  let seen : Map[String, Bool] = Map([])
   let mut non_empty_count = 0
-  let parts : Array[String] = header
-    .split(",")
-    .map(part => part.to_owned())
-    .collect()
-  for i in 0..<parts.length() {
-    let list_member = parts[i].trim(chars=" \t").to_owned()
+  for part in header.split(",") {
+    let list_member = part.trim(chars=" \t")
     if !list_member.is_empty() {
       non_empty_count = non_empty_count + 1
       if non_empty_count > 32 {
@@ -514,8 +524,13 @@ pub fn parse_tracestate(
           let key = key_view.to_owned()
           let value = value_view.to_owned()
           match validate_trace_state_entry(key, value) {
-            Result::Ok(entry) =>
-              parsed_entries = append_trace_state_entry(parsed_entries, entry)
+            Result::Ok(entry) => {
+              if seen.contains(key) {
+                return Result::Err(InvalidTraceState("duplicate key: " + key))
+              }
+              seen.set(key, true)
+              parsed_entries.push(entry)
+            }
             Result::Err(err) => return Result::Err(err)
           }
         }
@@ -599,32 +614,41 @@ pub fn format_traceparent(ctx : SpanContext) -> String {
 pub fn parse_traceparent(
   header : String,
 ) -> Result[SpanContext, TraceContextError] {
-  let parts : Array[String] = header
-    .split("-")
-    .map(part => part.to_owned())
-    .collect()
-  if parts.length() < 4 {
-    return Result::Err(
-      InvalidTraceParent("expected version-trace-id-span-id-flags"),
-    )
+  let length = header.length()
+  if length < 55 {
+    return Result::Err(InvalidTraceParent("expected at least 55 characters"))
   }
-  let version = parts[0]
-  if version.length() != 2 || !is_lower_hex_string(version, 2) {
+  if length > TRACEPARENT_MAX_LENGTH {
+    return Result::Err(InvalidTraceParent("header exceeds 512 characters"))
+  }
+  if header.code_unit_at(2).to_int() != 45 ||
+    header.code_unit_at(35).to_int() != 45 ||
+    header.code_unit_at(52).to_int() != 45 {
+    return Result::Err(InvalidTraceParent("invalid field separators"))
+  }
+  let version = header[0:2].to_owned()
+  if !is_lower_hex_string(version, 2) {
     return Result::Err(InvalidTraceParent("invalid version"))
   }
   if version == "ff" {
     return Result::Err(InvalidTraceParent("version ff is reserved"))
   }
-  if version == "00" && parts.length() != 4 {
+  if version == "00" && length != 55 {
     return Result::Err(
       InvalidTraceParent("version 00 cannot contain extra fields"),
     )
   }
-  match TraceId::parse(parts[1]) {
+  if version != "00" && length > 55 && header.code_unit_at(55).to_int() != 45 {
+    return Result::Err(InvalidTraceParent("invalid extension separator"))
+  }
+  let trace_id = header[3:35].to_owned()
+  let span_id = header[36:52].to_owned()
+  let trace_flags = header[53:55].to_owned()
+  match TraceId::parse(trace_id) {
     Result::Ok(tid) =>
-      match SpanId::parse(parts[2]) {
+      match SpanId::parse(span_id) {
         Result::Ok(sid) =>
-          match TraceFlags::from_hex(parts[3]) {
+          match TraceFlags::from_hex(trace_flags) {
             Result::Ok(flags) =>
               Result::Ok(
                 span_context(

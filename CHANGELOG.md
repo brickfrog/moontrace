@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Human-readable event messages, field keys, and trace-context diagnostics now render C0/C1 control codes as visible escapes, preventing injected line breaks and terminal control sequences while leaving structured JSON unchanged.
+- W3C `traceparent` and `tracestate` parsing now rejects inputs over 512 characters before eager allocation; `tracestate` also rejects duplicate wire keys instead of applying last-write-wins behavior.
+- Trace and span identifier generation now seeds ChaCha8 from 32 bytes of platform entropy when available, with the existing clock-derived seed retained only as a documented fallback.
+- Newly created native file-subscriber logs and gzip rotations request owner-only `0600` permissions on Unix. Existing file modes are not changed.
+- The default OTLP HTTP client now streams response bodies with a 64 KiB ceiling. Oversized responses fail as non-retryable request errors.
+- GitHub workflows now install a pinned MoonBit toolchain and core from versioned archives whose SHA-256 digests are verified before extraction, replacing the mutable remote installer pipeline.
+
 ## [0.13.0] - 2026-06-01
 
 ### Added

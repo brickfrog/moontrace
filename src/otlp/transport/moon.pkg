@@ -10,6 +10,7 @@ import {
 
 import {
   "moonbitlang/core/json",
+  "moonbitlang/async/socket",
 } for "test"
 
 warnings = "-unused_package"

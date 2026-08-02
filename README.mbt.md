@@ -242,6 +242,12 @@ match @moontrace.parse_tracestate("rojo=00f067aa0ba902b7,congo=t61rcWkgMzE") {
 
 `SpanContext` keeps the remote trace ID, span ID, sampled flag, tracestate, and remote/local marker. `span_from_remote_context` creates a local child span while preserving the incoming sampled flag for downstream export.
 
+Incoming `traceparent` and `tracestate` values are limited to 512 characters.
+Serialized `tracestate` values may contain at most 32 non-empty members and must
+not repeat a key. `parse_span_context` preserves a valid `traceparent` while
+dropping malformed, oversized, or duplicate-key `tracestate`, matching its
+partial-recovery behavior.
+
 ### Span Links
 
 Parent/child spans model ownership. Links model causal edges that should not change the parent relationship, such as retries, queued work, or fan-in.
@@ -336,6 +342,12 @@ Output:
 14:31:44.500 | ERROR | handler — delivery failed  target="leaf-1" exit_code=2
 ```
 
+Human-readable formatting keeps each event on one physical record. C0/C1
+control codes in event messages, field keys, and trace-context diagnostics are
+rendered visibly (`\\n`, `\\r`, `\\t`, or `\\u{001b}`-style escapes). Printable
+Unicode is preserved. The JSON subscriber remains governed by JSON string
+escaping and is unchanged.
+
 ### JSON Subscriber
 
 Machine-readable JSON output:
@@ -399,6 +411,12 @@ pub async fn export_batch(
   client.shutdown()
 }
 ```
+
+The default HTTP client streams response bodies and retains at most 64 KiB.
+Larger responses return `Request("HTTP response body exceeds 65536 bytes")` and
+are not retried. Successful and error response bodies within the limit remain
+available through `HttpResponse.body`; injected clients keep the same public
+interface.
 
 ### Subscriber Composition
 
@@ -491,6 +509,9 @@ See [docs/flame.md](docs/flame.md) for rendering with `inferno-flamegraph` or `f
 ### File Subscriber
 
 `brickfrog/moontrace/file` provides a native-only buffered JSONL file subscriber. The synchronous subscriber enqueues without blocking the logging call site; an async worker drains, rotates, optionally gzips rotated files, and tracks written/dropped counts.
+
+On Unix, files newly created by the subscriber request owner-only `0600`
+permissions. Existing file modes are left unchanged.
 
 ```mbt
 pub async fn install_file_subscriber() -> Unit {

@@ -1,12 +1,14 @@
 ///|
-// Stretch an 8-byte wall-clock timestamp to 32 bytes using splitmix64-style
-// mixing constants. Not cryptographically strong, but sufficient to prevent
-// accidental trace-ID collisions between independently-launched processes.
-// Two processes starting within the same nanosecond would still collide —
-// for adversarial collision resistance, OS entropy would be needed, which
-// moonbitlang/core/random does not currently expose.
-fn make_seed() -> Bytes {
-  let t = @env.now()
+// Prefer a 32-byte platform entropy source. If the target cannot provide one,
+// stretch the millisecond wall clock into the required seed size. The fallback
+// is deterministic and non-cryptographic, but keeps unsupported environments
+// functional.
+fn make_seed(random_bytes : (Int) -> Bytes?, now : () -> UInt64) -> Bytes {
+  match random_bytes(32) {
+    Some(seed) if seed.length() == 32 => return seed
+    _ => ()
+  }
+  let t = now()
   let constants : Array[UInt64] = [
     0UL, 0x9e3779b97f4a7c15UL, 0x6c62272e07bb0142UL, 0x94d049bb133111ebUL,
   ]
@@ -21,7 +23,9 @@ fn make_seed() -> Bytes {
 }
 
 ///|
-let rng : @random.Rand = @random.Rand::chacha8(seed=make_seed())
+let rng : @random.Rand = @random.Rand::chacha8(
+  seed=make_seed(@env.rand, @env.now),
+)
 
 ///|
 fn to_hex_16(val : UInt64) -> String {

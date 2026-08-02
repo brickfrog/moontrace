@@ -1,6 +1,8 @@
 ///|
 pub impl Show for Field with fn output(self, logger) {
-  logger.write_string("\{self.key}=\{self.value.stringify()}")
+  logger.write_string(escape_control_chars(self.key))
+  logger.write_string("=")
+  logger.write_string(self.value.stringify())
 }
 
 ///|
