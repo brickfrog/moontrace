@@ -51,7 +51,7 @@ pub fn parse_env_filter(
   directive : String,
 ) -> Result[ParsedFilter, EnvFilterError] {
   let mut default_level = Info
-  let filters : Map[String, Level] = {}
+  let filters : Map[String, Level] = Map([])
   for raw_part in directive.split(",") {
     let part = trim_env_filter_part(raw_part)
     if !part.is_empty() {

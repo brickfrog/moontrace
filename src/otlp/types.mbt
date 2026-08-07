@@ -105,22 +105,22 @@ pub fn instrumentation_scope(
 pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
   match self {
     StringVal(s) => {
-      let m : Map[String, Json] = {}
+      let m : Map[String, Json] = Map([])
       m.set("stringValue", s.to_json())
       m.to_json()
     }
     IntVal(i) => {
-      let m : Map[String, Json] = {}
+      let m : Map[String, Json] = Map([])
       m.set("intValue", i.to_string().to_json())
       m.to_json()
     }
     BoolVal(b) => {
-      let m : Map[String, Json] = {}
+      let m : Map[String, Json] = Map([])
       m.set("boolValue", b.to_json())
       m.to_json()
     }
     DoubleVal(d) => {
-      let m : Map[String, Json] = {}
+      let m : Map[String, Json] = Map([])
       m.set("doubleValue", d.to_json())
       m.to_json()
     }
@@ -129,7 +129,7 @@ pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
 
 ///|
 pub fn OtlpAttribute::to_json(self : OtlpAttribute) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("key", self.key.to_json())
   m.set("value", self.value.to_json())
   m.to_json()
@@ -137,7 +137,7 @@ pub fn OtlpAttribute::to_json(self : OtlpAttribute) -> Json {
 
 ///|
 pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("traceId", self.trace_id.to_json())
   m.set("spanId", self.span_id.to_json())
   if !self.trace_state.is_empty() {
@@ -149,7 +149,7 @@ pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
 
 ///|
 pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("traceId", self.trace_id.to_json())
   m.set("spanId", self.span_id.to_json())
   if !self.parent_span_id.is_empty() {
@@ -162,7 +162,7 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   m.set("endTimeUnixNano", self.end_time_unix_nano.to_string().to_json())
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
   m.set("links", self.links.map(fn(link) { link.to_json() }).to_json())
-  let status : Map[String, Json] = {}
+  let status : Map[String, Json] = Map([])
   status.set("code", self.status_code.to_json())
   if !self.status_message.is_empty() {
     status.set("message", self.status_message.to_json())
@@ -173,11 +173,11 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
 
 ///|
 pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("timeUnixNano", self.time_unix_nano.to_string().to_json())
   m.set("severityNumber", self.severity_number.to_json())
   m.set("severityText", self.severity_text.to_json())
-  let body : Map[String, Json] = {}
+  let body : Map[String, Json] = Map([])
   body.set("stringValue", self.body.to_json())
   m.set("body", body.to_json())
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
@@ -186,14 +186,14 @@ pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
 
 ///|
 pub fn Resource::to_json(self : Resource) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
   m.to_json()
 }
 
 ///|
 pub fn InstrumentationScope::to_json(self : InstrumentationScope) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("name", self.name.to_json())
   if !self.version.is_empty() {
     m.set("version", self.version.to_json())

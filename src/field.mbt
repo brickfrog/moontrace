@@ -6,7 +6,7 @@ pub(all) struct Field {
 
 ///|
 pub fn fields_to_json(fields : Array[Field]) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   fields.each(fn(f) { m.set(f.key, f.value) })
   m.to_json()
 }

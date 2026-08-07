@@ -55,15 +55,15 @@ pub fn wrap_log_records(
   resource? : Resource = resource(),
   scope? : InstrumentationScope = instrumentation_scope(),
 ) -> Json {
-  let scope_logs : Map[String, Json] = {}
+  let scope_logs : Map[String, Json] = Map([])
   scope_logs.set("scope", scope.to_json())
   scope_logs.set("logRecords", records.map(fn(r) { r.to_json() }).to_json())
 
-  let resource_logs : Map[String, Json] = {}
+  let resource_logs : Map[String, Json] = Map([])
   resource_logs.set("resource", resource.to_json())
   resource_logs.set("scopeLogs", [scope_logs.to_json()].to_json())
 
-  let root : Map[String, Json] = {}
+  let root : Map[String, Json] = Map([])
   root.set("resourceLogs", [resource_logs.to_json()].to_json())
   root.to_json()
 }
@@ -76,15 +76,15 @@ pub fn wrap_spans(
   resource? : Resource = resource(),
   scope? : InstrumentationScope = instrumentation_scope(),
 ) -> Json {
-  let scope_spans : Map[String, Json] = {}
+  let scope_spans : Map[String, Json] = Map([])
   scope_spans.set("scope", scope.to_json())
   scope_spans.set("spans", spans.map(fn(s) { s.to_json() }).to_json())
 
-  let resource_spans : Map[String, Json] = {}
+  let resource_spans : Map[String, Json] = Map([])
   resource_spans.set("resource", resource.to_json())
   resource_spans.set("scopeSpans", [scope_spans.to_json()].to_json())
 
-  let root : Map[String, Json] = {}
+  let root : Map[String, Json] = Map([])
   root.set("resourceSpans", [resource_spans.to_json()].to_json())
   root.to_json()
 }

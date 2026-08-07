@@ -32,18 +32,18 @@ pub fn FlameExporter::reset(self : FlameExporter) -> Unit {
 
 ///|
 pub fn fold_spans(spans : Array[@moontrace.Span]) -> String {
-  let spans_by_id : Map[String, @moontrace.Span] = {}
+  let spans_by_id : Map[String, @moontrace.Span] = Map([])
   spans.each(fn(span) {
     spans_by_id.set(span_key(span.trace_id, span.span_id), span)
   })
-  let direct_child_duration_by_parent : Map[String, UInt64] = {}
+  let direct_child_duration_by_parent : Map[String, UInt64] = Map([])
   spans.each(fn(span) {
     let parent = span_key(span.trace_id, span.parent_span_id)
     if valid_parent_edge(span, spans_by_id, spans.length()) {
       add_weight(direct_child_duration_by_parent, parent, span.duration())
     }
   })
-  let folded_weights : Map[String, UInt64] = {}
+  let folded_weights : Map[String, UInt64] = Map([])
   spans.each(fn(span) {
     let child_duration = direct_child_duration_by_parent.get_or_default(
       span_key(span.trace_id, span.span_id),
@@ -129,7 +129,7 @@ fn valid_parent_edge(
     Some(parent_span) => Some(parent_span)
     None => return false
   }
-  let visited : Map[String, Bool] = {}
+  let visited : Map[String, Bool] = Map([])
   let mut remaining = span_count
   while remaining > 0 {
     match current {

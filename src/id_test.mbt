@@ -39,7 +39,7 @@ test "ids are non-zero" {
 
 ///|
 test "bulk trace ids are unique" {
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for _ in 0..<1000 {
     let id = @moontrace.next_trace_id()
     assert_true(!seen.contains(id))
@@ -49,7 +49,7 @@ test "bulk trace ids are unique" {
 
 ///|
 test "bulk span ids are unique" {
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for _ in 0..<1000 {
     let id = @moontrace.next_span_id()
     assert_true(!seen.contains(id))

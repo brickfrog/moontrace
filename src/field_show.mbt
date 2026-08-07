@@ -7,7 +7,7 @@ pub impl Show for Field with fn output(self, logger) {
 
 ///|
 pub fn Field::to_json(self : Field) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set(self.key, self.value)
   m.to_json()
 }
