@@ -34,4 +34,3 @@ pub fn FileSubscriberConfig::new(String, max_size_bytes? : Int, max_files? : Int
 // Type aliases
 
 // Traits
-

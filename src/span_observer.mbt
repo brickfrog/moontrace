@@ -214,7 +214,7 @@ pub fn SpanLinkKind::to_json(self : SpanLinkKind) -> Json {
 
 ///|
 pub fn SpanLink::to_json(self : SpanLink) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("trace_id", self.trace_id.to_json())
   m.set("span_id", self.span_id.to_json())
   m.set("kind", self.kind.to_json())

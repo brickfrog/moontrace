@@ -1,6 +1,6 @@
 ///|
 pub fn Span::to_json(self : Span) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("name", self.name.to_json())
   m.set("trace_id", self.trace_id.to_json())
   m.set("span_id", self.span_id.to_json())

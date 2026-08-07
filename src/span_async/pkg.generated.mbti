@@ -17,4 +17,3 @@ pub async fn[T] with_span_async(String, fields? : Array[@moontrace.Field], async
 // Type aliases
 
 // Traits
-

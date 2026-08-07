@@ -17,4 +17,3 @@ pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit) -> 
 // Type aliases
 
 // Traits
-

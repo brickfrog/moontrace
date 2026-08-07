@@ -452,4 +452,3 @@ pub struct TraceStateEntry {
 // Type aliases
 
 // Traits
-

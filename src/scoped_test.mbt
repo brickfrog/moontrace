@@ -134,8 +134,11 @@ test "with_trace_state restores all globals after raised failure" {
     })
   }
 
-  let result : Result[Unit, ScopedFailure] = try? fail_in_scope()
-  guard result is Err(_) else { abort("expected scoped failure") }
+  try fail_in_scope() catch {
+    _ => ()
+  } noraise {
+    _ => abort("expected scoped failure")
+  }
 
   @moontrace.info("blocked after failure")
   @moontrace.warn("blocked by restored module filter after failure")

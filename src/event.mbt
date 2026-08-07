@@ -38,7 +38,7 @@ fn merge_fields(fields : Array[Field]) -> Array[Field] {
   if global_context.val.is_empty() {
     fields
   } else {
-    let explicit_keys : Map[String, Bool] = {}
+    let explicit_keys : Map[String, Bool] = Map([])
     fields.each(fn(f) { explicit_keys.set(f.key, true) })
     let merged : Array[Field] = []
     global_context.val.each(fn(k, v) {
@@ -325,7 +325,7 @@ pub fn trace(
 
 ///|
 pub fn Event::to_json(self : Event) -> Json {
-  let m : Map[String, Json] = {}
+  let m : Map[String, Json] = Map([])
   m.set("level", self.level.to_json())
   m.set("message", self.message.to_json())
   m.set("timestamp", self.timestamp.to_json())

@@ -379,8 +379,11 @@ test "scoped install restores global subscriber and observer on raise" {
     })
   }
 
-  let result : Result[Unit, ExampleFailure] = try? fail_in_scope()
-  guard result is Err(_) else { abort("expected ExampleFailure") }
+  try fail_in_scope() catch {
+    _ => ()
+  } noraise {
+    _ => abort("expected ExampleFailure")
+  }
 
   @moontrace.info("after failure")
   let after_span = @moontrace.span("after failure span")
