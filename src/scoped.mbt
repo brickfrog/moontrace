@@ -37,17 +37,8 @@ fn restore_trace_state(snapshot : TraceStateSnapshot) -> Unit {
 /// across async tasks.
 pub fn[T] with_trace_state(f : () -> T raise?) -> T raise? {
   let snapshot = snapshot_trace_state()
-  try f() catch {
-    err => {
-      restore_trace_state(snapshot)
-      raise err
-    }
-  } noraise {
-    result => {
-      restore_trace_state(snapshot)
-      result
-    }
-  }
+  defer restore_trace_state(snapshot)
+  f()
 }
 
 ///|

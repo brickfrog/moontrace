@@ -13,7 +13,9 @@ async fn with_response_server(
         while request_body.read_some() is Some(_) {
 
         }
-        conn.send_response(200, "OK", extra_headers={ "Retry-After": "2" })
+        // Deliberately cased to match neither `Retry-After` nor `retry-after`:
+        // header lookup must be case-insensitive.
+        conn.send_response(200, "OK", extra_headers={ "Retry-after": "2" })
         match request.path {
           "/small" => conn.write("small response")
           "/exact" => conn.write("x".repeat(64 * 1024))

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Requires the MoonBit 0.10.10 toolchain. `moonbitlang/protobuf` 0.1.1 and `moonbitlang/async` 0.19.0 no longer parse under it, so dependencies move to `moonbitlang/protobuf@0.1.2` and `moonbitlang/async@0.21.1`, and the pinned CI toolchain moves from 0.10.6 to 0.10.10.
+- `Retry-After` is now read from the OTLP HTTP response with a case-insensitive lookup (`moonbitlang/async/http` 0.21 keys headers by `CaseInsensitiveString`), replacing the previous two-literal `retry-after` / `Retry-After` probe. Casings such as `Retry-after` are now honored. The public `parse_retry_after_ms(Map[String, String])` signature is unchanged.
+- `with_trace_state`, `with_span_async`, and `with_child_span_async` now release their scope with `defer` instead of a catch-all handler that re-raised. State restore and span exit now also run on async cancellation paths that a catch-all will stop capturing in a future compiler. Error-message recording still runs in `catch`, which is the only construct that can observe the error value.
+
 ## [0.13.1] - 2026-08-01
 
 ### Security

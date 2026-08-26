@@ -340,7 +340,7 @@ async fn FileSubscriber::write_batch(
   ignore(self.write_lock.get())
   defer self.release_write_lock()
   self.initialize_file()
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   let mut payload_bytes = 0
   lines.each(fn(line) {
     payload_bytes += byte_len(line)
