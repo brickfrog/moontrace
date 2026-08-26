@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-26
+
 ### Changed
 
 - Requires the MoonBit 0.10.10 toolchain. `moonbitlang/protobuf` 0.1.1 and `moonbitlang/async` 0.19.0 no longer parse under it, so dependencies move to `moonbitlang/protobuf@0.1.2` and `moonbitlang/async@0.21.1`, and the pinned CI toolchain moves from 0.10.6 to 0.10.10 (#69).
