@@ -3,8 +3,8 @@ name = "brickfrog/moontrace"
 version = "0.13.1"
 
 import {
-  "moonbitlang/async@0.19.0",
-  "moonbitlang/protobuf@0.1.1",
+  "moonbitlang/async@0.21.1",
+  "moonbitlang/protobuf@0.1.2",
 }
 
 readme = "README.mbt.md"

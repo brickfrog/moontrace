@@ -41,6 +41,20 @@ pub fn AsyncHttpClient::shutdown(self : AsyncHttpClient) -> Unit {
 }
 
 ///|
+/// `moonbitlang/async/http` keys headers by `CaseInsensitiveString`, while the
+/// `OtlpHttpClient` trait exposes plain `Map[String, String]` to callers.
+#cfg(any(target="native", target="js"))
+fn to_http_headers(
+  headers : Map[String, String],
+) -> Map[@http.CaseInsensitiveString, String] {
+  let converted : Map[@http.CaseInsensitiveString, String] = Map([])
+  for name, value in headers {
+    converted[name] = value
+  }
+  converted
+}
+
+///|
 #cfg(any(target="native", target="js"))
 pub impl OtlpHttpClient for AsyncHttpClient with fn post(
   self,
@@ -53,7 +67,7 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
   }
   @async.with_timeout(self.timeout_ms, () => {
     let content : &@io.Data = body
-    let client = @http.post_stream(url, headers~)
+    let client = @http.post_stream(url, headers=to_http_headers(headers))
     defer client.close()
     client.write(content)
     let response = client.end_request()
@@ -63,7 +77,10 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
         Ok({
           status_code: response.code,
           body: @utf8.decode(data),
-          retry_after_ms: parse_retry_after_ms(response.headers),
+          retry_after_ms: match response.headers.get("Retry-After") {
+            Some(value) => parse_retry_after_value_ms(value)
+            None => None
+          },
         })
     }
   }) catch {

@@ -19,7 +19,7 @@ fn event_line(message : String) -> String {
 ///|
 #cfg(target="native")
 fn lines(messages : Array[String]) -> String {
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   messages.each(fn(message) { builder.write_string(event_line(message)) })
   builder.to_string()
 }

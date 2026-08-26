@@ -141,7 +141,7 @@ for moontrace to own confidently.
 For `moontrace-cg9.7.4`, the chosen implemented path is option 2 with an
 important constraint: moontrace hand-rolls only the minimal OTLP trace and log
 messages it emits, but delegates all primitive protobuf writing to the official
-`moonbitlang/protobuf@0.1.1` runtime. It does not vendor or depend on
+`moonbitlang/protobuf` runtime (pinned at `0.1.2`). It does not vendor or depend on
 `ryota0624/opentelemetry_proto_mbt`, and it does not introduce a codegen step.
 
 The implementation writes:
