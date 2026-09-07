@@ -8,7 +8,7 @@ pub(all) struct FlameExporter {
 pub fn flame_exporter(
   output? : (String) -> Unit = fn(s) { println(s) },
 ) -> FlameExporter {
-  { spans: [], output }
+  { spans: [], output, }
 }
 
 ///|

@@ -521,7 +521,7 @@ test "otlp wrap_log_records carries resource and scope attributes" {
     service_name="log-api",
     service_version="2.0.0",
     attributes=[
-      @otlp.OtlpAttribute::{ key: "region", value: @otlp.StringVal("iad") },
+      @otlp.OtlpAttribute::{ key: "region", value: @otlp.StringVal("iad"), },
     ],
   )
   let scope = @otlp.instrumentation_scope(
@@ -696,7 +696,7 @@ test "otlp exporter shutdown drops reentrant log output before later flush" {
 test "otlp exporter snapshots resource attributes at construction" {
   let output : Array[String] = []
   let res = @otlp.resource(attributes=[
-    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes") },
+    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes"), },
   ])
   let exp = @otlp.exporter(
     log_output=fn(s) { output.push(s) },
@@ -723,7 +723,7 @@ test "otlp exporter snapshots resource attributes at construction" {
 test "otlp exporter snapshots scope attributes at construction" {
   let output : Array[String] = []
   let scope = @otlp.instrumentation_scope(name="snapshot-scope", attributes=[
-    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes") },
+    @otlp.OtlpAttribute::{ key: "kept", value: @otlp.StringVal("yes"), },
   ])
   let exp = @otlp.exporter(
     log_output=fn(s) { output.push(s) },
@@ -774,9 +774,9 @@ test "otlp id generation is unique and hex" {
 
 ///|
 test "otlp field conversion preserves types" {
-  let str_field = @moontrace.Field::{ key: "s", value: "hello".to_json() }
-  let num_field = @moontrace.Field::{ key: "n", value: (42).to_json() }
-  let bool_field = @moontrace.Field::{ key: "b", value: true.to_json() }
+  let str_field = @moontrace.Field::{ key: "s", value: "hello".to_json(), }
+  let num_field = @moontrace.Field::{ key: "n", value: (42).to_json(), }
+  let bool_field = @moontrace.Field::{ key: "b", value: true.to_json(), }
 
   let sa = @otlp.field_to_attribute(str_field)
   let na = @otlp.field_to_attribute(num_field)

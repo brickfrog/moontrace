@@ -1,6 +1,6 @@
 ///|
 test "constructing a Field directly" {
-  let f = @moontrace.Field::{ key: "name", value: "hello".to_json() }
+  let f = @moontrace.Field::{ key: "name", value: "hello".to_json(), }
   assert_eq(f.key, "name")
   @debug.assert_eq(f.value, "hello".to_json())
 }

@@ -52,7 +52,7 @@ pub struct TestSubscriber {
 
 ///|
 pub fn test_subscriber() -> TestSubscriber {
-  { events: [], lifecycle: [], records: [] }
+  { events: [], lifecycle: [], records: [], }
 }
 
 ///|
@@ -218,7 +218,7 @@ pub fn EventQuery::with_span_name(
 
 ///|
 pub fn lifecycle_query() -> LifecycleQuery {
-  { kind: None, span_id: None, span_name: None, field_key: None }
+  { kind: None, span_id: None, span_name: None, field_key: None, }
 }
 
 ///|
@@ -297,7 +297,7 @@ fn TestSubscriber::capture_event(
   let snapshot = event_snapshot(event)
   let index = self.records.length()
   self.events.push(snapshot)
-  self.records.push({ index, event: Some(snapshot), lifecycle: None })
+  self.records.push({ index, event: Some(snapshot), lifecycle: None, })
 }
 
 ///|
@@ -309,9 +309,9 @@ fn TestSubscriber::capture_lifecycle(
   link : @moontrace.SpanLink?,
 ) -> Unit {
   let index = self.records.length()
-  let lifecycle = { index, kind, span, field, link }
+  let lifecycle = { index, kind, span, field, link, }
   self.lifecycle.push(lifecycle)
-  self.records.push({ index, event: None, lifecycle: Some(lifecycle) })
+  self.records.push({ index, event: None, lifecycle: Some(lifecycle), })
 }
 
 ///|

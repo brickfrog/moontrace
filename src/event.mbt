@@ -8,10 +8,10 @@ pub(all) struct Event {
 } derive(Debug)
 
 ///|
-let global_subscriber : Ref[((Event) -> Unit)?] = { val: None }
+let global_subscriber : Ref[((Event) -> Unit)?] = { val: None, }
 
 ///|
-let global_min_level : Ref[Level] = { val: Trace }
+let global_min_level : Ref[Level] = { val: Trace, }
 
 ///|
 pub fn set_min_level(level : Level) -> Unit {
@@ -43,7 +43,7 @@ fn merge_fields(fields : Array[Field]) -> Array[Field] {
     let merged : Array[Field] = []
     global_context.val.each(fn(k, v) {
       if !explicit_keys.contains(k) {
-        merged.push({ key: k, value: v })
+        merged.push({ key: k, value: v, })
       }
     })
     fields.each(fn(f) { merged.push(f) })
@@ -111,9 +111,9 @@ fn span_event_fields(span : Span, fields : Array[Field]) -> Array[Field] {
       merged.push(field)
     }
   })
-  merged.push({ key: "trace_id", value: span.trace_id.to_json() })
-  merged.push({ key: "span_id", value: span.span_id.to_json() })
-  merged.push({ key: "parent_span_id", value: span.parent_span_id.to_json() })
+  merged.push({ key: "trace_id", value: span.trace_id.to_json(), })
+  merged.push({ key: "span_id", value: span.span_id.to_json(), })
+  merged.push({ key: "parent_span_id", value: span.parent_span_id.to_json(), })
   merged
 }
 

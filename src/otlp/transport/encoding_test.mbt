@@ -140,22 +140,22 @@ priv struct DecodedLogsRequest {
 
 ///|
 fn decoded_any_default() -> DecodedAnyValue {
-  { string_value: None, bool_value: None, int_value: None, double_value: None }
+  { string_value: None, bool_value: None, int_value: None, double_value: None, }
 }
 
 ///|
 fn decoded_status_default() -> DecodedStatus {
-  { message: "", code: 0 }
+  { message: "", code: 0, }
 }
 
 ///|
 fn decoded_resource_default() -> DecodedResource {
-  { attributes: [] }
+  { attributes: [], }
 }
 
 ///|
 fn decoded_scope_default() -> DecodedScope {
-  { name: "", version: "", attributes: [] }
+  { name: "", version: "", attributes: [], }
 }
 
 ///|
@@ -359,7 +359,7 @@ fn decode_key_value(body : Bytes) -> DecodedKeyValue {
     @protobuf.EndOfStream => ()
     err => decode_fail("KeyValue", "\{err}")
   }
-  { key, value }
+  { key, value, }
 }
 
 ///|
@@ -419,7 +419,7 @@ fn decode_scope(body : Bytes) -> DecodedScope {
     @protobuf.EndOfStream => ()
     err => decode_fail("InstrumentationScope", "\{err}")
   }
-  { name, version, attributes }
+  { name, version, attributes, }
 }
 
 ///|
@@ -562,7 +562,7 @@ fn decode_scope_spans(body : Bytes) -> DecodedScopeSpans {
     @protobuf.EndOfStream => ()
     err => decode_fail("ScopeSpans", "\{err}")
   }
-  { scope, spans }
+  { scope, spans, }
 }
 
 ///|
@@ -595,7 +595,7 @@ fn decode_resource_spans(body : Bytes) -> DecodedResourceSpans {
     @protobuf.EndOfStream => ()
     err => decode_fail("ResourceSpans", "\{err}")
   }
-  { resource, scope_spans }
+  { resource, scope_spans, }
 }
 
 ///|
@@ -710,7 +710,7 @@ fn decode_scope_logs(body : Bytes) -> DecodedScopeLogs {
     @protobuf.EndOfStream => ()
     err => decode_fail("ScopeLogs", "\{err}")
   }
-  { scope, log_records }
+  { scope, log_records, }
 }
 
 ///|
@@ -743,7 +743,7 @@ fn decode_resource_logs(body : Bytes) -> DecodedResourceLogs {
     @protobuf.EndOfStream => ()
     err => decode_fail("ResourceLogs", "\{err}")
   }
-  { resource, scope_logs }
+  { resource, scope_logs, }
 }
 
 ///|
@@ -852,7 +852,7 @@ fn unwrap_payload(
 ///|
 fn protobuf_test_resource() -> @otlp.Resource {
   @otlp.resource(service_name="svc", service_version="1.2.3", attributes=[
-    @otlp.OtlpAttribute::{ key: "resource.bool", value: @otlp.BoolVal(true) },
+    @otlp.OtlpAttribute::{ key: "resource.bool", value: @otlp.BoolVal(true), },
   ])
 }
 
@@ -878,8 +878,8 @@ fn protobuf_test_span() -> @otlp.OtlpSpan {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [
-      @otlp.OtlpAttribute::{ key: "answer", value: @otlp.IntVal(42L) },
-      @otlp.OtlpAttribute::{ key: "ratio", value: @otlp.DoubleVal(2.5) },
+      @otlp.OtlpAttribute::{ key: "answer", value: @otlp.IntVal(42L), },
+      @otlp.OtlpAttribute::{ key: "ratio", value: @otlp.DoubleVal(2.5), },
     ],
     links: [],
     status_code: 2,
@@ -895,8 +895,8 @@ fn protobuf_test_log_record() -> @otlp.OtlpLogRecord {
     severity_text: "ERROR",
     body: "log body",
     attributes: [
-      @otlp.OtlpAttribute::{ key: "log.attr", value: @otlp.StringVal("value") },
-      @otlp.OtlpAttribute::{ key: "log.ok", value: @otlp.BoolVal(true) },
+      @otlp.OtlpAttribute::{ key: "log.attr", value: @otlp.StringVal("value"), },
+      @otlp.OtlpAttribute::{ key: "log.ok", value: @otlp.BoolVal(true), },
     ],
   }
 }

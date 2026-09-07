@@ -25,7 +25,7 @@ pub(all) struct SpanLifecycleObserver {
 }
 
 ///|
-let global_span_observer : Ref[SpanLifecycleObserver?] = { val: None }
+let global_span_observer : Ref[SpanLifecycleObserver?] = { val: None, }
 
 ///|
 fn span_snapshot(span : Span) -> Span {
@@ -69,7 +69,7 @@ pub fn span_lifecycle_observer(
 
   },
 ) -> SpanLifecycleObserver {
-  { on_created, on_entered, on_recorded, on_exited, on_closed, on_linked }
+  { on_created, on_entered, on_recorded, on_exited, on_closed, on_linked, }
 }
 
 ///|

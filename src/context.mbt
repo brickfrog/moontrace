@@ -1,5 +1,5 @@
 ///|
-let global_context : Ref[Map[String, Json]] = { val: {} }
+let global_context : Ref[Map[String, Json]] = { val: {}, }
 
 ///|
 pub fn[T : ToJson] set_global_field(key : String, value : T) -> Unit {

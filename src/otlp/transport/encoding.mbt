@@ -96,7 +96,7 @@ fn encode_protobuf_payload(
   let writer : &@protobuf.Writer = body
   try {
     write_body(writer)
-    Ok({ content_type: otlp_protobuf_content_type(), body: body.to_bytes() })
+    Ok({ content_type: otlp_protobuf_content_type(), body: body.to_bytes(), })
   } catch {
     InvalidHexId(field, value) =>
       Err(

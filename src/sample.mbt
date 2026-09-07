@@ -56,7 +56,7 @@ pub fn ratio_sampler(
   ratio : Double,
   rand? : () -> Double = default_sampling_rand,
 ) -> RatioSampler {
-  { inner, ratio: clamp_sampling_ratio(ratio), rand, kept: 0, dropped: 0 }
+  { inner, ratio: clamp_sampling_ratio(ratio), rand, kept: 0, dropped: 0, }
 }
 
 ///|
@@ -224,7 +224,7 @@ pub(all) struct TraceSampler {
 
 ///|
 pub fn trace_sampler(inner : (Event) -> Unit, ratio : Double) -> TraceSampler {
-  { inner, ratio: clamp_sampling_ratio(ratio), kept: 0, dropped: 0 }
+  { inner, ratio: clamp_sampling_ratio(ratio), kept: 0, dropped: 0, }
 }
 
 ///|

@@ -87,7 +87,7 @@ pub fn resource(
   for attribute in attributes {
     resource_attributes.push(attribute)
   }
-  { attributes: resource_attributes }
+  { attributes: resource_attributes, }
 }
 
 ///|
@@ -96,7 +96,7 @@ pub fn instrumentation_scope(
   version? : String = "",
   attributes? : Array[OtlpAttribute] = [],
 ) -> InstrumentationScope {
-  { name, version, attributes: attributes.copy() }
+  { name, version, attributes: attributes.copy(), }
 }
 
 // Convert OtlpValue to Json

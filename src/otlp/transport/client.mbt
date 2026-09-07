@@ -32,7 +32,7 @@ async fn read_bounded_response_body(
 ///|
 pub fn async_http_client(timeout_ms? : Int = 5000) -> AsyncHttpClient {
   let timeout_ms = if timeout_ms < 1 { 1 } else { timeout_ms }
-  { timeout_ms, is_shut_down: false }
+  { timeout_ms, is_shut_down: false, }
 }
 
 ///|

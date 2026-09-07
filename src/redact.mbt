@@ -85,7 +85,7 @@ fn redact_field(field : Field, policy : RedactionPolicy) -> Field? {
     false => Some(field)
     true =>
       match policy.mode {
-        Redact => Some({ key: field.key, value: policy.placeholder.to_json() })
+        Redact => Some({ key: field.key, value: policy.placeholder.to_json(), })
         Drop => None
       }
   }

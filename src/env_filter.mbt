@@ -79,7 +79,7 @@ pub fn parse_env_filter(
       }
     }
   }
-  Ok({ default_level, module_filters: filters })
+  Ok({ default_level, module_filters: filters, })
 }
 
 ///|

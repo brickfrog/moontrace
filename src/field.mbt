@@ -13,10 +13,10 @@ pub fn fields_to_json(fields : Array[Field]) -> Json {
 
 ///|
 pub fn[T : ToJson] field(key : String, value : T) -> Field {
-  { key, value: value.to_json() }
+  { key, value: value.to_json(), }
 }
 
 ///|
 pub fn fields(pairs : Array[(String, Json)]) -> Array[Field] {
-  pairs.map(fn(pair) { { key: pair.0, value: pair.1 } })
+  pairs.map(fn(pair) { { key: pair.0, value: pair.1, } })
 }
