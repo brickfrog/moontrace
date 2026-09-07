@@ -106,12 +106,12 @@ pub(all) struct ShutdownAfterPostClient {
 
 ///|
 fn fake_client(replies : Array[FakeReply]) -> FakeClient {
-  { replies, calls: [], next: 0 }
+  { replies, calls: [], next: 0, }
 }
 
 ///|
 fn response(status_code : Int) -> @transport.HttpResponse {
-  { status_code, body: "body-\{status_code}", retry_after_ms: None }
+  { status_code, body: "body-\{status_code}", retry_after_ms: None, }
 }
 
 ///|
@@ -133,7 +133,7 @@ pub impl @transport.OtlpHttpClient for FakeClient with fn post(
   body,
   headers,
 ) {
-  self.calls.push({ url, body, headers: headers.copy() })
+  self.calls.push({ url, body, headers: headers.copy(), })
   if self.next >= self.replies.length() {
     return Err(@transport.Request("fake client exhausted"))
   }
@@ -152,7 +152,7 @@ pub impl @transport.OtlpHttpClient for ShutdownAfterPostClient with fn post(
   body,
   headers,
 ) {
-  self.calls.push({ url, body, headers: headers.copy() })
+  self.calls.push({ url, body, headers: headers.copy(), })
   if self.next >= self.replies.length() {
     return Err(@transport.Request("fake client exhausted"))
   }

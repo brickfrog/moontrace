@@ -168,9 +168,9 @@ pub fn Span::exit(self : Span) -> Unit {
   notify_span_exited(self)
   let duration = self.end_time - self.start_time
   let exit_fields = self.fields.copy()
-  exit_fields.push({ key: "duration_ns", value: duration.to_json() })
+  exit_fields.push({ key: "duration_ns", value: duration.to_json(), })
   if self.status != Unset {
-    exit_fields.push({ key: "status", value: self.status.to_json() })
+    exit_fields.push({ key: "status", value: self.status.to_json(), })
     if !self.status_message.is_empty() {
       exit_fields.push({
         key: "status_message",
@@ -199,7 +199,7 @@ pub fn Span::set_status(
 pub fn Span::record_error(self : Span, msg : String) -> Unit {
   self.status = SpanError
   self.status_message = msg
-  let field : Field = { key: "error", value: msg.to_json() }
+  let field : Field = { key: "error", value: msg.to_json(), }
   self.fields.push(field)
   notify_span_recorded(self, field)
 }

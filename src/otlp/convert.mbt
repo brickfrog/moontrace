@@ -31,7 +31,7 @@ fn json_to_otlp_value(value : Json) -> OtlpValue {
 
 ///|
 pub fn field_to_attribute(field : @moontrace.Field) -> OtlpAttribute {
-  { key: field.key, value: json_to_otlp_value(field.value) }
+  { key: field.key, value: json_to_otlp_value(field.value), }
 }
 
 // Convert moontrace Event to OTLP log record

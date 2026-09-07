@@ -1,6 +1,6 @@
 ///|
 /// Global module filter map: package_name -> min_level
-let module_filters : Ref[Map[String, Level]] = { val: {} }
+let module_filters : Ref[Map[String, Level]] = { val: {}, }
 
 ///|
 /// Set a filter for a specific module to the given minimum level

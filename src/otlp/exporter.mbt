@@ -14,12 +14,12 @@ pub(all) struct OtlpExporter {
 
 ///|
 fn copy_resource(resource : Resource) -> Resource {
-  { attributes: resource.attributes.copy() }
+  { attributes: resource.attributes.copy(), }
 }
 
 ///|
 fn copy_scope(scope : InstrumentationScope) -> InstrumentationScope {
-  { ..scope, attributes: scope.attributes.copy() }
+  { ..scope, attributes: scope.attributes.copy(), }
 }
 
 ///|

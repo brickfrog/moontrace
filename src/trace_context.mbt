@@ -225,12 +225,12 @@ pub fn TraceFlags::from_hex(
 
 ///|
 pub fn TraceFlags::sampled() -> TraceFlags {
-  { flags: 1 }
+  { flags: 1, }
 }
 
 ///|
 pub fn TraceFlags::unsampled() -> TraceFlags {
-  { flags: 0 }
+  { flags: 0, }
 }
 
 ///|
@@ -254,8 +254,8 @@ pub fn TraceFlags::with_sampled(
   sampled : Bool,
 ) -> TraceFlags {
   match (self.is_sampled(), sampled) {
-    (true, false) => { flags: self.flags - 1 }
-    (false, true) => { flags: self.flags + 1 }
+    (true, false) => { flags: self.flags - 1, }
+    (false, true) => { flags: self.flags + 1, }
     _ => self
   }
 }
@@ -368,7 +368,7 @@ fn validate_trace_state_entry(
   } else if !validate_trace_state_value(value) {
     Result::Err(InvalidTraceState("invalid value for key: " + key))
   } else {
-    Result::Ok({ key, value })
+    Result::Ok({ key, value, })
   }
 }
 
@@ -411,7 +411,7 @@ fn prepend_trace_state_entry(
 
 ///|
 pub fn TraceState::empty() -> TraceState {
-  { entries: [] }
+  { entries: [], }
 }
 
 ///|
@@ -429,7 +429,7 @@ pub fn TraceState::from_entries(
       Result::Err(err) => return Result::Err(err)
     }
   }
-  Result::Ok({ entries: normalized })
+  Result::Ok({ entries: normalized, })
 }
 
 ///|
@@ -499,7 +499,7 @@ pub fn format_tracestate(state : TraceState) -> String {
 
 ///|
 fn copy_trace_state(state : TraceState) -> TraceState {
-  { entries: state.entries.copy() }
+  { entries: state.entries.copy(), }
 }
 
 ///|
@@ -541,15 +541,15 @@ pub fn parse_tracestate(
       }
     }
   }
-  Result::Ok({ entries: parsed_entries })
+  Result::Ok({ entries: parsed_entries, })
 }
 
 ///|
 pub fn span_context(
   trace_id : TraceId,
   span_id : SpanId,
-  flags? : TraceFlags = { flags: 0 },
-  trace_state? : TraceState = { entries: [] },
+  flags? : TraceFlags = { flags: 0, },
+  trace_state? : TraceState = { entries: [], },
   is_remote? : Bool = false,
 ) -> SpanContext {
   {
@@ -565,8 +565,8 @@ pub fn span_context(
 pub fn span_context_from_ids(
   trace_id : String,
   span_id : String,
-  flags? : TraceFlags = { flags: 0 },
-  trace_state? : TraceState = { entries: [] },
+  flags? : TraceFlags = { flags: 0, },
+  trace_state? : TraceState = { entries: [], },
   is_remote? : Bool = false,
 ) -> Result[SpanContext, TraceContextError] {
   match TraceId::parse(trace_id) {

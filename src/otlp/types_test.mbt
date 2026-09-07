@@ -160,7 +160,7 @@ test "otlp link to_json includes tracestate and attributes" {
     span_id: "00f067aa0ba902b7",
     trace_state: "rojo=00f067aa0ba902b7",
     attributes: [
-      @otlp.OtlpAttribute::{ key: "edge", value: @otlp.StringVal("remote") },
+      @otlp.OtlpAttribute::{ key: "edge", value: @otlp.StringVal("remote"), },
     ],
   }
   let obj = otlp_json_object(link.to_json(), "link")
@@ -236,7 +236,10 @@ test "otlp instrumentation scope to_json includes version and attributes" {
     name="moontrace-test",
     version="0.9.3",
     attributes=[
-      @otlp.OtlpAttribute::{ key: "scope.role", value: @otlp.StringVal("test") },
+      @otlp.OtlpAttribute::{
+        key: "scope.role",
+        value: @otlp.StringVal("test"),
+      },
     ],
   )
   let obj = otlp_json_object(scope.to_json(), "scope")

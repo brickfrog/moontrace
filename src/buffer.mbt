@@ -7,7 +7,7 @@ pub(all) struct EventBuffer {
 
 ///|
 pub fn buffer(inner : (Event) -> Unit, capacity? : Int = 10) -> EventBuffer {
-  { events: [], capacity: if capacity < 1 { 1 } else { capacity }, inner }
+  { events: [], capacity: if capacity < 1 { 1 } else { capacity }, inner, }
 }
 
 ///|
