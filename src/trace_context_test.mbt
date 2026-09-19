@@ -243,9 +243,11 @@ test "invalid traceparent headers are structured errors" {
       "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-extra",
     ),
   )
-  // Non-ASCII payloads put a UTF-16 surrogate pair on a slice boundary. Bracket
-  // slicing trims inward there instead of raising, so the parser must still
-  // reject these through its own hex validation.
+  // Non-ASCII payloads must be rejected by hex validation, not by slicing.
+  // The fixed separator checks keep every surrogate pair wholly inside a slice
+  // (units 33-34 of [3:35]; 53-54 of [53:55]), so 0.10.13's inward-trimming
+  // clamp never fires here and nothing but is_lower_hex_string /
+  // parse_hex_byte stands between these headers and a parsed context.
   assert_context_err(
     @moontrace.parse_traceparent(
       "00-4bf92f3577b34da6a3ce929d0e0e47\u{1F600}-00f067aa0ba902b7-01",

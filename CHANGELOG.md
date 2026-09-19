@@ -11,10 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pinned CI toolchain moves from MoonBit 0.10.11 to 0.10.13 (`moonc v0.10.13+cbb11c36f`, `moon 0.1.20260915`). No source change was required: the removed `f!()` call syntax, `for { }`, `fn name[T]`, `typealias`/`traitalias`/`fnalias`, and `type!` forms are already absent, and no custom `Logger` implementation exists that the new `write_view`/`write_substring` requirement would break.
 - `moonbitlang/core/json` is now a test-only import of `@moontrace/otlp`; it is used solely by `exporter_test.mbt`, and 0.10.13 reports the package-level import as unused.
-
-### Fixed
-
-- `parse_traceparent` is covered for non-ASCII headers that place a UTF-16 surrogate pair on a bracket-slice boundary. 0.10.13 makes such slices trim inward instead of raising, so rejection now rests on the parser's own length and hex validation.
+- `parse_traceparent` now has regression coverage for non-ASCII headers. Rejection rests on its length and hex validation, which 0.10.13's bracket-slice clamping does not reach: the fixed separator checks keep any surrogate pair wholly inside a slice, so no slice trims and behavior is unchanged.
 
 ## [0.14.0] - 2026-08-26
 
