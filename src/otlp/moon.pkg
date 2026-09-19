@@ -1,4 +1,7 @@
 import {
   "brickfrog/moontrace",
-  "moonbitlang/core/json",
 }
+
+import {
+  "moonbitlang/core/json",
+} for "test"
