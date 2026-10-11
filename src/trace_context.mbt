@@ -342,7 +342,7 @@ fn validate_trace_state_key(key : String) -> Bool {
         validate_key_part(system, 14, false)
       }
     }
-    None => validate_key_part(key, 256, true)
+    None => validate_key_part(key, 256, false)
   }
 }
 

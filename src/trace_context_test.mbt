@@ -495,3 +495,30 @@ test "span_with_trace remains backwards compatible" {
     ctx.traceparent(),
   )
 }
+
+///|
+test "tracestate simple keys require a lowercase letter start" {
+  for key in ["0", "1vendor", "9vendor"] {
+    assert_state_err(@moontrace.parse_tracestate(key + "=opaque"))
+    assert_entry_err(@moontrace.trace_state_entry(key, "opaque"))
+    assert_state_err(@moontrace.TraceState::empty().set(key, "opaque"))
+  }
+  for key in ["a", "a1_*-/", "1tenant@vendor", "0@a"] {
+    let entry = expect_entry(@moontrace.trace_state_entry(key, "opaque"))
+    let state = expect_state(@moontrace.TraceState::from_entries([entry]))
+    let updated = expect_state(
+      @moontrace.TraceState::empty().set(key, "opaque"),
+    )
+    assert_eq(updated.to_header(), state.to_header())
+    assert_eq(
+      expect_state(@moontrace.parse_tracestate(state.to_header())).to_header(),
+      key + "=opaque",
+    )
+  }
+  let traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+  let ctx = expect_context(
+    @moontrace.parse_span_context(traceparent, tracestate="1vendor=opaque"),
+  )
+  assert_eq(ctx.traceparent(), traceparent)
+  assert_true(ctx.trace_state.is_empty())
+}
