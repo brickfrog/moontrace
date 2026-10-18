@@ -1,3 +1,8 @@
 import {
   "brickfrog/moontrace",
+  "moonbitlang/core/env",
 }
+
+options(
+  "native-stub": [ "terminal.c" ],
+)
