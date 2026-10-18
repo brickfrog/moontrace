@@ -1,7 +1,7 @@
 // Convert moontrace Level to OTLP severity number
 
 ///|
-pub fn level_to_severity(level : @moontrace.Level) -> Int {
+pub fn level_to_severity(level : @moontrace.Level) -> Int32 {
   match level {
     @moontrace.Trace => 1
     @moontrace.Debug => 5
@@ -52,8 +52,8 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
 ///|
 pub fn wrap_log_records(
   records : Array[OtlpLogRecord],
-  resource? : Resource = resource(),
-  scope? : InstrumentationScope = instrumentation_scope(),
+  resource~ : Resource = resource(),
+  scope~ : InstrumentationScope = instrumentation_scope(),
 ) -> Json {
   let scope_logs : Map[String, Json] = Map([])
   scope_logs.set("scope", scope.to_json())
@@ -73,8 +73,8 @@ pub fn wrap_log_records(
 ///|
 pub fn wrap_spans(
   spans : Array[OtlpSpan],
-  resource? : Resource = resource(),
-  scope? : InstrumentationScope = instrumentation_scope(),
+  resource~ : Resource = resource(),
+  scope~ : InstrumentationScope = instrumentation_scope(),
 ) -> Json {
   let scope_spans : Map[String, Json] = Map([])
   scope_spans.set("scope", scope.to_json())

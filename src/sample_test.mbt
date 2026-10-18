@@ -1,7 +1,7 @@
 ///|
 fn sample_test_event(
   message : String,
-  fields? : Array[@moontrace.Field] = [],
+  fields~ : Array[@moontrace.Field] = [],
 ) -> @moontrace.Event {
   @moontrace.Event::{
     level: @moontrace.Info,

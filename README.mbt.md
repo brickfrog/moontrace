@@ -177,6 +177,13 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 ### Convenience Wrappers
 
+`with_span`, `with_span_ctx`, and `with_child_span` accept callbacks that raise.
+They record the error as `SpanError`, close the span, and propagate the original
+error. Non-raising callbacks remain non-raising. Nested spans close from child
+to parent as errors propagate. Let the wrapper close its span: if a callback
+calls `exit()` early, a later error cannot update the already-delivered close
+snapshot. The wrapper will not close the span a second time.
+
 ```moonbit
 // Auto enter/exit
 @moontrace.with_span("operation", fn() {

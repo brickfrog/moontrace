@@ -1,37 +1,37 @@
 ///|
-const DEFAULT_MAX_SIZE_BYTES : Int = 10 * 1024 * 1024
+const DEFAULT_MAX_SIZE_BYTES : Int32 = 10 * 1024 * 1024
 
 ///|
-const DEFAULT_MAX_FILES : Int = 5
+const DEFAULT_MAX_FILES : Int32 = 5
 
 ///|
-const DEFAULT_MAX_BATCH : Int = 128
+const DEFAULT_MAX_BATCH : Int32 = 128
 
 ///|
-const DEFAULT_QUEUE_CAPACITY : Int = 1024
+const DEFAULT_QUEUE_CAPACITY : Int32 = 1024
 
 ///|
 #cfg(target="native")
-const FILE_PERMISSION : Int = 0o600
+const FILE_PERMISSION : Int32 = 0o600
 
 ///|
 pub(all) struct FileSubscriberConfig {
   path : String
-  max_size_bytes : Int
-  max_files : Int
+  max_size_bytes : Int32
+  max_files : Int32
   gzip : Bool
-  max_batch : Int
-  queue_capacity : Int
+  max_batch : Int32
+  queue_capacity : Int32
 } derive(Eq, Compare, Debug)
 
 ///|
 pub fn FileSubscriberConfig::new(
   path : String,
-  max_size_bytes? : Int = DEFAULT_MAX_SIZE_BYTES,
-  max_files? : Int = DEFAULT_MAX_FILES,
-  gzip? : Bool = false,
-  max_batch? : Int = DEFAULT_MAX_BATCH,
-  queue_capacity? : Int = DEFAULT_QUEUE_CAPACITY,
+  max_size_bytes~ : Int32 = DEFAULT_MAX_SIZE_BYTES,
+  max_files~ : Int32 = DEFAULT_MAX_FILES,
+  gzip~ : Bool = false,
+  max_batch~ : Int32 = DEFAULT_MAX_BATCH,
+  queue_capacity~ : Int32 = DEFAULT_QUEUE_CAPACITY,
 ) -> FileSubscriberConfig {
   {
     path,
@@ -50,10 +50,10 @@ struct FileSubscriber {
   queue : @aqueue.Queue[String]
   write_lock : @aqueue.Queue[Unit]
   mut initialized : Bool
-  mut current_size : Int
-  mut enqueued_count : Int
-  mut written_count : Int
-  mut dropped_count : Int
+  mut current_size : Int32
+  mut enqueued_count : Int32
+  mut written_count : Int32
+  mut dropped_count : Int32
   mut is_shut_down : Bool
   mut worker_running : Bool
 }
@@ -73,11 +73,11 @@ let _non_native_file_subscriber_marker : FileSubscriber = FileSubscriber::{
 ///|
 pub fn file_subscriber(
   path : String,
-  max_size_bytes? : Int = DEFAULT_MAX_SIZE_BYTES,
-  max_files? : Int = DEFAULT_MAX_FILES,
-  gzip? : Bool = false,
-  max_batch? : Int = DEFAULT_MAX_BATCH,
-  queue_capacity? : Int = DEFAULT_QUEUE_CAPACITY,
+  max_size_bytes~ : Int32 = DEFAULT_MAX_SIZE_BYTES,
+  max_files~ : Int32 = DEFAULT_MAX_FILES,
+  gzip~ : Bool = false,
+  max_batch~ : Int32 = DEFAULT_MAX_BATCH,
+  queue_capacity~ : Int32 = DEFAULT_QUEUE_CAPACITY,
 ) -> FileSubscriber {
   FileSubscriber::new(
     FileSubscriberConfig::new(
@@ -151,31 +151,31 @@ pub fn FileSubscriber::subscriber(
 }
 
 ///|
-pub fn FileSubscriber::dropped(self : FileSubscriber) -> Int {
+pub fn FileSubscriber::dropped(self : FileSubscriber) -> Int32 {
   self.dropped_count_impl()
 }
 
 ///|
 #cfg(target="native")
-pub fn FileSubscriber::written(self : FileSubscriber) -> Int {
+pub fn FileSubscriber::written(self : FileSubscriber) -> Int32 {
   self.written_count
 }
 
 ///|
 #cfg(not(target="native"))
-pub fn FileSubscriber::written(_self : FileSubscriber) -> Int {
+pub fn FileSubscriber::written(_self : FileSubscriber) -> Int32 {
   0
 }
 
 ///|
 #cfg(target="native")
-fn FileSubscriber::dropped_count_impl(self : FileSubscriber) -> Int {
+fn FileSubscriber::dropped_count_impl(self : FileSubscriber) -> Int32 {
   self.dropped_count
 }
 
 ///|
 #cfg(not(target="native"))
-fn FileSubscriber::dropped_count_impl(_self : FileSubscriber) -> Int {
+fn FileSubscriber::dropped_count_impl(_self : FileSubscriber) -> Int32 {
   ignore(_self.marker)
   0
 }
@@ -260,7 +260,7 @@ pub async fn FileSubscriber::shutdown(self : FileSubscriber) -> Unit {
 }
 
 ///|
-fn clamp_positive(value : Int) -> Int {
+fn clamp_positive(value : Int32) -> Int32 {
   if value < 1 {
     1
   } else {
@@ -269,7 +269,7 @@ fn clamp_positive(value : Int) -> Int {
 }
 
 ///|
-fn clamp_non_negative(value : Int) -> Int {
+fn clamp_non_negative(value : Int32) -> Int32 {
   if value < 0 {
     0
   } else {
@@ -285,7 +285,7 @@ fn unsupported_target_message() -> String {
 
 ///|
 #cfg(target="native")
-fn byte_len(data : String) -> Int {
+fn byte_len(data : String) -> Int32 {
   let payload : &@io.Data = data
   payload.binary().length()
 }
@@ -458,14 +458,14 @@ async fn FileSubscriber::shift_rotated_files(self : FileSubscriber) -> Unit {
 #cfg(target="native")
 fn FileSubscriber::raw_rotated_path(
   self : FileSubscriber,
-  index : Int,
+  index : Int32,
 ) -> String {
   self.config.path + "." + index.to_string()
 }
 
 ///|
 #cfg(target="native")
-fn FileSubscriber::rotated_path(self : FileSubscriber, index : Int) -> String {
+fn FileSubscriber::rotated_path(self : FileSubscriber, index : Int32) -> String {
   let path = self.raw_rotated_path(index)
   if self.config.gzip {
     path + ".gz"

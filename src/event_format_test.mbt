@@ -2,8 +2,8 @@
 fn sample_event(
   level : @moontrace.Level,
   message : String,
-  fields? : Array[@moontrace.Field] = [],
-  source? : String = "brickfrog/choir/server",
+  fields~ : Array[@moontrace.Field] = [],
+  source~ : String = "brickfrog/choir/server",
 ) -> @moontrace.Event {
   @moontrace.Event::{
     level,

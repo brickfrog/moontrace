@@ -80,8 +80,8 @@ span.exit()
 
 ### Package naming
 - Don't name packages `io` — conflicts with `moonbitlang/async/io`
-- MoonBit's moon.pkg DSL has no import alias syntax
-- If two packages want the same short name, rename yours
+- Package aliases use `@alias` in `moon.pkg`: `import { "brickfrog/moontrace" @mt, }` allows callers to write `@mt.info(...)`.
+- Use import aliases when dependencies share the same short name.
 
 ### Async pitfalls
 - `@process.run` with `stdout=pipe` deadlocks — use `spawn_orphan` + read + `wait_pid`

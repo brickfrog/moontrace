@@ -10,7 +10,7 @@ pub(all) enum SpanLifecycleKind {
 
 ///|
 pub struct SpanLifecycleEvent {
-  index : Int
+  index : Int32
   kind : SpanLifecycleKind
   span : @moontrace.Span
   field : @moontrace.Field?
@@ -19,7 +19,7 @@ pub struct SpanLifecycleEvent {
 
 ///|
 pub struct CapturedRecord {
-  index : Int
+  index : Int32
   event : @moontrace.Event?
   lifecycle : SpanLifecycleEvent?
 } derive(Debug)
@@ -410,7 +410,7 @@ fn event_has_field(
 ///|
 fn TestSubscriber::record_in_span(
   self : TestSubscriber,
-  record_index : Int,
+  record_index : Int32,
   span_id : String?,
   span_name : String?,
 ) -> Bool {
@@ -446,7 +446,7 @@ fn TestSubscriber::event_matches(
   self : TestSubscriber,
   query : EventQuery,
   event : @moontrace.Event,
-  record_index : Int,
+  record_index : Int32,
 ) -> Bool {
   let level_matches = match query.level {
     Some(level) => event.level == level

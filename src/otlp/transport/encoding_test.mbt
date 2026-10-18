@@ -78,7 +78,7 @@ priv struct DecodedScope {
 ///|
 priv struct DecodedStatus {
   message : String
-  code : UInt
+  code : UInt32
 }
 
 ///|
@@ -86,9 +86,9 @@ priv struct DecodedSpan {
   trace_id : Bytes
   span_id : Bytes
   parent_span_id : Bytes
-  flags : UInt
+  flags : UInt32
   name : String
-  kind : UInt
+  kind : UInt32
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[DecodedKeyValue]
@@ -115,7 +115,7 @@ priv struct DecodedTraceRequest {
 ///|
 priv struct DecodedLogRecord {
   time_unix_nano : UInt64
-  severity_number : UInt
+  severity_number : UInt32
   severity_text : String
   body : DecodedAnyValue
   attributes : Array[DecodedKeyValue]
@@ -159,7 +159,11 @@ fn decoded_scope_default() -> DecodedScope {
 }
 
 ///|
-fn assert_wire_type(actual : UInt, expected : UInt, context : String) -> Unit {
+fn assert_wire_type(
+  actual : UInt32,
+  expected : UInt32,
+  context : String,
+) -> Unit {
   if actual != expected {
     abort(
       "unexpected protobuf wire type for " +
@@ -201,7 +205,10 @@ fn read_string_field(
 }
 
 ///|
-fn read_uint32_field(reader : @protobuf.BytesReader, context : String) -> UInt {
+fn read_uint32_field(
+  reader : @protobuf.BytesReader,
+  context : String,
+) -> UInt32 {
   (reader |> @protobuf.read_uint32()) catch {
     err => {
       decode_fail(context, "\{err}")
@@ -211,7 +218,10 @@ fn read_uint32_field(reader : @protobuf.BytesReader, context : String) -> UInt {
 }
 
 ///|
-fn read_fixed32_field(reader : @protobuf.BytesReader, context : String) -> UInt {
+fn read_fixed32_field(
+  reader : @protobuf.BytesReader,
+  context : String,
+) -> UInt32 {
   (reader |> @protobuf.read_fixed32()) catch {
     err => {
       decode_fail(context, "\{err}")
@@ -269,7 +279,7 @@ fn read_double_field(
 ///|
 fn skip_unknown(
   reader : @protobuf.BytesReader,
-  wire_type : UInt,
+  wire_type : UInt32,
   context : String,
 ) -> Unit {
   (reader |> @protobuf.read_unknown(wire_type)) catch {

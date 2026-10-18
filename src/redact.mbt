@@ -27,10 +27,10 @@ pub(all) struct RedactionPolicy {
 
 ///|
 pub fn redaction_policy(
-  deny? : Array[String] = ["password", "token", "secret"],
-  allow? : Array[String]? = None,
-  mode? : RedactionMode = Redact,
-  placeholder? : String = "[REDACTED]",
+  deny~ : Array[String] = ["password", "token", "secret"],
+  allow~ : Array[String]? = None,
+  mode~ : RedactionMode = Redact,
+  placeholder~ : String = "[REDACTED]",
 ) -> RedactionPolicy {
   {
     deny: deny.copy(),
@@ -112,7 +112,7 @@ fn redact_event(event : Event, policy : RedactionPolicy) -> Event {
 ///|
 pub fn redact(
   inner : (Event) -> Unit,
-  policy? : RedactionPolicy = default_redaction_policy(),
+  policy~ : RedactionPolicy = default_redaction_policy(),
 ) -> (Event) -> Unit {
   fn(event) { inner(redact_event(event, policy)) }
 }

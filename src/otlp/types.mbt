@@ -27,21 +27,21 @@ pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
   parent_span_id : String
-  flags : Int
+  flags : Int32
   name : String
-  kind : Int // 1=INTERNAL, 2=SERVER, 3=CLIENT
+  kind : Int32 // 1=INTERNAL, 2=SERVER, 3=CLIENT
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[OtlpAttribute]
   links : Array[OtlpLink]
-  status_code : Int // 0=UNSET, 1=OK, 2=ERROR
+  status_code : Int32 // 0=UNSET, 1=OK, 2=ERROR
   status_message : String
 } derive(Debug)
 
 ///|
 pub(all) struct OtlpLogRecord {
   time_unix_nano : UInt64
-  severity_number : Int
+  severity_number : Int32
   severity_text : String
   body : String
   attributes : Array[OtlpAttribute]
@@ -67,9 +67,9 @@ const SERVICE_VERSION_KEY : String = "service.version"
 
 ///|
 pub fn resource(
-  service_name? : String = "",
-  service_version? : String = "",
-  attributes? : Array[OtlpAttribute] = [],
+  service_name~ : String = "",
+  service_version~ : String = "",
+  attributes~ : Array[OtlpAttribute] = [],
 ) -> Resource {
   let resource_attributes : Array[OtlpAttribute] = []
   if !service_name.is_empty() {
@@ -92,9 +92,9 @@ pub fn resource(
 
 ///|
 pub fn instrumentation_scope(
-  name? : String = "moontrace",
-  version? : String = "",
-  attributes? : Array[OtlpAttribute] = [],
+  name~ : String = "moontrace",
+  version~ : String = "",
+  attributes~ : Array[OtlpAttribute] = [],
 ) -> InstrumentationScope {
   { name, version, attributes: attributes.copy(), }
 }

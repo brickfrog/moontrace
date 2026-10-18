@@ -4,7 +4,7 @@ suberror ExampleFailure
 ///|
 fn assert_record_event(
   records : Array[CapturedRecord],
-  index : Int,
+  index : Int32,
   message : String,
 ) -> Unit {
   if records[index].index != index {
@@ -26,7 +26,7 @@ fn assert_record_event(
 ///|
 fn assert_record_lifecycle(
   records : Array[CapturedRecord],
-  index : Int,
+  index : Int32,
   kind : SpanLifecycleKind,
   span_name : String,
 ) -> Unit {

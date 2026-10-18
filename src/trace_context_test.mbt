@@ -99,7 +99,7 @@ fn assert_entry_err(
 }
 
 ///|
-fn make_tracestate_header(count : Int) -> String {
+fn make_tracestate_header(count : Int32) -> String {
   let buf = StringBuilder()
   for i in 0..<count {
     if i > 0 {

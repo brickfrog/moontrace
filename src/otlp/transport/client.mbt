@@ -1,16 +1,16 @@
 ///|
 pub(all) struct AsyncHttpClient {
-  timeout_ms : Int
+  timeout_ms : Int32
   mut is_shut_down : Bool
 }
 
 ///|
 #cfg(any(target="native", target="js"))
-const MAX_RESPONSE_BODY_BYTES : Int = 64 * 1024
+const MAX_RESPONSE_BODY_BYTES : Int32 = 64 * 1024
 
 ///|
 #cfg(any(target="native", target="js"))
-const RESPONSE_READ_CHUNK_BYTES : Int = 8 * 1024
+const RESPONSE_READ_CHUNK_BYTES : Int32 = 8 * 1024
 
 ///|
 #cfg(any(target="native", target="js"))
@@ -30,7 +30,7 @@ async fn read_bounded_response_body(
 }
 
 ///|
-pub fn async_http_client(timeout_ms? : Int = 5000) -> AsyncHttpClient {
+pub fn async_http_client(timeout_ms~ : Int32 = 5000) -> AsyncHttpClient {
   let timeout_ms = if timeout_ms < 1 { 1 } else { timeout_ms }
   { timeout_ms, is_shut_down: false, }
 }

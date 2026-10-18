@@ -12,7 +12,7 @@ fn redaction_sample_event(fields : Array[@moontrace.Field]) -> @moontrace.Event 
 ///|
 fn redaction_capture(
   event : @moontrace.Event,
-  policy? : @moontrace.RedactionPolicy = @moontrace.default_redaction_policy(),
+  policy~ : @moontrace.RedactionPolicy = @moontrace.default_redaction_policy(),
 ) -> @moontrace.Event {
   let captured : Array[@moontrace.Event] = []
   let subscriber = @moontrace.redact(
@@ -33,7 +33,7 @@ fn assert_redaction_json_eq(actual : Json, expected : Json) -> Unit {
 ///|
 fn assert_redaction_field(
   event : @moontrace.Event,
-  index : Int,
+  index : Int32,
   key : String,
   value : Json,
 ) -> Unit {

@@ -5,8 +5,8 @@ pub(all) struct OtlpHttpTransport {
   traces_path : String
   logs_path : String
   headers : Map[String, String]
-  max_retries : Int
-  base_backoff_ms : Int
+  max_retries : Int32
+  base_backoff_ms : Int32
   mut is_shut_down : Bool
 }
 
@@ -14,11 +14,11 @@ pub(all) struct OtlpHttpTransport {
 pub fn transport(
   client : &OtlpHttpClient,
   endpoint : String,
-  traces_path? : String = "/v1/traces",
-  logs_path? : String = "/v1/logs",
-  headers? : Map[String, String] = default_headers(),
-  max_retries? : Int = 3,
-  base_backoff_ms? : Int = 1000,
+  traces_path~ : String = "/v1/traces",
+  logs_path~ : String = "/v1/logs",
+  headers~ : Map[String, String] = default_headers(),
+  max_retries~ : Int32 = 3,
+  base_backoff_ms~ : Int32 = 1000,
 ) -> OtlpHttpTransport {
   {
     client,
@@ -64,7 +64,7 @@ fn OtlpHttpTransport::ensure_open(
 ///|
 async fn OtlpHttpTransport::wait_before_retry(
   self : OtlpHttpTransport,
-  delay_ms : Int,
+  delay_ms : Int32,
 ) -> Result[Unit, TransportError] {
   match self.ensure_open() {
     Err(err) => return Err(err)
@@ -182,8 +182,8 @@ pub async fn OtlpHttpTransport::export_json(
 pub async fn OtlpHttpTransport::export_spans(
   self : OtlpHttpTransport,
   spans : Array[@otlp.OtlpSpan],
-  resource? : @otlp.Resource = @otlp.resource(),
-  scope? : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportOutcome, TransportError] {
   let payload = @otlp.wrap_spans(spans, resource~, scope~).stringify()
   self.export_json(join_url(self.endpoint, self.traces_path), payload)
@@ -193,8 +193,8 @@ pub async fn OtlpHttpTransport::export_spans(
 pub async fn OtlpHttpTransport::export_logs(
   self : OtlpHttpTransport,
   records : Array[@otlp.OtlpLogRecord],
-  resource? : @otlp.Resource = @otlp.resource(),
-  scope? : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportOutcome, TransportError] {
   let payload = @otlp.wrap_log_records(records, resource~, scope~).stringify()
   self.export_json(join_url(self.endpoint, self.logs_path), payload)

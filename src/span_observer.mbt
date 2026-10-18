@@ -60,12 +60,12 @@ fn link_snapshot(link : SpanLink) -> SpanLink {
 
 ///|
 pub fn span_lifecycle_observer(
-  on_created? : (Span) -> Unit = fn(_span : Span) {  },
-  on_entered? : (Span) -> Unit = fn(_span : Span) {  },
-  on_recorded? : (Span, Field) -> Unit = fn(_span : Span, _field : Field) {  },
-  on_exited? : (Span) -> Unit = fn(_span : Span) {  },
-  on_closed? : (Span) -> Unit = fn(_span : Span) {  },
-  on_linked? : (Span, SpanLink) -> Unit = fn(_span : Span, _link : SpanLink) {
+  on_created~ : (Span) -> Unit = fn(_span : Span) {  },
+  on_entered~ : (Span) -> Unit = fn(_span : Span) {  },
+  on_recorded~ : (Span, Field) -> Unit = fn(_span : Span, _field : Field) {  },
+  on_exited~ : (Span) -> Unit = fn(_span : Span) {  },
+  on_closed~ : (Span) -> Unit = fn(_span : Span) {  },
+  on_linked~ : (Span, SpanLink) -> Unit = fn(_span : Span, _link : SpanLink) {
 
   },
 ) -> SpanLifecycleObserver {
@@ -122,8 +122,8 @@ pub fn clear_span_observer() -> Unit {
 ///|
 pub fn span_link(
   target : Span,
-  kind? : SpanLinkKind = SpanLinked,
-  fields? : Array[Field] = [],
+  kind~ : SpanLinkKind = SpanLinked,
+  fields~ : Array[Field] = [],
 ) -> SpanLink {
   {
     trace_id: target.trace_id,
@@ -137,8 +137,8 @@ pub fn span_link(
 ///|
 pub fn span_link_from_context(
   ctx : SpanContext,
-  kind? : SpanLinkKind = SpanLinked,
-  fields? : Array[Field] = [],
+  kind~ : SpanLinkKind = SpanLinked,
+  fields~ : Array[Field] = [],
 ) -> SpanLink {
   {
     trace_id: ctx.trace_id,
@@ -153,7 +153,7 @@ pub fn span_link_from_context(
 pub fn Span::link(
   self : Span,
   target : Span,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
 ) -> Unit {
   let link = span_link(target, fields~)
   self.links.push(link)
@@ -164,7 +164,7 @@ pub fn Span::link(
 pub fn Span::follows_from(
   self : Span,
   target : Span,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
 ) -> Unit {
   let link = span_link(target, kind=SpanFollowsFrom, fields~)
   self.links.push(link)
@@ -175,7 +175,7 @@ pub fn Span::follows_from(
 pub fn Span::link_context(
   self : Span,
   ctx : SpanContext,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
 ) -> Unit {
   let link = span_link_from_context(ctx, fields~)
   self.links.push(link)
@@ -186,7 +186,7 @@ pub fn Span::link_context(
 pub fn Span::follows_from_context(
   self : Span,
   ctx : SpanContext,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
 ) -> Unit {
   let link = span_link_from_context(ctx, kind=SpanFollowsFrom, fields~)
   self.links.push(link)
