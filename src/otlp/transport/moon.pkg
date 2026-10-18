@@ -1,4 +1,6 @@
 import {
+  "brickfrog/moontrace",
+  "moonbitlang/async/aqueue",
   "moonbitlang/core/json",
   "brickfrog/moontrace/otlp",
   "moonbitlang/async",

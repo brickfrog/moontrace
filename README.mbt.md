@@ -535,6 +535,15 @@ nonnegative int64 JSON numbers or decimal strings, including exponent notation;
 quoted counts retain int64 precision, while bare numbers follow ProtoJSON Double
 coercion. Unknown fields are ignored. Existing export method signatures remain unchanged.
 
+For timed JSON delivery with bounded buffering, use
+`@transport.managed_json_exporter(tx)`. Its synchronous subscriber and completed
+span observer drop new batches under pressure; `run()` is owned by your task
+group. Async `flush()` provides a terminal-outcome barrier, and `shutdown()` closes
+intake and drains accepted work plus final partial batches. Inspect `stats()`,
+`last_report()`, and `last_error()` for delivery, rejection, and drop outcomes.
+See [managed OTLP usage and cancellation semantics](docs/managed-otlp.md), or run
+`moon run src/cmd/managed_json --target native` for a self-contained synthetic example.
+
 ### Subscriber Composition
 
 Route events to multiple subscribers:
