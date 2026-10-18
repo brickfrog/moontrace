@@ -1,5 +1,7 @@
 # brickfrog/moontrace
 
+[![Tested with MoonBit](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbrickfrog%2Fmoontrace%2Fmain%2F.github%2Fscripts%2Fsetup-moonbit.sh&search=MOONBIT_VERSION%3D%27%28%5B%5E%27%5D%2B%29%27&replace=%241&label=tested%20with%20MoonBit&color=blue)](https://github.com/brickfrog/moontrace/blob/main/.github/scripts/setup-moonbit.sh)
+
 Structured tracing for MoonBit. Spans, structured fields, pluggable subscribers.
 
 Inspired by Rust's [tracing](https://github.com/tokio-rs/tracing) crate and [loguru](https://github.com/Delgan/loguru)'s developer experience.
