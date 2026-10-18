@@ -355,6 +355,43 @@ rendered visibly (`\\n`, `\\r`, `\\t`, or `\\u{001b}`-style escapes). Printable
 Unicode is preserved. The JSON subscriber remains governed by JSON string
 escaping and is unchanged.
 
+### Application Startup
+
+Use `@console.initialize_from_env()` for application startup. It installs a
+console subscriber using `eprintln` and defaults to Info. `MOONTRACE_LOG` sets
+the global and exact-package filters using the directives described above.
+
+```moonbit
+fn main {
+  match @console.initialize_from_env() {
+    Ok(_) => ()
+    Err(err) => {
+      eprintln(err)
+      return
+    }
+  }
+  @moontrace.info("ready")
+}
+```
+
+Missing or blank `MOONTRACE_LOG` selects Info with no package overrides.
+Successful setup replaces the subscriber and existing filters. Invalid
+filters return `Err` before changing any tracing state. Package overrides can
+be more verbose than the global level. Use `env_var="MY_APP_LOG"` to choose a
+different environment variable.
+
+Color defaults to automatic: stderr must be a terminal, `NO_COLOR` must be
+unset or empty, and `TERM` must not be `dumb`. Explicit `color=true` or
+`color=false` overrides automatic detection and these environment variables.
+A custom `output=fn(line) { ... }` defaults to plain text unless color is
+explicitly enabled.
+
+Native and Node.js output goes to stderr. On wasm-gc, the current MoonBit
+runtime routes `eprintln` to stdout and automatic color is disabled; pass a
+custom output callback when the host provides a separate error stream.
+The existing `@console.initialize()` defaults and the core
+`@moontrace.initialize_from_env()` filter-only helper are unchanged.
+
 ### JSON Subscriber
 
 Machine-readable JSON output:
