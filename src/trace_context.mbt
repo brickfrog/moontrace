@@ -42,7 +42,7 @@ pub struct SpanId {
 
 ///|
 pub struct TraceFlags {
-  flags : Int
+  flags : Int32
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -66,18 +66,18 @@ pub struct SpanContext {
 } derive(Debug)
 
 ///|
-const TRACEPARENT_MAX_LENGTH : Int = 512
+const TRACEPARENT_MAX_LENGTH : Int32 = 512
 
 ///|
-const TRACESTATE_MAX_LENGTH : Int = 512
+const TRACESTATE_MAX_LENGTH : Int32 = 512
 
 ///|
-fn is_lower_hex_unit(unit : Int) -> Bool {
+fn is_lower_hex_unit(unit : Int32) -> Bool {
   (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102)
 }
 
 ///|
-fn hex_value_unit(unit : Int) -> Int? {
+fn hex_value_unit(unit : Int32) -> Int32? {
   if unit >= 48 && unit <= 57 {
     Some(unit - 48)
   } else if unit >= 97 && unit <= 102 {
@@ -88,7 +88,7 @@ fn hex_value_unit(unit : Int) -> Int? {
 }
 
 ///|
-fn is_lower_hex_string(value : String, expected_len : Int) -> Bool {
+fn is_lower_hex_string(value : String, expected_len : Int32) -> Bool {
   if value.length() != expected_len {
     return false
   }
@@ -115,7 +115,7 @@ fn is_all_zero(value : String) -> Bool {
 }
 
 ///|
-fn hex_digit(value : Int) -> String {
+fn hex_digit(value : Int32) -> String {
   match value {
     0 => "0"
     1 => "1"
@@ -137,7 +137,7 @@ fn hex_digit(value : Int) -> String {
 }
 
 ///|
-fn parse_hex_byte(value : String) -> Int? {
+fn parse_hex_byte(value : String) -> Int32? {
   guard value.length() == 2 else { return None }
   match
     (
@@ -203,7 +203,7 @@ pub impl Show for SpanId with fn output(self, logger) {
 
 ///|
 pub fn TraceFlags::from_int(
-  flags : Int,
+  flags : Int32,
 ) -> Result[TraceFlags, TraceContextError] {
   if flags < 0 || flags > 255 {
     Result::Err(InvalidTraceFlags("expected an unsigned 8-bit value"))
@@ -261,7 +261,7 @@ pub fn TraceFlags::with_sampled(
 }
 
 ///|
-pub fn TraceFlags::to_int(self : TraceFlags) -> Int {
+pub fn TraceFlags::to_int(self : TraceFlags) -> Int32 {
   self.flags
 }
 
@@ -294,12 +294,12 @@ pub impl Show for TraceFlags with fn output(self, logger) {
 }
 
 ///|
-fn is_trace_state_key_start(unit : Int, allow_digit : Bool) -> Bool {
+fn is_trace_state_key_start(unit : Int32, allow_digit : Bool) -> Bool {
   (unit >= 97 && unit <= 122) || (allow_digit && unit >= 48 && unit <= 57)
 }
 
 ///|
-fn is_trace_state_key_rest(unit : Int) -> Bool {
+fn is_trace_state_key_rest(unit : Int32) -> Bool {
   (unit >= 97 && unit <= 122) ||
   (unit >= 48 && unit <= 57) ||
   unit == 95 ||
@@ -311,7 +311,7 @@ fn is_trace_state_key_rest(unit : Int) -> Bool {
 ///|
 fn validate_key_part(
   value : String,
-  max_len : Int,
+  max_len : Int32,
   allow_digit_start : Bool,
 ) -> Bool {
   guard !value.is_empty() && value.length() <= max_len else { return false }
@@ -440,7 +440,7 @@ pub fn trace_state(
 }
 
 ///|
-pub fn TraceState::len(self : TraceState) -> Int {
+pub fn TraceState::len(self : TraceState) -> Int32 {
   self.entries.length()
 }
 
@@ -548,9 +548,9 @@ pub fn parse_tracestate(
 pub fn span_context(
   trace_id : TraceId,
   span_id : SpanId,
-  flags? : TraceFlags = { flags: 0, },
-  trace_state? : TraceState = { entries: [], },
-  is_remote? : Bool = false,
+  flags~ : TraceFlags = { flags: 0, },
+  trace_state~ : TraceState = { entries: [], },
+  is_remote~ : Bool = false,
 ) -> SpanContext {
   {
     trace_id: trace_id.value,
@@ -565,9 +565,9 @@ pub fn span_context(
 pub fn span_context_from_ids(
   trace_id : String,
   span_id : String,
-  flags? : TraceFlags = { flags: 0, },
-  trace_state? : TraceState = { entries: [], },
-  is_remote? : Bool = false,
+  flags~ : TraceFlags = { flags: 0, },
+  trace_state~ : TraceState = { entries: [], },
+  is_remote~ : Bool = false,
 ) -> Result[SpanContext, TraceContextError] {
   match TraceId::parse(trace_id) {
     Result::Ok(tid) =>
@@ -591,7 +591,7 @@ pub fn SpanContext::is_remote(self : SpanContext) -> Bool {
 }
 
 ///|
-pub fn SpanContext::trace_flags_int(self : SpanContext) -> Int {
+pub fn SpanContext::trace_flags_int(self : SpanContext) -> Int32 {
   self.flags.to_int()
 }
 
@@ -670,7 +670,7 @@ pub fn parse_traceparent(
 ///|
 pub fn parse_span_context(
   traceparent : String,
-  tracestate? : String = "",
+  tracestate~ : String = "",
 ) -> Result[SpanContext, TraceContextError] {
   match parse_traceparent(traceparent) {
     Result::Ok(ctx) => {
@@ -732,8 +732,8 @@ pub fn traceparent_from_span(span : Span) -> Result[String, TraceContextError] {
 pub fn span_from_remote_context(
   ctx : SpanContext,
   name : String,
-  fields? : Array[Field] = [],
-  kind? : SpanKind = Server,
+  fields~ : Array[Field] = [],
+  kind~ : SpanKind = Server,
 ) -> Span {
   let s = span_with_ids_unnotified(
     name,

@@ -1,12 +1,12 @@
 ///|
 pub(all) struct EventBuffer {
   mut events : Array[Event]
-  capacity : Int
+  capacity : Int32
   inner : (Event) -> Unit
 }
 
 ///|
-pub fn buffer(inner : (Event) -> Unit, capacity? : Int = 10) -> EventBuffer {
+pub fn buffer(inner : (Event) -> Unit, capacity~ : Int32 = 10) -> EventBuffer {
   { events: [], capacity: if capacity < 1 { 1 } else { capacity }, inner, }
 }
 
@@ -28,6 +28,6 @@ pub fn EventBuffer::flush(self : EventBuffer) -> Unit {
 }
 
 ///|
-pub fn EventBuffer::len(self : EventBuffer) -> Int {
+pub fn EventBuffer::len(self : EventBuffer) -> Int32 {
   self.events.length()
 }

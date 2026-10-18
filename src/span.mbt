@@ -6,7 +6,7 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
-  mut trace_flags : Int
+  mut trace_flags : Int32
   mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
@@ -19,8 +19,8 @@ pub(all) struct Span {
 ///|
 pub fn span(
   name : String,
-  fields? : Array[Field] = [],
-  kind? : SpanKind = Internal,
+  fields~ : Array[Field] = [],
+  kind~ : SpanKind = Internal,
 ) -> Span {
   let s = {
     name,
@@ -46,8 +46,8 @@ pub fn span(
 pub fn span_with_trace(
   name : String,
   trace_id : String,
-  fields? : Array[Field] = [],
-  kind? : SpanKind = Internal,
+  fields~ : Array[Field] = [],
+  kind~ : SpanKind = Internal,
 ) -> Span {
   let s = {
     name,
@@ -73,8 +73,8 @@ pub fn span_with_trace(
 pub fn child_span(
   parent : Span,
   name : String,
-  fields? : Array[Field] = [],
-  kind? : SpanKind = Internal,
+  fields~ : Array[Field] = [],
+  kind~ : SpanKind = Internal,
 ) -> Span {
   let s = span_with_ids(
     name,
@@ -96,8 +96,8 @@ fn span_with_ids(
   trace_id : String,
   parent_span_id : String,
   kind : SpanKind,
-  trace_flags? : Int = 0,
-  trace_state? : TraceState = TraceState::empty(),
+  trace_flags~ : Int32 = 0,
+  trace_state~ : TraceState = TraceState::empty(),
 ) -> Span {
   let s = span_with_ids_unnotified(
     name,
@@ -119,8 +119,8 @@ fn span_with_ids_unnotified(
   trace_id : String,
   parent_span_id : String,
   kind : SpanKind,
-  trace_flags? : Int = 0,
-  trace_state? : TraceState = TraceState::empty(),
+  trace_flags~ : Int32 = 0,
+  trace_state~ : TraceState = TraceState::empty(),
 ) -> Span {
   {
     name,
@@ -186,7 +186,7 @@ pub fn Span::exit(self : Span) -> Unit {
 pub fn Span::set_status(
   self : Span,
   status : SpanStatus,
-  message? : String? = None,
+  message~ : String? = None,
 ) -> Unit {
   self.status = status
   match message {

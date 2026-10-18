@@ -46,15 +46,15 @@ pub(all) struct RatioSampler {
   inner : (Event) -> Unit
   ratio : Double
   rand : () -> Double
-  mut kept : Int
-  mut dropped : Int
+  mut kept : Int32
+  mut dropped : Int32
 }
 
 ///|
 pub fn ratio_sampler(
   inner : (Event) -> Unit,
   ratio : Double,
-  rand? : () -> Double = default_sampling_rand,
+  rand~ : () -> Double = default_sampling_rand,
 ) -> RatioSampler {
   { inner, ratio: clamp_sampling_ratio(ratio), rand, kept: 0, dropped: 0, }
 }
@@ -73,33 +73,33 @@ pub fn RatioSampler::subscriber(self : RatioSampler) -> (Event) -> Unit {
 }
 
 ///|
-pub fn RatioSampler::kept(self : RatioSampler) -> Int {
+pub fn RatioSampler::kept(self : RatioSampler) -> Int32 {
   self.kept
 }
 
 ///|
-pub fn RatioSampler::dropped(self : RatioSampler) -> Int {
+pub fn RatioSampler::dropped(self : RatioSampler) -> Int32 {
   self.dropped
 }
 
 ///|
 pub(all) struct RateLimiter {
   inner : (Event) -> Unit
-  limit : Int
+  limit : Int32
   window_ns : UInt64
   clock : () -> UInt64
   mut window_start : UInt64
-  mut count : Int
-  mut kept : Int
-  mut dropped : Int
+  mut count : Int32
+  mut kept : Int32
+  mut dropped : Int32
 }
 
 ///|
 pub fn rate_limiter(
   inner : (Event) -> Unit,
-  limit : Int,
+  limit : Int32,
   window_ns : UInt64,
-  clock? : () -> UInt64 = @env.now,
+  clock~ : () -> UInt64 = @env.now,
 ) -> RateLimiter {
   {
     inner,
@@ -154,12 +154,12 @@ pub fn RateLimiter::subscriber(self : RateLimiter) -> (Event) -> Unit {
 }
 
 ///|
-pub fn RateLimiter::kept(self : RateLimiter) -> Int {
+pub fn RateLimiter::kept(self : RateLimiter) -> Int32 {
   self.kept
 }
 
 ///|
-pub fn RateLimiter::dropped(self : RateLimiter) -> Int {
+pub fn RateLimiter::dropped(self : RateLimiter) -> Int32 {
   self.dropped
 }
 
@@ -218,8 +218,8 @@ fn trace_id_field(event : Event) -> String? {
 pub(all) struct TraceSampler {
   inner : (Event) -> Unit
   ratio : Double
-  mut kept : Int
-  mut dropped : Int
+  mut kept : Int32
+  mut dropped : Int32
 }
 
 ///|
@@ -248,11 +248,11 @@ pub fn TraceSampler::subscriber(self : TraceSampler) -> (Event) -> Unit {
 }
 
 ///|
-pub fn TraceSampler::kept(self : TraceSampler) -> Int {
+pub fn TraceSampler::kept(self : TraceSampler) -> Int32 {
   self.kept
 }
 
 ///|
-pub fn TraceSampler::dropped(self : TraceSampler) -> Int {
+pub fn TraceSampler::dropped(self : TraceSampler) -> Int32 {
   self.dropped
 }

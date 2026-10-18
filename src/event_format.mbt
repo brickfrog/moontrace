@@ -27,7 +27,7 @@ pub fn format_timestamp_hms(timestamp : UInt64) -> String {
 }
 
 ///|
-pub fn Event::format(self : Event, color? : Bool = false) -> String {
+pub fn Event::format(self : Event, color~ : Bool = false) -> String {
   format_event(self, color, format_timestamp_utc)
 }
 

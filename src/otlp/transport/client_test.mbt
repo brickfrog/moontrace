@@ -1,7 +1,7 @@
 ///|
 #cfg(target="native")
 async fn with_response_server(
-  requests : Ref[Int],
+  requests : Ref[Int32],
   f : async (String) -> Unit,
 ) -> Unit {
   @async.with_task_group(group => {
@@ -48,7 +48,7 @@ fn expect_http_response(
 #cfg(target="native")
 async test "async HTTP client preserves bounded response bodies" {
   @async.with_timeout(2000, () => {
-    let requests : Ref[Int] = Ref(0)
+    let requests : Ref[Int32] = Ref(0)
     with_response_server(requests, endpoint => {
       let client = @transport.async_http_client(timeout_ms=1000)
       let small = expect_http_response(
@@ -70,7 +70,7 @@ async test "async HTTP client preserves bounded response bodies" {
 #cfg(target="native")
 async test "async HTTP client rejects oversized response and remains usable" {
   @async.with_timeout(2000, () => {
-    let requests : Ref[Int] = Ref(0)
+    let requests : Ref[Int32] = Ref(0)
     with_response_server(requests, endpoint => {
       let client = @transport.async_http_client(timeout_ms=1000)
       match
@@ -93,7 +93,7 @@ async test "async HTTP client rejects oversized response and remains usable" {
 #cfg(target="native")
 async test "oversized OTLP response is non-retryable" {
   @async.with_timeout(2000, () => {
-    let requests : Ref[Int] = Ref(0)
+    let requests : Ref[Int32] = Ref(0)
     with_response_server(requests, endpoint => {
       let client = @transport.async_http_client(timeout_ms=1000)
       let tx = @transport.transport(
@@ -118,7 +118,7 @@ async test "oversized OTLP response is non-retryable" {
 #cfg(target="native")
 async test "response body read obeys HTTP client timeout" {
   @async.with_timeout(2000, () => {
-    let requests : Ref[Int] = Ref(0)
+    let requests : Ref[Int32] = Ref(0)
     with_response_server(requests, endpoint => {
       let client = @transport.async_http_client(timeout_ms=25)
       match

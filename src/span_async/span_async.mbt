@@ -24,7 +24,7 @@ fn error_message(err : Error) -> String {
 #warnings("-fragile_catch_all")
 pub async fn[T] with_span_async(
   name : String,
-  fields? : Array[@moontrace.Field] = [],
+  fields~ : Array[@moontrace.Field] = [],
   f : async (@moontrace.Span) -> T,
 ) -> T {
   let s = @moontrace.span(name, fields~)
@@ -55,7 +55,7 @@ pub async fn[T] with_span_async(
 pub async fn[T] with_child_span_async(
   parent : @moontrace.Span,
   name : String,
-  fields? : Array[@moontrace.Field] = [],
+  fields~ : Array[@moontrace.Field] = [],
   f : async (@moontrace.Span) -> T,
 ) -> T {
   let s = @moontrace.child_span(parent, name, fields~)

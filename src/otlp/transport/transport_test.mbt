@@ -92,15 +92,15 @@ pub(all) struct FakeCall {
 pub(all) struct FakeClient {
   replies : Array[FakeReply]
   calls : Array[FakeCall]
-  mut next : Int
+  mut next : Int32
 }
 
 ///|
 pub(all) struct ShutdownAfterPostClient {
   replies : Array[FakeReply]
   calls : Array[FakeCall]
-  mut next : Int
-  shutdown_on_call : Int
+  mut next : Int32
+  shutdown_on_call : Int32
   after_post : () -> Unit
 }
 
@@ -110,14 +110,14 @@ fn fake_client(replies : Array[FakeReply]) -> FakeClient {
 }
 
 ///|
-fn response(status_code : Int) -> @transport.HttpResponse {
+fn response(status_code : Int32) -> @transport.HttpResponse {
   { status_code, body: "body-\{status_code}", retry_after_ms: None, }
 }
 
 ///|
 fn response_retry_after(
-  status_code : Int,
-  retry_after_ms : Int,
+  status_code : Int32,
+  retry_after_ms : Int32,
 ) -> @transport.HttpResponse {
   {
     status_code,
@@ -170,7 +170,7 @@ pub impl @transport.OtlpHttpClient for ShutdownAfterPostClient with fn post(
 ///|
 fn test_transport(
   client : FakeClient,
-  max_retries? : Int = 3,
+  max_retries~ : Int32 = 3,
 ) -> @transport.OtlpHttpTransport {
   @transport.transport(
     client,

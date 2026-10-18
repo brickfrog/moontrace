@@ -6,7 +6,7 @@ pub(all) struct OtlpExporter {
   mut spans : Array[OtlpSpan]
   log_output : (String) -> Unit
   span_output : (String) -> Unit
-  capacity : Int
+  capacity : Int32
   resource : Resource
   scope : InstrumentationScope
   mut is_shut_down : Bool
@@ -24,11 +24,11 @@ fn copy_scope(scope : InstrumentationScope) -> InstrumentationScope {
 
 ///|
 pub fn exporter(
-  log_output? : (String) -> Unit = fn(s) { println(s) },
-  span_output? : (String) -> Unit = fn(s) { println(s) },
-  capacity? : Int = 10,
-  resource? : Resource = resource(),
-  scope? : InstrumentationScope = instrumentation_scope(),
+  log_output~ : (String) -> Unit = fn(s) { println(s) },
+  span_output~ : (String) -> Unit = fn(s) { println(s) },
+  capacity~ : Int32 = 10,
+  resource~ : Resource = resource(),
+  scope~ : InstrumentationScope = instrumentation_scope(),
 ) -> OtlpExporter {
   let cap = if capacity < 1 { 1 } else { capacity }
   {

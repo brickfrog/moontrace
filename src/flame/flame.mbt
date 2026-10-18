@@ -6,7 +6,7 @@ pub(all) struct FlameExporter {
 
 ///|
 pub fn flame_exporter(
-  output? : (String) -> Unit = fn(s) { println(s) },
+  output~ : (String) -> Unit = fn(s) { println(s) },
 ) -> FlameExporter {
   { spans: [], output, }
 }
@@ -82,7 +82,7 @@ fn add_weight(
 fn stack_string(
   span : @moontrace.Span,
   spans_by_id : Map[String, @moontrace.Span],
-  span_count : Int,
+  span_count : Int32,
 ) -> String {
   let frames : Array[String] = []
   let mut current = Some(span)
@@ -115,7 +115,7 @@ fn span_key(trace_id : String, span_id : String) -> String {
 fn valid_parent_edge(
   span : @moontrace.Span,
   spans_by_id : Map[String, @moontrace.Span],
-  span_count : Int,
+  span_count : Int32,
 ) -> Bool {
   if span.parent_span_id.is_empty() {
     return false

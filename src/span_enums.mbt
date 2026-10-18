@@ -24,7 +24,7 @@ pub fn SpanKind::to_string(self : SpanKind) -> String {
 }
 
 ///|
-pub fn SpanKind::to_int(self : SpanKind) -> Int {
+pub fn SpanKind::to_int(self : SpanKind) -> Int32 {
   match self {
     Internal => 1
     Server => 2
@@ -56,7 +56,7 @@ pub fn SpanStatus::to_string(self : SpanStatus) -> String {
 }
 
 ///|
-pub fn SpanStatus::to_int(self : SpanStatus) -> Int {
+pub fn SpanStatus::to_int(self : SpanStatus) -> Int32 {
   match self {
     Unset => 0
     Ok => 1

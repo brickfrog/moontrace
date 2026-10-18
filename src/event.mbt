@@ -145,7 +145,7 @@ pub fn event_in_span(
   span : Span,
   level : Level,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, level, msg, fields, loc)
@@ -156,7 +156,7 @@ pub fn event_in_span(
 pub fn trace_in_span(
   span : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, Trace, msg, fields, loc)
@@ -167,7 +167,7 @@ pub fn trace_in_span(
 pub fn debug_in_span(
   span : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, Debug, msg, fields, loc)
@@ -178,7 +178,7 @@ pub fn debug_in_span(
 pub fn info_in_span(
   span : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, Info, msg, fields, loc)
@@ -189,7 +189,7 @@ pub fn info_in_span(
 pub fn warn_in_span(
   span : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, Warn, msg, fields, loc)
@@ -200,7 +200,7 @@ pub fn warn_in_span(
 pub fn error_in_span(
   span : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(span, Error_, msg, fields, loc)
@@ -212,7 +212,7 @@ pub fn Span::event(
   self : Span,
   level : Level,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, level, msg, fields, loc)
@@ -223,7 +223,7 @@ pub fn Span::event(
 pub fn Span::trace(
   self : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, Trace, msg, fields, loc)
@@ -234,7 +234,7 @@ pub fn Span::trace(
 pub fn Span::debug(
   self : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, Debug, msg, fields, loc)
@@ -245,7 +245,7 @@ pub fn Span::debug(
 pub fn Span::info(
   self : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, Info, msg, fields, loc)
@@ -256,7 +256,7 @@ pub fn Span::info(
 pub fn Span::warn(
   self : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, Warn, msg, fields, loc)
@@ -267,7 +267,7 @@ pub fn Span::warn(
 pub fn Span::error(
   self : Span,
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_in_span_with_loc(self, Error_, msg, fields, loc)
@@ -277,7 +277,7 @@ pub fn Span::error(
 #callsite(autofill(loc))
 pub fn info(
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_with_loc(Info, msg, fields, loc)
@@ -287,7 +287,7 @@ pub fn info(
 #callsite(autofill(loc))
 pub fn warn(
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_with_loc(Warn, msg, fields, loc)
@@ -297,7 +297,7 @@ pub fn warn(
 #callsite(autofill(loc))
 pub fn error(
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_with_loc(Error_, msg, fields, loc)
@@ -307,7 +307,7 @@ pub fn error(
 #callsite(autofill(loc))
 pub fn debug(
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_with_loc(Debug, msg, fields, loc)
@@ -317,7 +317,7 @@ pub fn debug(
 #callsite(autofill(loc))
 pub fn trace(
   msg : String,
-  fields? : Array[Field] = [],
+  fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
   emit_with_loc(Trace, msg, fields, loc)

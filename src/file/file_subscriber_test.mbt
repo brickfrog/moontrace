@@ -26,7 +26,7 @@ fn lines(messages : Array[String]) -> String {
 
 ///|
 #cfg(target="native")
-fn string_bytes(data : String) -> Int {
+fn string_bytes(data : String) -> Int32 {
   let payload : &@io.Data = data
   payload.binary().length()
 }

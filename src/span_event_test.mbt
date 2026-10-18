@@ -10,7 +10,7 @@ fn span_event_field_value(event : @moontrace.Event, key : String) -> Json? {
 }
 
 ///|
-fn span_event_field_count(event : @moontrace.Event, key : String) -> Int {
+fn span_event_field_count(event : @moontrace.Event, key : String) -> Int32 {
   let mut count = 0
   event.fields.each(fn(field) { if field.key == key { count = count + 1 } })
   count

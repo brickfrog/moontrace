@@ -3,7 +3,7 @@
 // stretch the millisecond wall clock into the required seed size. The fallback
 // is deterministic and non-cryptographic, but keeps unsupported environments
 // functional.
-fn make_seed(random_bytes : (Int) -> Bytes?, now : () -> UInt64) -> Bytes {
+fn make_seed(random_bytes : (Int32) -> Bytes?, now : () -> UInt64) -> Bytes {
   match random_bytes(32) {
     Some(seed) if seed.length() == 32 => return seed
     _ => ()

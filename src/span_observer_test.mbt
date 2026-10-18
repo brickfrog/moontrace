@@ -27,9 +27,9 @@ test "span lifecycle observer ordering" {
 
 ///|
 test "record after enter is visible to record and close observers only" {
-  let entered_field_counts : Array[Int] = []
-  let recorded_field_counts : Array[Int] = []
-  let closed_field_counts : Array[Int] = []
+  let entered_field_counts : Array[Int32] = []
+  let recorded_field_counts : Array[Int32] = []
+  let closed_field_counts : Array[Int32] = []
   @moontrace.set_span_observer(
     @moontrace.span_lifecycle_observer(
       on_entered=fn(span) { entered_field_counts.push(span.fields.length()) },
@@ -240,7 +240,7 @@ test "span link_context retains remote context identity and tracestate" {
 test "completed span observer captures closed span without event subscriber" {
   let names : Array[String] = []
   let active_states : Array[Bool] = []
-  let field_counts : Array[Int] = []
+  let field_counts : Array[Int32] = []
   @moontrace.set_span_observer(
     @moontrace.completed_span_observer(fn(span) {
       names.push(span.name)

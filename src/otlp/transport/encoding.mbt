@@ -84,7 +84,7 @@ fn json_payload(json : Json) -> OtlpPayload {
 ///|
 priv suberror ProtobufWireError {
   InvalidHexId(String, String)
-  InvalidUnsignedField(String, Int)
+  InvalidUnsignedField(String, Int32)
 }
 
 ///|
@@ -119,7 +119,7 @@ fn encode_protobuf_payload(
 ///|
 fn protobuf_message_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   write_body : (&@protobuf.Writer) -> Unit raise,
 ) -> Unit raise {
   let body = Buffer()
@@ -133,7 +133,7 @@ fn protobuf_message_field(
 ///|
 fn protobuf_string_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : String,
 ) -> Unit raise {
   if !value.is_empty() {
@@ -145,7 +145,7 @@ fn protobuf_string_field(
 ///|
 fn protobuf_bytes_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : Bytes,
 ) -> Unit raise {
   if value.length() > 0 {
@@ -157,8 +157,8 @@ fn protobuf_bytes_field(
 ///|
 fn protobuf_uint32_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
-  value : UInt,
+  field_number : UInt32,
+  value : UInt32,
 ) -> Unit raise {
   if value != 0 {
     writer |> @protobuf.write_tag((field_number, 0))
@@ -169,8 +169,8 @@ fn protobuf_uint32_field(
 ///|
 fn protobuf_fixed32_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
-  value : UInt,
+  field_number : UInt32,
+  value : UInt32,
 ) -> Unit raise {
   if value != 0 {
     writer |> @protobuf.write_tag((field_number, 5))
@@ -181,7 +181,7 @@ fn protobuf_fixed32_field(
 ///|
 fn protobuf_fixed64_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : UInt64,
 ) -> Unit raise {
   if value != 0UL {
@@ -193,7 +193,7 @@ fn protobuf_fixed64_field(
 ///|
 fn protobuf_bool_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : Bool,
 ) -> Unit raise {
   writer |> @protobuf.write_tag((field_number, 0))
@@ -203,7 +203,7 @@ fn protobuf_bool_field(
 ///|
 fn protobuf_int64_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : Int64,
 ) -> Unit raise {
   writer |> @protobuf.write_tag((field_number, 0))
@@ -213,7 +213,7 @@ fn protobuf_int64_field(
 ///|
 fn protobuf_double_field(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   value : Double,
 ) -> Unit raise {
   writer |> @protobuf.write_tag((field_number, 1))
@@ -221,7 +221,7 @@ fn protobuf_double_field(
 }
 
 ///|
-fn unsigned_int(field : String, value : Int) -> UInt raise {
+fn unsigned_int(field : String, value : Int32) -> UInt32 raise {
   if value < 0 {
     raise InvalidUnsignedField(field, value)
   }
@@ -232,7 +232,7 @@ fn unsigned_int(field : String, value : Int) -> UInt raise {
 fn hex_id_bytes(
   field : String,
   value : String,
-  expected_bytes : Int,
+  expected_bytes : Int32,
 ) -> Bytes raise {
   if value.length() != expected_bytes * 2 {
     raise InvalidHexId(field, value)
@@ -256,7 +256,7 @@ fn hex_id_bytes(
 fn optional_hex_id_bytes(
   field : String,
   value : String,
-  expected_bytes : Int,
+  expected_bytes : Int32,
 ) -> Bytes raise {
   if value.is_empty() {
     b""
@@ -295,7 +295,7 @@ fn write_key_value(
 ///|
 fn write_key_values(
   writer : &@protobuf.Writer,
-  field_number : UInt,
+  field_number : UInt32,
   attributes : Array[@otlp.OtlpAttribute],
 ) -> Unit raise {
   for attribute in attributes {
@@ -326,7 +326,7 @@ fn write_instrumentation_scope(
 ///|
 fn write_status(
   writer : &@protobuf.Writer,
-  status_code : Int,
+  status_code : Int32,
   status_message : String,
 ) -> Unit raise {
   protobuf_string_field(writer, 2, status_message)
@@ -481,8 +481,8 @@ fn write_export_logs_service_request(
 pub fn OtlpEncoder::encode_spans(
   self : OtlpEncoder,
   spans : Array[@otlp.OtlpSpan],
-  resource? : @otlp.Resource = @otlp.resource(),
-  scope? : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[OtlpPayload, EncodingError] {
   match self {
     JsonEncoder => Ok(json_payload(@otlp.wrap_spans(spans, resource~, scope~)))
@@ -497,8 +497,8 @@ pub fn OtlpEncoder::encode_spans(
 pub fn OtlpEncoder::encode_logs(
   self : OtlpEncoder,
   records : Array[@otlp.OtlpLogRecord],
-  resource? : @otlp.Resource = @otlp.resource(),
-  scope? : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[OtlpPayload, EncodingError] {
   match self {
     JsonEncoder =>

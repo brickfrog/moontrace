@@ -1,8 +1,8 @@
 ///|
 pub(all) struct HttpResponse {
-  status_code : Int
+  status_code : Int32
   body : String
-  retry_after_ms : Int?
+  retry_after_ms : Int32?
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -34,10 +34,10 @@ pub(all) enum RetryClass {
 } derive(Eq, Compare, Debug)
 
 ///|
-const MAX_RETRY_AFTER_MS : Int = 300000
+const MAX_RETRY_AFTER_MS : Int32 = 300000
 
 ///|
-pub fn classify_status(status_code : Int) -> RetryClass {
+pub fn classify_status(status_code : Int32) -> RetryClass {
   if status_code >= 200 && status_code < 300 {
     Success
   } else {
@@ -59,8 +59,8 @@ pub fn classify_error(error : TransportError) -> RetryClass {
 ///|
 pub(all) struct ExportOutcome {
   success : Bool
-  attempts : Int
-  status_code : Int?
+  attempts : Int32
+  status_code : Int32?
   error : TransportError?
   retry_class : RetryClass
 } derive(Eq, Compare, Debug)
@@ -79,7 +79,7 @@ pub fn default_headers() -> Map[String, String] {
 }
 
 ///|
-pub fn parse_retry_after_ms(headers : Map[String, String]) -> Int? {
+pub fn parse_retry_after_ms(headers : Map[String, String]) -> Int32? {
   match headers.get("retry-after") {
     Some(value) => parse_retry_after_value_ms(value)
     None =>
@@ -91,7 +91,7 @@ pub fn parse_retry_after_ms(headers : Map[String, String]) -> Int? {
 }
 
 ///|
-fn parse_retry_after_value_ms(value : String) -> Int? {
+fn parse_retry_after_value_ms(value : String) -> Int32? {
   let trimmed = value.trim()
   if trimmed.is_empty() {
     None
@@ -128,9 +128,9 @@ fn join_url(endpoint : String, path : String) -> String {
 ///|
 fn retry_delay_ms(
   response : HttpResponse?,
-  base_backoff_ms : Int,
-  attempts : Int,
-) -> Int {
+  base_backoff_ms : Int32,
+  attempts : Int32,
+) -> Int32 {
   match response {
     Some(resp) =>
       match resp.retry_after_ms {
@@ -142,7 +142,7 @@ fn retry_delay_ms(
 }
 
 ///|
-fn exponential_backoff_ms(base_backoff_ms : Int, attempts : Int) -> Int {
+fn exponential_backoff_ms(base_backoff_ms : Int32, attempts : Int32) -> Int32 {
   if base_backoff_ms <= 0 {
     0
   } else {
@@ -158,7 +158,7 @@ fn exponential_backoff_ms(base_backoff_ms : Int, attempts : Int) -> Int {
 }
 
 ///|
-fn clamp_retry_delay_ms(delay_ms : Int) -> Int {
+fn clamp_retry_delay_ms(delay_ms : Int32) -> Int32 {
   if delay_ms < 0 {
     0
   } else if delay_ms > MAX_RETRY_AFTER_MS {

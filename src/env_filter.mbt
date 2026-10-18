@@ -117,7 +117,7 @@ pub fn set_filter_from_directives(
 /// are parsed and applied, with invalid directives returned as structured
 /// errors so logging is never widened by ignoring a bad filter.
 pub fn initialize_from_env(
-  env_var? : String = "MOONTRACE_LOG",
+  env_var~ : String = "MOONTRACE_LOG",
 ) -> Result[Unit, EnvFilterError] {
   match @env.get_env_var(env_var) {
     Some(value) =>
