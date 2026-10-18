@@ -2,6 +2,7 @@
 package "brickfrog/moontrace"
 
 import {
+  "moonbitlang/core/builtin",
   "moonbitlang/core/debug",
 }
 
@@ -75,6 +76,8 @@ pub fn initialize_from_env(env_var? : String) -> Result[Unit, EnvFilterError]
 pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
+
+pub fn logger(fields? : Array[Field], span? : Span) -> Logger
 
 pub fn next_span_id() -> String
 
@@ -234,6 +237,24 @@ pub fn Level::from_string(String) -> Self?
 pub fn Level::to_json(Self) -> Json
 pub fn Level::to_string(Self) -> String
 pub impl Show for Level
+
+pub struct Logger {
+  // private fields
+}
+pub fn Logger::bind(Self, Array[Field]) -> Self
+#callsite(autofill(loc))
+pub fn Logger::debug(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Logger::error(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Logger::event(Self, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+pub fn Logger::in_span(Self, Span) -> Self
+#callsite(autofill(loc))
+pub fn Logger::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Logger::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Logger::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub(all) struct ParsedFilter {
   default_level : Level
