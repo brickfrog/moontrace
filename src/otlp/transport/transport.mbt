@@ -88,10 +88,11 @@ async fn OtlpHttpTransport::wait_before_retry(
 }
 
 ///|
-pub async fn OtlpHttpTransport::export_json(
+async fn OtlpHttpTransport::export_json_impl(
   self : OtlpHttpTransport,
   url : String,
   payload : String,
+  on_partial : (ExportPartialSuccess) -> Unit,
 ) -> Result[ExportOutcome, TransportError] {
   let max_attempts = self.max_retries + 1
   for attempts = 1; attempts <= max_attempts; {
@@ -104,14 +105,39 @@ pub async fn OtlpHttpTransport::export_json(
       Ok(response) => {
         let retry_class = classify_status(response.status_code)
         match retry_class {
-          Success =>
+          Success => {
+            let partial = match parse_export_response(response.body) {
+              Ok(value) => value
+              Err(error) => return Err(error)
+            }
+            let rejected = match partial {
+              None => false
+              Some(details) => {
+                on_partial(details)
+                details.rejected_spans > 0L || details.rejected_log_records > 0L
+              }
+            }
             return Ok({
-              success: true,
+              success: !rejected,
               attempts,
               status_code: Some(response.status_code),
-              error: None,
-              retry_class,
+              error: if rejected {
+                let details = partial.unwrap()
+                Some(
+                  Request(
+                    "OTLP partial rejection: rejectedSpans=\{details.rejected_spans}, rejectedLogRecords=\{details.rejected_log_records}: \{details.error_message}",
+                  ),
+                )
+              } else {
+                None
+              },
+              retry_class: if rejected {
+                NonRetryable
+              } else {
+                Success
+              },
             })
+          }
           NonRetryable =>
             return Ok({
               success: false,
@@ -198,4 +224,55 @@ pub async fn OtlpHttpTransport::export_logs(
 ) -> Result[ExportOutcome, TransportError] {
   let payload = @otlp.wrap_log_records(records, resource~, scope~).stringify()
   self.export_json(join_url(self.endpoint, self.logs_path), payload)
+}
+
+///|
+/// Export JSON, treating partial rejection as a non-retryable unsuccessful outcome.
+pub async fn OtlpHttpTransport::export_json(
+  self : OtlpHttpTransport,
+  url : String,
+  payload : String,
+) -> Result[ExportOutcome, TransportError] {
+  self.export_json_impl(url, payload, _ => ())
+}
+
+///|
+/// Export JSON with structured collector partial-success details, including warnings.
+pub async fn OtlpHttpTransport::export_json_report(
+  self : OtlpHttpTransport,
+  url : String,
+  payload : String,
+) -> Result[ExportReport, TransportError] {
+  let partial = Ref(None)
+  match
+    self.export_json_impl(url, payload, value => partial.val = Some(value)) {
+    Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
+    Err(error) => Err(error)
+  }
+}
+
+///|
+pub async fn OtlpHttpTransport::export_spans_report(
+  self : OtlpHttpTransport,
+  spans : Array[@otlp.OtlpSpan],
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+) -> Result[ExportReport, TransportError] {
+  self.export_json_report(
+    join_url(self.endpoint, self.traces_path),
+    @otlp.wrap_spans(spans, resource~, scope~).stringify(),
+  )
+}
+
+///|
+pub async fn OtlpHttpTransport::export_logs_report(
+  self : OtlpHttpTransport,
+  records : Array[@otlp.OtlpLogRecord],
+  resource~ : @otlp.Resource = @otlp.resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+) -> Result[ExportReport, TransportError] {
+  self.export_json_report(
+    join_url(self.endpoint, self.logs_path),
+    @otlp.wrap_log_records(records, resource~, scope~).stringify(),
+  )
 }

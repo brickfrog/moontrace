@@ -39,7 +39,7 @@ pub fn field_to_attribute(field : @moontrace.Field) -> OtlpAttribute {
 ///|
 pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
   {
-    time_unix_nano: event.timestamp,
+    time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
     severity_number: level_to_severity(event.level),
     severity_text: event.level.to_string(),
     body: event.message,
@@ -87,4 +87,15 @@ pub fn wrap_spans(
   let root : Map[String, Json] = Map([])
   root.set("resourceSpans", [resource_spans.to_json()].to_json())
   root.to_json()
+}
+
+///|
+/// Convert core clock milliseconds only at the Moontrace -> OTLP boundary.
+/// Saturate unrepresentable values rather than silently wrapping fixed64.
+fn milliseconds_to_nanoseconds(value : UInt64) -> UInt64 {
+  if value > 18446744073709UL {
+    18446744073709551615UL
+  } else {
+    value * 1000000UL
+  }
 }

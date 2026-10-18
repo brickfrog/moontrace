@@ -21,6 +21,8 @@ pub fn otlp_json_content_type() -> String
 
 pub fn otlp_protobuf_content_type() -> String
 
+pub fn parse_export_response(String) -> Result[ExportPartialSuccess?, TransportError]
+
 pub fn parse_retry_after_ms(Map[String, String]) -> Int?
 
 pub fn protobuf_encoder() -> OtlpEncoder
@@ -52,6 +54,17 @@ pub(all) struct ExportOutcome {
   retry_class : RetryClass
 } derive(Compare, Eq, @debug.Debug)
 
+pub(all) struct ExportPartialSuccess {
+  rejected_spans : Int64
+  rejected_log_records : Int64
+  error_message : String
+} derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct ExportReport {
+  outcome : ExportOutcome
+  partial_success : ExportPartialSuccess?
+} derive(Compare, Eq, @debug.Debug)
+
 pub(all) struct HttpResponse {
   status_code : Int
   body : String
@@ -77,8 +90,11 @@ pub(all) struct OtlpHttpTransport {
   mut is_shut_down : Bool
 }
 pub async fn OtlpHttpTransport::export_json(Self, String, String) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_json_report(Self, String, String) -> Result[ExportReport, TransportError]
 pub async fn OtlpHttpTransport::export_logs(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_logs_report(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportReport, TransportError]
 pub async fn OtlpHttpTransport::export_spans(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_spans_report(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportReport, TransportError]
 pub fn OtlpHttpTransport::shutdown(Self) -> Unit
 
 pub(all) struct OtlpPayload {

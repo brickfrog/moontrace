@@ -514,6 +514,25 @@ are not retried. Successful and error response bodies within the limit remain
 available through `HttpResponse.body`; injected clients keep the same public
 interface.
 
+Moontrace event and span clocks use milliseconds. `event_to_log_record` and
+`span_to_otlp` convert these to nanoseconds once, saturating at `UInt64` maximum
+if the result cannot fit. Directly constructed `OtlpLogRecord` and `OtlpSpan`
+timestamps already use nanoseconds; JSON and protobuf encoders preserve them.
+
+Successful HTTP responses are parsed as OTLP JSON. Empty/whitespace-only bodies
+are accepted for compatibility; malformed nonempty responses return a
+non-retryable `Request` error. A partial rejection sets `ExportOutcome.success`
+to `false`, with a `NonRetryable` classification and counts/message in `error`.
+The batch is never retried after partial success, including warning-only replies.
+Use `export_json_report`, `export_spans_report`, or `export_logs_report` to receive
+an `ExportReport` containing the existing `outcome` plus optional structured
+`partial_success` (`rejected_spans`, `rejected_log_records`, `error_message`).
+Zero rejected counts remain successful; report methods retain collector warnings.
+`parse_export_response` also exposes the parser independently. Counts accept
+nonnegative int64 JSON numbers or decimal strings, including exponent notation;
+quoted counts retain int64 precision, while bare numbers follow ProtoJSON Double
+coercion. Unknown fields are ignored. Existing export method signatures remain unchanged.
+
 ### Subscriber Composition
 
 Route events to multiple subscribers:
