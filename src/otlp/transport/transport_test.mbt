@@ -111,7 +111,7 @@ fn fake_client(replies : Array[FakeReply]) -> FakeClient {
 
 ///|
 fn response(status_code : Int32) -> @transport.HttpResponse {
-  { status_code, body: "body-\{status_code}", retry_after_ms: None, }
+  { status_code, body: "{}", retry_after_ms: None, }
 }
 
 ///|
@@ -119,11 +119,7 @@ fn response_retry_after(
   status_code : Int32,
   retry_after_ms : Int32,
 ) -> @transport.HttpResponse {
-  {
-    status_code,
-    body: "body-\{status_code}",
-    retry_after_ms: Some(retry_after_ms),
-  }
+  { status_code, body: "{}", retry_after_ms: Some(retry_after_ms), }
 }
 
 ///|
@@ -411,4 +407,67 @@ async test "export_logs builds logs URL and OTLP JSON envelope" {
   assert_eq(client.calls[0].url, "http://collector:4318/v1/logs")
   assert_true(client.calls[0].body.contains("\"resourceLogs\""))
   assert_true(client.calls[0].body.contains("\"stringValue\":\"hello\""))
+}
+
+///|
+async test "HTTP200 partial rejection is not full success or retried" {
+  let client = fake_client([
+    FakeResponse({
+      status_code: 200,
+      body: "{\"partialSuccess\":{\"rejectedSpans\":\"2\",\"errorMessage\":\"fixture rejection\"}}",
+      retry_after_ms: None,
+    }),
+  ])
+  let outcome = unwrap_outcome(
+    test_transport(client).export_json("http://fixture/v1/traces", "{}"),
+  )
+  assert_false(outcome.success)
+  assert_retry_class(outcome.retry_class, @transport.NonRetryable)
+  assert_eq(client.calls.length(), 1)
+  assert_true(outcome.error is Some(_))
+}
+
+///|
+async test "report retains log rejections and warning-only responses without retry" {
+  for (count, success) in [("3", false), ("0", true)] {
+    let client = fake_client([
+      FakeResponse({
+        status_code: 200,
+        body: "{\"partialSuccess\":{\"rejectedLogRecords\":\"\{count}\",\"errorMessage\":\"collector message\"}}",
+        retry_after_ms: None,
+      }),
+    ])
+    let report = match test_transport(client).export_logs_report([]) {
+      Ok(report) => report
+      Err(error) => abort(error.to_string())
+    }
+    assert_eq(report.outcome.success, success)
+    assert_eq(report.outcome.attempts, 1)
+    assert_eq(client.calls.length(), 1)
+    let details = report.partial_success.unwrap()
+    assert_eq(details.error_message, "collector message")
+    assert_eq(details.rejected_log_records.to_string(), count)
+  }
+}
+
+///|
+async test "empty success and malformed success responses are terminal" {
+  for body in ["", "{}", " \n", "broken", "[]"] {
+    let client = fake_client([
+      FakeResponse({ status_code: 200, body, retry_after_ms: None, }),
+    ])
+    let result = test_transport(client).export_spans_report([])
+    if body == "broken" || body == "[]" {
+      assert_true(result is Err(@transport.Request(_)))
+    } else {
+      match result {
+        Ok(report) => {
+          assert_true(report.outcome.success)
+          assert_true(report.partial_success is None)
+        }
+        Err(error) => abort(error.to_string())
+      }
+    }
+    assert_eq(client.calls.length(), 1)
+  }
 }

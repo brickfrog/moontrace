@@ -17,6 +17,10 @@ async fn with_response_server(
         // header lookup must be case-insensitive.
         conn.send_response(200, "OK", extra_headers={ "Retry-after": "2" })
         match request.path {
+          "/partial" =>
+            conn.write(
+              "{\"partialSuccess\":{\"rejectedSpans\":\"2\",\"errorMessage\":\"synthetic rejection\"}}",
+            )
           "/small" => conn.write("small response")
           "/exact" => conn.write("x".repeat(64 * 1024))
           "/oversized" => conn.write("x".repeat(64 * 1024 + 1))
@@ -127,6 +131,35 @@ async test "response body read obeys HTTP client timeout" {
           assert_eq(message, "HTTP request timed out after 25ms")
         Err(err) => abort("unexpected transport error: \{err}")
         Ok(_) => abort("expected body read timeout")
+      }
+      assert_eq(requests.val, 1)
+    })
+  })
+}
+
+///|
+#cfg(target="native")
+async test "HTTP consumer receives collector partial rejection exactly once" {
+  @async.with_timeout(2000, () => {
+    let requests = Ref(0)
+    with_response_server(requests, endpoint => {
+      let tx = @transport.transport(
+        @transport.async_http_client(),
+        endpoint,
+        traces_path="/partial",
+        base_backoff_ms=0,
+      )
+      match tx.export_spans_report([]) {
+        Ok(report) => {
+          assert_false(report.outcome.success)
+          assert_eq(report.outcome.attempts, 1)
+          assert_eq(report.partial_success.unwrap().rejected_spans, 2L)
+          assert_eq(
+            report.partial_success.unwrap().error_message,
+            "synthetic rejection",
+          )
+        }
+        Err(error) => abort(error.to_string())
       }
       assert_eq(requests.val, 1)
     })
