@@ -2,6 +2,7 @@
 package "brickfrog/moontrace/otlp/transport"
 
 import {
+  "brickfrog/moontrace",
   "brickfrog/moontrace/otlp",
   "moonbitlang/core/debug",
 }
@@ -16,6 +17,8 @@ pub fn classify_status(Int) -> RetryClass
 pub fn default_headers() -> Map[String, String]
 
 pub fn json_encoder() -> OtlpEncoder
+
+pub fn managed_json_exporter(OtlpHttpTransport, batch_size? : Int, queue_capacity? : Int, max_payload_bytes? : Int, max_pending_bytes? : Int, flush_interval_ms? : Int, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> ManagedJsonExporter
 
 pub fn otlp_json_content_type() -> String
 
@@ -70,6 +73,33 @@ pub(all) struct HttpResponse {
   body : String
   retry_after_ms : Int?
 } derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct ManagedExportStats {
+  enqueued_batches : Int64
+  delivered_batches : Int64
+  failed_batches : Int64
+  dropped_batches : Int64
+  dropped_records : Int64
+  pending_batches : Int
+  pending_bytes : Int
+  buffered_logs : Int
+  buffered_spans : Int
+  closing : Bool
+  closed : Bool
+  worker_running : Bool
+} derive(Eq, @debug.Debug)
+
+pub struct ManagedJsonExporter {
+  // private fields
+}
+pub async fn ManagedJsonExporter::flush(Self) -> ManagedExportStats
+pub fn ManagedJsonExporter::last_error(Self) -> String?
+pub fn ManagedJsonExporter::last_report(Self) -> ExportReport?
+pub async fn ManagedJsonExporter::run(Self) -> Unit
+pub async fn ManagedJsonExporter::shutdown(Self) -> ManagedExportStats
+pub fn ManagedJsonExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
+pub fn ManagedJsonExporter::stats(Self) -> ManagedExportStats
+pub fn ManagedJsonExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
 pub(all) enum OtlpEncoder {
   JsonEncoder
