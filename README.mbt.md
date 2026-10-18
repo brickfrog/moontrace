@@ -91,7 +91,7 @@ derives a logger that adds an existing span's correlation IDs.
 
 ```moonbit
 let request = @moontrace.logger(fields=[@moontrace.field("request_id", "req-7")])
-@moontrace.with_span("request", span => {
+@moontrace.with_span_ctx("request", span => {
   let db = request.bind([@moontrace.field("component", "db")]).in_span(span)
   db.info("query complete", fields=[@moontrace.field("rows", 3)])
   request.info("request complete")
