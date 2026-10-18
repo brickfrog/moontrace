@@ -28,16 +28,18 @@ exp.flush()
 @moontrace.clear_span_observer()
 ```
 
-Write the folded output to a file, then render it with your flamegraph tool:
+Write the folded output from your application to a file, then render it with your
+flamegraph tool. Replace `path/to/your/app` with your executable package path;
+this repository does not provide a `src/cmd/main` executable:
 
 ```sh
-moon run src/cmd/main --target native > trace.folded
+moon run path/to/your/app --target native > trace.folded
 inferno-flamegraph trace.folded > flame.svg
 ```
 
 The same folded file works with `flamegraph.pl`:
 
 ```sh
-moon run src/cmd/main --target native > trace.folded
+moon run path/to/your/app --target native > trace.folded
 flamegraph.pl trace.folded > flame.svg
 ```

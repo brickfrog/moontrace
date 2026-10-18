@@ -12,6 +12,15 @@ moon add brickfrog/moontrace
 
 ## Quick Start
 
+Add the packages used below to your application's `moon.pkg`:
+
+```moonbit
+import {
+  "brickfrog/moontrace",
+  "brickfrog/moontrace/console",
+}
+```
+
 ```moonbit
 fn main {
   // One-liner setup with colored console output
@@ -33,9 +42,9 @@ Output:
 ```
 14:31:43.903 | INFO  | myapp — server started  port=8080
 14:31:43.904 | WARN  | myapp — slow query  ms=250
-14:31:43.904 | TRACE | moontrace — span.enter handle_request
+14:31:43.904 | TRACE — span.enter handle_request
 14:31:43.904 | INFO  | myapp — processing
-14:31:43.904 | TRACE | moontrace — span.exit handle_request  duration_ns=12345
+14:31:43.904 | TRACE — span.exit handle_request  duration_ns=0
 ```
 
 ## Events
@@ -63,7 +72,10 @@ Attach structured fields to any event:
 
 The `field()` function uses MoonBit's `ToJson` trait dispatch — any type implementing `ToJson` works. For raw `Json` values, use `fields()` instead.
 
-Every event automatically captures its source package via `SourceLoc`, available as `event.source`.
+Public event and logger calls capture the caller package via `SourceLoc`,
+available as `event.source`. Internal span lifecycle events have an empty source.
+Plain event calls inside a span wrapper do not automatically acquire span IDs;
+use span methods or a bound logger for correlation.
 
 ## Global Context
 
@@ -146,7 +158,9 @@ match @moontrace.parse_env_filter("warn,my/queue/package=trace") {
 }
 ```
 
-`initialize_from_env()` reads `MOONTRACE_LOG` by default. Use it during application startup:
+`@moontrace.initialize_from_env()` reads `MOONTRACE_LOG` and changes filters only;
+it does not install a subscriber. Missing or blank values leave existing filters
+unchanged. For combined subscriber and filter setup, see [Application Startup](#application-startup):
 
 ```mbt
 match @moontrace.initialize_from_env() {
@@ -169,7 +183,7 @@ For tests or temporary overrides, wrap work in a synchronous scope:
 })
 ```
 
-`with_trace_state(fn() { ... })` snapshots the subscriber, global minimum level,
+`with_trace_state(fn() { ... })` snapshots the subscriber, span observer, global minimum level,
 global context fields, and module filters, then restores them when the closure
 returns or raises. The convenience helpers `with_subscriber`, `with_min_level`,
 `with_global_field`, `with_global_fields`, and `with_module_filter` use the same
@@ -191,10 +205,13 @@ s.enter()
 // ... do work ...
 s.record("rows", 42)  // add fields after creation
 s.exit()
-// s.duration() returns elapsed nanoseconds
+// s.duration() returns elapsed milliseconds with the current runtime
 ```
 
 Spans are single-use lifecycles: `exit()` closes a span, and later `enter()`/`exit()` calls on the same span are ignored. Create a new child span for repeated or nested work.
+
+The legacy `duration_ns` field currently contains the same millisecond value as
+`duration()`; its name does not imply a unit conversion.
 
 Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex chars).
 
@@ -316,16 +333,15 @@ Use `link_context` and `follows_from_context` when the related operation came fr
 
 ### Async Span Propagation
 
-MoonBit has no task-local storage, so spans must be passed explicitly across async boundaries:
+Pass spans or bound loggers explicitly across async boundaries. A synchronous
+`with_span_ctx` callback cannot suspend; use the async wrappers below when work
+needs to await. For example, pass an existing parent into an async function:
 
 ```mbt
-@moontrace.with_span_ctx("request", fn(parent) {
-  async_work(parent)
-})
-
 pub async fn async_work(parent : @moontrace.Span) -> Unit {
-  @moontrace.with_child_span(parent, "async_step", fn(_s) {
-    // child inherits parent's trace_id
+  @span_async.with_child_span_async(parent, "async_step", child => {
+    @async.pause()
+    child.info("step complete")
   })
 }
 ```
@@ -576,8 +592,8 @@ See [docs/sampling.md](docs/sampling.md) for the sampling model.
 let flame = @flame.flame_exporter(output=fn(folded) { println(folded) })
 @moontrace.set_span_observer(flame.span_observer())
 
-@moontrace.with_span("request", fn() {
-  @moontrace.with_span("db query", fn() { () })
+@moontrace.with_span_ctx("request", parent => {
+  @moontrace.with_child_span(parent, "db query", _child => ())
 })
 
 flame.flush()
@@ -643,7 +659,7 @@ let plain = event.format()           // no color
 let colored = event.format(color=true) // ANSI colored
 ```
 
-All types implement `Show` for `println` and string interpolation:
+`Event` and `Span` implement `Show` for `println` and string interpolation:
 
 ```mbt
 println(event)       // human-readable output
@@ -675,7 +691,9 @@ Contributions are welcome. Please:
 3. Run `moon info && moon fmt` if you change public APIs (updates `.mbti` files)
 4. Add tests for new features
 
-The pre-commit hook runs `moon fmt` and `moon check` automatically.
+See [AGENTS.md](AGENTS.md) for the pinned toolchain, repository conventions, and
+validation guidance. When installed, the pre-commit hook runs `moon fmt` and
+`moon check --target native` automatically.
 
 ### Development
 
