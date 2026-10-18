@@ -83,6 +83,42 @@ Explicit fields override global context on key collision.
 @moontrace.clear_global_fields()            // remove all
 ```
 
+## Bound Loggers
+
+Bind request fields once and pass the logger explicitly to the work that needs
+those fields. `bind` derives a child without changing its parent; `in_span`
+derives a logger that adds an existing span's correlation IDs.
+
+```moonbit
+let request = @moontrace.logger(fields=[@moontrace.field("request_id", "req-7")])
+@moontrace.with_span("request", span => {
+  let db = request.bind([@moontrace.field("component", "db")]).in_span(span)
+  db.info("query complete", fields=[@moontrace.field("rows", 3)])
+  request.info("request complete")
+})
+```
+
+`logger(span=span, fields=[...])` can bind fields and a span together. Loggers
+provide `trace`, `debug`, `info`, `warn`, `error`, and `event(level, message)`;
+all accept optional per-event `fields` and preserve the emitting caller's
+package for filtering and source metadata.
+
+Field precedence is **global < parent < child < event**. Within each supplied
+array, the last duplicate key wins; each key appears once, in the position of
+its first occurrence. An associated span's `trace_id`, `span_id`, and
+`parent_span_id` override all supplied values. Span fields are not copied into
+log events, and binding does not enter, exit, or otherwise change a span.
+
+Bound fields, including nested JSON arrays and objects, are copied at binding
+and emission. Mutating caller arrays or captured event fields does not change
+future bound fields. This isolation costs allocations for enabled events;
+filtered events skip field copying. Global context, filters, and the subscriber
+are read at emission time, so existing subscriber redaction still applies.
+
+Pass the logger to async tasks explicitly. There is no implicit current span,
+global field installation, or automatic task-local propagation. Keep the
+parent logger when an uncorrelated logger is also needed.
+
 ## Per-Module Filtering
 
 Filter log levels by package:

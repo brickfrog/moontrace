@@ -8,3 +8,7 @@ import {
   "moonbitlang/async",
   "brickfrog/moontrace/test",
 } for "test"
+
+import {
+  "moonbitlang/async",
+} for "wbtest"
