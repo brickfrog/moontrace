@@ -8,6 +8,8 @@ import {
 // Values
 pub async fn[T] with_child_span_async(@moontrace.Span, String, fields? : Array[@moontrace.Field], async (@moontrace.Span) -> T) -> T
 
+pub async fn[T] with_remote_span_async(@moontrace.SpanContext, String, fields? : Array[@moontrace.Field], kind? : @moontrace.SpanKind, async (@moontrace.Span) -> T) -> T
+
 pub async fn[T] with_span_async(String, fields? : Array[@moontrace.Field], async (@moontrace.Span) -> T) -> T
 
 // Errors
