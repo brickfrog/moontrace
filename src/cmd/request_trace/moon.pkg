@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/json",
+  "brickfrog/moontrace",
+  "brickfrog/moontrace/span_async",
+  "brickfrog/moontrace/otlp/transport",
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")

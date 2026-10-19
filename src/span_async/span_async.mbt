@@ -19,23 +19,12 @@ fn error_message(err : Error) -> String {
 /// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
 /// scope. If a future compiler stops routing cancellation through `catch`, the
 /// span is still exited but the cancellation message is no longer recorded.
-// The handler inspects `err` rather than cleaning up, so E0092 is a false
-// positive here; the cleanup it asks for already moved to `defer` above.
-#warnings("-fragile_catch_all")
 pub async fn[T] with_span_async(
   name : String,
   fields~ : Array[@moontrace.Field] = [],
   f : async (@moontrace.Span) -> T,
 ) -> T {
-  let s = @moontrace.span(name, fields~)
-  s.enter()
-  defer s.exit()
-  f(s) catch {
-    err => {
-      s.record_error(error_message(err))
-      raise err
-    }
-  }
+  run_in_span_async(@moontrace.span(name, fields~), f)
 }
 
 ///|
@@ -49,16 +38,22 @@ pub async fn[T] with_span_async(
 /// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
 /// scope. If a future compiler stops routing cancellation through `catch`, the
 /// span is still exited but the cancellation message is no longer recorded.
-// See `with_span_async`: E0092 is a false positive for an error-inspecting
-// handler, and the cleanup it asks for already moved to `defer` below.
-#warnings("-fragile_catch_all")
 pub async fn[T] with_child_span_async(
   parent : @moontrace.Span,
   name : String,
   fields~ : Array[@moontrace.Field] = [],
   f : async (@moontrace.Span) -> T,
 ) -> T {
-  let s = @moontrace.child_span(parent, name, fields~)
+  run_in_span_async(@moontrace.child_span(parent, name, fields~), f)
+}
+
+///|
+// Catch observes the original error; defer owns cleanup for all async helpers.
+#warnings("-fragile_catch_all")
+async fn[T] run_in_span_async(
+  s : @moontrace.Span,
+  f : async (@moontrace.Span) -> T,
+) -> T {
   s.enter()
   defer s.exit()
   f(s) catch {
@@ -67,4 +62,23 @@ pub async fn[T] with_child_span_async(
       raise err
     }
   }
+}
+
+///|
+/// Run request work in a new local span parented by incoming trace context.
+/// Defaults to Server; preserves trace ID, sampled flags, and tracestate through
+/// span_from_remote_context. Headers must already be parsed by the caller.
+/// Enters before f, records raised errors/cancellation, and always exits on return
+/// or raise. Propagates the original result/error; installs no task-local context.
+pub async fn[T] with_remote_span_async(
+  context : @moontrace.SpanContext,
+  name : String,
+  fields~ : Array[@moontrace.Field] = [],
+  kind~ : @moontrace.SpanKind = @moontrace.Server,
+  f : async (@moontrace.Span) -> T,
+) -> T {
+  run_in_span_async(
+    @moontrace.span_from_remote_context(context, name, fields~, kind~),
+    f,
+  )
 }

@@ -95,3 +95,117 @@ async test "with_child_span_async exits on structured cancellation" {
   assert_true(span.status_message.contains("Cancelled"))
   assert_true(span_has_field(span, "error"))
 }
+
+///|
+fn incoming_request_context() -> @moontrace.SpanContext {
+  match
+    @moontrace.parse_span_context(
+      "00-11111111111111111111111111111111-2222222222222222-01",
+      tracestate="vendor=fixture",
+    ) {
+    Ok(context) => context
+    Err(error) => abort(error.to_string())
+  }
+}
+
+///|
+async test "remote async span preserves incoming propagation and returns callback result" {
+  let context = incoming_request_context()
+  let captured : Ref[@moontrace.Span?] = Ref(None)
+  let result = with_remote_span_async(
+    context,
+    "request",
+    fields=[@moontrace.field("request_id", "fixture")],
+    server => {
+      captured.val = Some(server)
+      assert_true(server.active)
+      assert_eq(server.kind, @moontrace.Server)
+      assert_eq(server.trace_id, context.trace_id.to_string())
+      assert_eq(server.parent_span_id, context.span_id.to_string())
+      assert_true(server.span_id != server.parent_span_id)
+      assert_eq(
+        @moontrace.span_trace_state(server).to_header(),
+        "vendor=fixture",
+      )
+      assert_true(@moontrace.span_trace_flags(server).is_sampled())
+      assert_true(span_has_field(server, "request_id"))
+      with_child_span_async(server, "child", child => {
+        @async.pause()
+        assert_eq(child.parent_span_id, server.span_id)
+        assert_eq(child.trace_id, server.trace_id)
+        assert_eq(
+          @moontrace.span_trace_state(child).to_header(),
+          "vendor=fixture",
+        )
+        42
+      })
+    },
+  )
+  assert_eq(result, 42)
+  let server = captured.val.unwrap()
+  assert_false(server.active)
+  assert_true(server.end_time >= server.start_time)
+  assert_eq(server.status, @moontrace.Unset)
+}
+
+///|
+suberror RemoteSpanError {
+  RemoteSpanError(Int32)
+} derive(Debug)
+
+///|
+async test "remote async span records failure while preserving the original typed error" {
+  let captured : Ref[@moontrace.Span?] = Ref(None)
+  let saw_error = Ref(false)
+  with_remote_span_async(
+    incoming_request_context(),
+    "failed request",
+    kind=@moontrace.Consumer,
+    server => {
+      captured.val = Some(server)
+      assert_eq(server.kind, @moontrace.Consumer)
+      @async.pause()
+      raise RemoteSpanError(73)
+    },
+  ) catch {
+    RemoteSpanError(code) => {
+      assert_eq(code, 73)
+      saw_error.val = true
+    }
+    error => raise error
+  }
+  assert_true(saw_error.val)
+  let server = captured.val.unwrap()
+  assert_false(server.active)
+  assert_eq(server.status, @moontrace.SpanError)
+  assert_true(server.status_message.contains("RemoteSpanError"))
+  assert_true(span_has_field(server, "error"))
+}
+
+///|
+async test "remote async span closes and records cancellation without changing remote context" {
+  let context = incoming_request_context()
+  let captured : Ref[@moontrace.Span?] = Ref(None)
+  @async.with_task_group(group => {
+    let task = group.spawn(() => {
+      with_remote_span_async(context, "cancelled request", server => {
+        captured.val = Some(server)
+        @async.sleep(10000)
+      })
+    })
+    @async.pause()
+    task.cancel()
+    let cancelled = Ref(false)
+    task.wait() catch {
+      error => cancelled.val = @async.is_cancellation_error(error)
+    }
+    assert_true(cancelled.val)
+  })
+  let server = captured.val.unwrap()
+  assert_false(server.active)
+  assert_eq(server.status, @moontrace.SpanError)
+  assert_eq(server.status_message, "Cancelled")
+  assert_eq(server.trace_id, context.trace_id.to_string())
+  assert_eq(server.parent_span_id, context.span_id.to_string())
+  assert_eq(context.trace_state.to_header(), "vendor=fixture")
+}

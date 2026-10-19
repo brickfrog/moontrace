@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/cmd/request_trace"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+type RequestError derive(@debug.Debug)
+
+// Types and methods
+type CaptureClient
+
+// Type aliases
+
+// Traits

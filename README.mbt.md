@@ -365,12 +365,26 @@ pub async fn handle_request() -> Unit {
 }
 ```
 
-`with_span_async` and `with_child_span_async` enter before the async closure
-runs and exit when it returns or raises. Errors, including structured
+`with_span_async`, `with_child_span_async`, and `with_remote_span_async` enter
+before the async closure runs and exit when it returns or raises. Errors, including structured
 cancellation delivered through MoonBit async error/catch paths, record
 `SpanError` before exit and are re-raised. This is best-effort structured
 cancellation instrumentation, not Rust Drop-guard semantics; out-of-band
 abort/kill is out of scope.
+
+For incoming trace headers, parse them with `parse_span_context(traceparent,
+tracestate=...)`, then pass the resulting context to
+`@span_async.with_remote_span_async(context, "request", server => { ... })`.
+The helper creates a local server span under the remote parent, preserving trace
+ID, sampled flags, and tracestate. Optional `fields` and `kind` match
+`span_from_remote_context`; header validation/fallback remains the caller's choice.
+Bind a logger to `server` and pass it explicitly to child work. The helper does
+not install global or task-local request context.
+
+Run `moon run src/cmd/request_trace --target native` (or `--target js`) for a
+synthetic request example. It checks two interleaved incoming contexts, outgoing
+headers, request/child log correlation, a handled failure, and managed JSON drain.
+It uses an in-process capture client and sends no network traffic.
 
 ## Subscribers
 
