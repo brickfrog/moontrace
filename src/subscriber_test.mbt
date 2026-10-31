@@ -140,3 +140,28 @@ test "with_directives filters one subscriber by package prefix" {
   sub(combinator_event(@moontrace.Warn, "", []))
   assert_eq(seen.map(e => e.source), ["my/app/http", "my/app/db", ""])
 }
+
+///|
+test "map_events isolates in-place changes from other subscribers" {
+  let original : Array[@moontrace.Event] = []
+  let nested : Map[String, Json] = Map([("token", Json("t"))])
+  let sub = @moontrace.compose([
+    @moontrace.map_events(_ => (), e => {
+      match e.fields[1].value {
+        Object(obj) => obj.set("token", Json("changed"))
+        _ => ()
+      }
+      e.fields.clear()
+      Some(e)
+    }),
+    e => original.push(e),
+  ])
+  sub(
+    combinator_event(@moontrace.Info, "a", [
+      @moontrace.field("user", "u"),
+      @moontrace.field("auth", Json(nested)),
+    ]),
+  )
+  assert_eq(original[0].fields.length(), 2)
+  assert_eq(original[0].fields[1].value, Json(Map([("token", Json("t"))])))
+}

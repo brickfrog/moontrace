@@ -13,14 +13,19 @@ pub fn with_filter(
 
 ///|
 /// Transform each event before `inner` sees it. Returning `None` drops the
-/// event. Use it to rename or rewrite fields or messages for one subscriber;
-/// other subscribers in a `compose` still receive the original event.
+/// event. Use it to rename or rewrite fields or messages for one subscriber.
+/// The transform receives a copy of the event's fields, including nested JSON,
+/// so in-place changes do not reach other subscribers in a `compose`.
 pub fn map_events(
   inner : (Event) -> Unit,
   transform : (Event) -> Event?,
 ) -> (Event) -> Unit {
   fn(event) {
-    match transform(event) {
+    let fields = event.fields.map(field => Field::{
+      key: field.key,
+      value: copy_logger_json(field.value),
+    })
+    match transform({ ..event, fields, }) {
       Some(mapped) => inner(mapped)
       None => ()
     }
