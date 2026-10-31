@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `enabled(level)` reports whether an event from the caller's package would reach the installed subscriber, so callers can skip building expensive messages and fields (#87).
+- Bound loggers can carry their own minimum level via `logger(min_level=...)` or `Logger::with_min_level`, replacing the global and module filters for their events so one request or component can be more verbose or stricter. Children inherit it, and `Logger::enabled` applies the same rule (#91).
 
 ### Deprecated
 

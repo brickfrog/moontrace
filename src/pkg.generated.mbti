@@ -80,7 +80,7 @@ pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
 
-pub fn logger(fields? : Array[Field], span? : Span) -> Logger
+pub fn logger(fields? : Array[Field], span? : Span, min_level? : Level) -> Logger
 
 pub fn next_span_id() -> String
 
@@ -250,6 +250,8 @@ pub fn Logger::bind(Self, Array[Field]) -> Self
 #callsite(autofill(loc))
 pub fn Logger::debug(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
+pub fn Logger::enabled(Self, Level, loc~ : SourceLoc) -> Bool
+#callsite(autofill(loc))
 pub fn Logger::error(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn Logger::event(Self, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -260,6 +262,7 @@ pub fn Logger::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> U
 pub fn Logger::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn Logger::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+pub fn Logger::with_min_level(Self, Level) -> Self
 
 pub(all) struct ParsedFilter {
   default_level : Level

@@ -129,6 +129,22 @@ future bound fields. This isolation costs allocations for enabled events;
 filtered events skip field copying. Global context, filters, and the subscriber
 are read at emission time, so existing subscriber redaction still applies.
 
+A logger can carry its own minimum level, set with `logger(min_level=...)` or
+`with_min_level(level)`. It replaces the global and module filters for that
+logger's events, so it can be more verbose than the global level (debug a single
+request) or stricter (quiet one noisy component). `bind`, `in_span`, and
+`with_min_level` children inherit it; loggers without one use the global and
+module filters. `logger.enabled(level)` applies the same rule.
+
+```moonbit
+@moontrace.set_min_level(@moontrace.Warn)
+let traced = @moontrace.logger(
+  fields=[@moontrace.field("request_id", "req-8")],
+  min_level=@moontrace.Debug,
+)
+traced.debug("emitted despite the global Warn level")
+```
+
 Pass the logger to async tasks explicitly. There is no implicit current span,
 global field installation, or automatic task-local propagation. Keep the
 parent logger when an uncorrelated logger is also needed.

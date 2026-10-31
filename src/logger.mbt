@@ -4,6 +4,7 @@
 pub struct Logger {
   priv bound_fields : Array[Field]
   priv associated_span : Span?
+  priv min_level : Level?
 }
 
 ///|
@@ -49,33 +50,75 @@ fn merge_logger_fields(
 ///|
 /// Bind a snapshot of fields, optionally associated with an existing span.
 /// Duplicate keys use the last value. The span supplies correlation IDs only;
-/// its fields and lifecycle are not inherited or changed.
-pub fn logger(fields~ : Array[Field] = [], span? : Span) -> Logger {
-  { bound_fields: merge_logger_fields([], fields), associated_span: span, }
+/// its fields and lifecycle are not inherited or changed. When `min_level` is
+/// set, it replaces the global and module filters for this logger's events.
+pub fn logger(
+  fields~ : Array[Field] = [],
+  span? : Span,
+  min_level? : Level,
+) -> Logger {
+  {
+    bound_fields: merge_logger_fields([], fields),
+    associated_span: span,
+    min_level,
+  }
 }
 
 ///|
 /// Derive an independent child logger. Child fields override parent fields;
-/// the associated span is retained. Arrays and nested JSON are copied.
+/// the associated span and minimum level are retained. Arrays and nested JSON
+/// are copied.
 pub fn Logger::bind(self : Logger, fields : Array[Field]) -> Logger {
   {
     bound_fields: merge_logger_fields(self.bound_fields, fields),
     associated_span: self.associated_span,
+    min_level: self.min_level,
   }
 }
 
 ///|
-/// Derive a logger associated with span, preserving the bound fields.
-/// This does not enter or exit the span or change the original logger.
+/// Derive a logger associated with span, preserving the bound fields and
+/// minimum level. This does not enter or exit the span or change the original
+/// logger.
 pub fn Logger::in_span(self : Logger, span : Span) -> Logger {
   {
     bound_fields: merge_logger_fields([], self.bound_fields),
     associated_span: Some(span),
+    min_level: self.min_level,
   }
 }
 
 ///|
-/// Emit through the current filters and subscriber using the caller's package.
+/// Derive a logger whose own minimum level replaces the global and module
+/// filters for its events, either more verbose (debug one request) or stricter.
+/// Bound fields and the associated span are preserved; the original is unchanged.
+pub fn Logger::with_min_level(self : Logger, level : Level) -> Logger {
+  {
+    bound_fields: merge_logger_fields([], self.bound_fields),
+    associated_span: self.associated_span,
+    min_level: Some(level),
+  }
+}
+
+///|
+fn Logger::admits(self : Logger, level : Level, source : String) -> Bool {
+  match self.min_level {
+    Some(min) => level >= min
+    None => should_log_module(source, level)
+  }
+}
+
+///|
+/// Report whether an event at `level` from this logger would reach the
+/// installed subscriber, using the logger's own minimum level when set.
+#callsite(autofill(loc))
+pub fn Logger::enabled(self : Logger, level : Level, loc~ : SourceLoc) -> Bool {
+  global_subscriber.val is Some(_) && self.admits(level, extract_package(loc))
+}
+
+///|
+/// Emit through the current subscriber using the caller's package. A logger
+/// minimum level replaces the global and module filters; otherwise they apply.
 /// Precedence is global < bound < event fields (last duplicate wins).
 /// An associated span's trace_id, span_id, and parent_span_id always win.
 #callsite(autofill(loc))
@@ -86,13 +129,14 @@ pub fn Logger::event(
   fields~ : Array[Field] = [],
   loc~ : SourceLoc,
 ) -> Unit {
-  if !should_log_module(extract_package(loc), level) {
+  let source = extract_package(loc)
+  if !self.admits(level, source) {
     return
   }
   let fields = merge_logger_fields(self.bound_fields, fields)
   match self.associated_span {
-    Some(span) => emit_in_span_with_loc(span, level, msg, fields, loc)
-    None => emit_with_loc(level, msg, fields, loc)
+    Some(span) => dispatch_in_span_from_source(span, level, msg, fields, source)
+    None => dispatch_from_source(level, msg, fields, source)
   }
 }
 

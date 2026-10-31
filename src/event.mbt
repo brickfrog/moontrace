@@ -88,14 +88,24 @@ fn emit_with_loc(
   if !should_log_module(source, level) {
     return
   }
-  let event = Event::{
+  dispatch_from_source(level, msg, fields, source)
+}
+
+///|
+/// Build and dispatch an event that has already passed filtering.
+fn dispatch_from_source(
+  level : Level,
+  msg : String,
+  fields : Array[Field],
+  source : String,
+) -> Unit {
+  dispatch(Event::{
     level,
     message: msg,
     fields: merge_fields(fields),
     timestamp: @env.now(),
     source,
-  }
-  dispatch(event)
+  })
 }
 
 ///|
@@ -129,14 +139,25 @@ fn emit_in_span_with_loc(
   if !should_log_module(source, level) {
     return
   }
-  let event = Event::{
+  dispatch_in_span_from_source(span, level, msg, fields, source)
+}
+
+///|
+/// Build and dispatch a span-associated event that has already passed filtering.
+fn dispatch_in_span_from_source(
+  span : Span,
+  level : Level,
+  msg : String,
+  fields : Array[Field],
+  source : String,
+) -> Unit {
+  dispatch(Event::{
     level,
     message: msg,
     fields: merge_fields(span_event_fields(span, fields)),
     timestamp: @env.now(),
     source,
-  }
-  dispatch(event)
+  })
 }
 
 ///|
