@@ -38,6 +38,8 @@ pub fn default_redaction_policy() -> RedactionPolicy
 #callsite(autofill(loc))
 pub fn enabled(Level, loc~ : SourceLoc) -> Bool
 
+pub fn enrich((Event) -> Unit, (Event) -> Array[Field]) -> (Event) -> Unit
+
 #callsite(autofill(loc))
 pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
@@ -52,6 +54,8 @@ pub fn[T : ToJson] field(String, T) -> Field
 pub fn fields(Array[(String, Json)]) -> Array[Field]
 
 pub fn fields_to_json(Array[Field]) -> Json
+
+pub fn filter_events((Event) -> Unit, (Event) -> Bool) -> (Event) -> Unit
 
 pub fn format_event(Event, Bool, (UInt64) -> String) -> String
 
@@ -81,6 +85,8 @@ pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 pub fn level_color(Level) -> String
 
 pub fn logger(fields? : Array[Field], span? : Span, min_level? : Level) -> Logger
+
+pub fn map_events((Event) -> Unit, (Event) -> Event?) -> (Event) -> Unit
 
 pub fn next_span_id() -> String
 
@@ -173,6 +179,8 @@ pub fn warn(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn warn_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T raise?) -> T raise?
+
+pub fn with_directives((Event) -> Unit, ParsedFilter) -> (Event) -> Unit
 
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 

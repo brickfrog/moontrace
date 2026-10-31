@@ -600,6 +600,39 @@ Filter events for any subscriber:
 )
 ```
 
+Each subscriber can also have its own package directives, predicate, transform,
+or computed fields. These wrappers only affect the subscriber they wrap:
+
+```moonbit
+let file_filter = match @moontrace.parse_env_filter("info,my/app/db=trace") {
+  Ok(filter) => filter
+  Err(err) => abort(err.to_string())
+}
+@moontrace.set_subscriber(@moontrace.compose([
+  @moontrace.with_directives(@json.subscriber(), file_filter),
+  @moontrace.filter_events(@console.subscriber(), e => e.level >= @moontrace.Warn),
+]))
+
+let enriched = @moontrace.enrich(@json.subscriber(), _ => [
+  @moontrace.field("host", "web-1"),
+])
+let renamed = @moontrace.map_events(@json.subscriber(), e => {
+  Some({ ..e, message: "[api] " + e.message })
+})
+```
+
+- `with_directives(inner, filter)` applies a `ParsedFilter` to one subscriber
+  using the same longest-prefix package rule as global filters. Global filters
+  run first, so it can only narrow what that subscriber receives.
+- `filter_events(inner, predicate)` forwards matching events.
+- `map_events(inner, transform)` rewrites an event, or drops it with `None`.
+- `enrich(inner, compute)` adds per-event computed fields; the event's own
+  fields win on key collisions, as with global fields.
+
+Unlike `intercept`, which observes events, these can change or drop what the
+wrapped subscriber sees. Place `redact` innermost so it also covers fields added
+by `enrich` or `map_events`.
+
 ### Utility Subscribers
 
 ```mbt

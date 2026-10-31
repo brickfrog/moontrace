@@ -28,9 +28,19 @@ pub fn clear_module_filters() -> Unit {
 /// package path wins, so an exact filter overrides a parent filter. Sources
 /// without a matching filter fall back to the global minimum level.
 fn effective_min(source : String) -> Level {
-  let filters = module_filters.val
+  resolve_module_level(module_filters.val, global_min_level.val, source)
+}
+
+///|
+/// Resolve `source` against package filters by longest matching package path,
+/// falling back to `default_level`.
+fn resolve_module_level(
+  filters : Map[String, Level],
+  default_level : Level,
+  source : String,
+) -> Level {
   if filters.is_empty() {
-    return global_min_level.val
+    return default_level
   }
   let mut prefix = source
   while true {
@@ -43,7 +53,7 @@ fn effective_min(source : String) -> Level {
       None => break
     }
   }
-  global_min_level.val
+  default_level
 }
 
 ///|
