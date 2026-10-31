@@ -97,9 +97,14 @@ The default is `parent_based_sampler(always_on_sampler())`: root spans are
 sampled and children follow their parent. `reset_span_sampler()` restores it,
 and `with_span_sampler(sampler, f)` and `with_trace_state` scope it.
 
-Span sampling does not filter events. Span enter and exit events, and events
-logged inside unsampled spans, still reach the subscriber. To drop those too,
-wrap the subscriber in `trace_sampler` at the same ratio.
+Span sampling does not filter events. Events logged inside unsampled spans and
+the Trace-level `span.enter`/`span.exit` lifecycle events still reach the
+subscriber. Span-correlated events (`Span::info`, `Logger::in_span`, and the
+other span-aware helpers) carry a `"trace_id"` field, so wrapping the subscriber
+in `trace_sampler` at the same ratio drops them for the same traces. Lifecycle
+events carry no `"trace_id"`, so `trace_sampler` passes them through; keep the
+minimum level above `Trace` or drop them with `filter_events` if they are not
+wanted.
 
 ## Composing Layers
 
