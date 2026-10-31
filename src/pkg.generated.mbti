@@ -36,6 +36,9 @@ pub fn debug_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> 
 pub fn default_redaction_policy() -> RedactionPolicy
 
 #callsite(autofill(loc))
+pub fn enabled(Level, loc~ : SourceLoc) -> Bool
+
+#callsite(autofill(loc))
 pub fn error(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
 #callsite(autofill(loc))

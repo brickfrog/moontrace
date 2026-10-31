@@ -76,3 +76,14 @@ fn extract_package(loc : SourceLoc) -> String {
     None => "unknown"
   }
 }
+
+///|
+/// Report whether an event at `level` from the caller's package would reach the
+/// installed subscriber after global and module filters. Call arguments are
+/// evaluated even when an event is filtered out, so use this to skip building
+/// expensive messages or fields. Wrappers should forward their own `loc`.
+#callsite(autofill(loc))
+pub fn enabled(level : Level, loc~ : SourceLoc) -> Bool {
+  global_subscriber.val is Some(_) &&
+  should_log_module(extract_package(loc), level)
+}

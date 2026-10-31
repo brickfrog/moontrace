@@ -692,6 +692,16 @@ Set a global minimum level to skip event allocation entirely:
 // trace() and debug() calls now short-circuit before allocating Event
 ```
 
+Call arguments are evaluated before filtering, so a filtered-out call still builds
+its message and fields. Guard expensive ones with `enabled`, which checks the
+installed subscriber and the global and module filters for the caller's package:
+
+```moonbit
+if @moontrace.enabled(@moontrace.Debug) {
+  @moontrace.debug("cache state", fields=[@moontrace.field("entries", dump_cache())])
+}
+```
+
 Global context fields use a fast path — zero allocation overhead when no context is set.
 
 ## Serialization
