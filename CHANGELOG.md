@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OTLP log records from span-associated events now carry top-level `traceId`/`spanId` (protobuf fields 9 and 10) so backends link logs to traces; previously correlation existed only as attributes. Only valid W3C IDs are promoted. `OtlpLogRecord` gains `trace_id` and `span_id` fields, so code constructing it directly must set them (empty strings omit them) (#84).
 - Module filters, `MOONTRACE_LOG`, and env-filter directives now apply to subpackages: `my/app=debug` also matches `my/app/db` (but not `my/apple`), and the longest matching package wins. Previously only the exact package matched, so parent filters silently did nothing for subpackages (#85).
 - Deny-list redaction now also applies to keys inside nested JSON objects and arrays, so secrets inside structured field values are no longer passed through. Allow-list policies keep their top-level behavior (#86).
+- Completed-span observations now deep-copy nested JSON in span fields, link fields, and span event fields, so later span changes or other observers cannot alter an already delivered observation.
 
 ## [0.14.0] - 2026-08-26
 
