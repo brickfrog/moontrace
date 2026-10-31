@@ -144,6 +144,8 @@ Filter log levels by package:
 
 Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed. A package filter overrides the global minimum level for matching packages, so it can be more verbose or stricter than the default.
 
+A filter also applies to subpackages: `my/app` matches `my/app` and `my/app/db`, but not `my/apple`. When several filters match, the longest package path wins, so `my/app=debug,my/app/db=warn` keeps `my/app/db` and its subpackages at Warn.
+
 EnvFilter-style directives configure the same state from a string:
 
 ```moonbit
@@ -427,7 +429,7 @@ escaping and is unchanged.
 
 Use `@console.initialize_from_env()` for application startup. It installs a
 console subscriber using `eprintln` and defaults to Info. `MOONTRACE_LOG` sets
-the global and exact-package filters using the directives described above.
+the global and package filters using the directives described above.
 
 ```moonbit
 fn main {

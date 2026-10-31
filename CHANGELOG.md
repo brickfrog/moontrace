@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Root spans from `span` and `span_with_trace` are now sampled by default (W3C flags `01`), matching the OpenTelemetry default `ParentBased(AlwaysOn)`. Previously they were created with flags `00`, so `traceparent_from_span` told downstream OpenTelemetry services to drop the trace. Child spans and spans from remote context still inherit their parent's flags (#83).
 - OTLP log records from span-associated events now carry top-level `traceId`/`spanId` (protobuf fields 9 and 10) so backends link logs to traces; previously correlation existed only as attributes. Only valid W3C IDs are promoted. `OtlpLogRecord` gains `trace_id` and `span_id` fields, so code constructing it directly must set them (empty strings omit them) (#84).
+- Module filters, `MOONTRACE_LOG`, and env-filter directives now apply to subpackages: `my/app=debug` also matches `my/app/db` (but not `my/apple`), and the longest matching package wins. Previously only the exact package matched, so parent filters silently did nothing for subpackages (#85).
 
 ## [0.14.0] - 2026-08-26
 
