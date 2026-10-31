@@ -27,8 +27,14 @@ pub fn format_timestamp_hms(timestamp : UInt64) -> String {
 }
 
 ///|
-pub fn Event::format(self : Event, color~ : Bool = false) -> String {
-  format_event(self, color, format_timestamp_utc)
+/// Format the event as one console line. With `location=true`, the caller's
+/// `file:line` follows the package when the event has one.
+pub fn Event::format(
+  self : Event,
+  color~ : Bool = false,
+  location~ : Bool = false,
+) -> String {
+  format_event(self, color, format_timestamp_utc, location~)
 }
 
 ///|
@@ -36,6 +42,7 @@ pub fn format_event(
   event : Event,
   color : Bool,
   format_timestamp : (UInt64) -> String,
+  location~ : Bool = false,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string(format_timestamp(event.timestamp))
@@ -52,6 +59,12 @@ pub fn format_event(
   if !source.is_empty() {
     buf.write_string(" | ")
     buf.write_string(source)
+  }
+  if location && !event.file.is_empty() {
+    buf.write_string(" | ")
+    buf.write_string(escape_control_chars(event.file))
+    buf.write_string(":")
+    buf.write_string(event.line.to_string())
   }
   buf.write_string(" — ")
   buf.write_string(escape_control_chars(event.message))

@@ -6,6 +6,8 @@ test "event timestamp converts milliseconds to nanoseconds once" {
     fields: [],
     timestamp: 1700000000123UL,
     source: "fixture",
+    file: "",
+    line: 0,
   }
   let record = @otlp.event_to_log_record(event)
   assert_eq(record.time_unix_nano, 1700000000123000000UL)
@@ -45,6 +47,8 @@ test "timestamp conversion saturates instead of wrapping" {
       fields: [],
       timestamp: ms,
       source: "fixture",
+      file: "",
+      line: 0,
     }
     assert_eq(@otlp.event_to_log_record(event).time_unix_nano, ns)
     let span = @moontrace.span("overflow fixture")

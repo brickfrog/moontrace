@@ -5,6 +5,8 @@ pub(all) struct Event {
   fields : Array[Field]
   timestamp : UInt64
   source : String
+  file : String
+  line : Int32
 } derive(Debug)
 
 ///|
@@ -72,6 +74,8 @@ fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
         fields: merge_fields(fields),
         timestamp: @env.now(),
         source: "",
+        file: "",
+        line: 0,
       })
     None => ()
   }
@@ -88,7 +92,7 @@ fn emit_with_loc(
   if !should_log_module(source, level) {
     return
   }
-  dispatch_from_source(level, msg, fields, source)
+  dispatch_from_source(level, msg, fields, source, loc)
 }
 
 ///|
@@ -98,13 +102,17 @@ fn dispatch_from_source(
   msg : String,
   fields : Array[Field],
   source : String,
+  loc : SourceLoc,
 ) -> Unit {
+  let (file, line) = extract_file_line(loc)
   dispatch(Event::{
     level,
     message: msg,
     fields: merge_fields(fields),
     timestamp: @env.now(),
     source,
+    file,
+    line,
   })
 }
 
@@ -139,7 +147,7 @@ fn emit_in_span_with_loc(
   if !should_log_module(source, level) {
     return
   }
-  dispatch_in_span_from_source(span, level, msg, fields, source)
+  dispatch_in_span_from_source(span, level, msg, fields, source, loc)
 }
 
 ///|
@@ -150,13 +158,17 @@ fn dispatch_in_span_from_source(
   msg : String,
   fields : Array[Field],
   source : String,
+  loc : SourceLoc,
 ) -> Unit {
+  let (file, line) = extract_file_line(loc)
   dispatch(Event::{
     level,
     message: msg,
     fields: merge_fields(span_event_fields(span, fields)),
     timestamp: @env.now(),
     source,
+    file,
+    line,
   })
 }
 
@@ -351,6 +363,10 @@ pub fn Event::to_json(self : Event) -> Json {
   m.set("message", Json(self.message))
   m.set("timestamp", Json(self.timestamp))
   m.set("source", Json(self.source))
+  if !self.file.is_empty() {
+    m.set("file", Json(self.file))
+    m.set("line", Json(self.line))
+  }
   m.set("fields", fields_to_json(self.fields))
   Json(m)
 }

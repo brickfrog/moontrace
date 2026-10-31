@@ -4,11 +4,12 @@ pub fn subscriber(
   output~ : (String) -> Unit = fn(s) { println(s) },
   color~ : Bool = true,
   format_timestamp~ : (UInt64) -> String = @moontrace.format_timestamp_utc,
+  location~ : Bool = false,
 ) -> (@moontrace.Event) -> Unit {
   fn(event) {
     if event.level < min_level {
       return
     }
-    output(@moontrace.format_event(event, color, format_timestamp))
+    output(@moontrace.format_event(event, color, format_timestamp, location~))
   }
 }

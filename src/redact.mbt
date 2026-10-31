@@ -133,13 +133,7 @@ fn redact_event(event : Event, policy : RedactionPolicy) -> Event {
       None => ()
     }
   })
-  Event::{
-    level: event.level,
-    message: event.message,
-    fields,
-    timestamp: event.timestamp,
-    source: event.source,
-  }
+  { ..event, fields, }
 }
 
 ///|

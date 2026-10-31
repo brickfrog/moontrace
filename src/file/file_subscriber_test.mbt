@@ -7,6 +7,8 @@ fn test_event(message : String) -> @moontrace.Event {
     fields: [],
     timestamp: (123 : UInt64),
     source: "brickfrog/moontrace/file/test",
+    file: "",
+    line: 0,
   }
 }
 

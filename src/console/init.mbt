@@ -4,8 +4,9 @@ pub fn initialize(
   color~ : Bool = true,
   output? : (String) -> Unit,
   format_timestamp~ : (UInt64) -> String = @moontrace.format_timestamp_utc,
+  location~ : Bool = false,
 ) -> Unit {
   @moontrace.set_subscriber(
-    subscriber(min_level~, color~, output?, format_timestamp~),
+    subscriber(min_level~, color~, output?, format_timestamp~, location~),
   )
 }

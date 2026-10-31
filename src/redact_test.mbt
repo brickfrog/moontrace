@@ -6,6 +6,8 @@ fn redaction_sample_event(fields : Array[@moontrace.Field]) -> @moontrace.Event 
     fields,
     timestamp: (12345 : UInt64),
     source: "brickfrog/moontrace",
+    file: "",
+    line: 0,
   }
 }
 

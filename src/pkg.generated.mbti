@@ -63,7 +63,7 @@ pub fn fields_to_json(Array[Field]) -> Json
 
 pub fn filter_events((Event) -> Unit, (Event) -> Bool) -> (Event) -> Unit
 
-pub fn format_event(Event, Bool, (UInt64) -> String) -> String
+pub fn format_event(Event, Bool, (UInt64) -> String, location? : Bool) -> String
 
 #deprecated
 pub fn format_timestamp_hms(UInt64) -> String
@@ -234,8 +234,10 @@ pub(all) struct Event {
   fields : Array[Field]
   timestamp : UInt64
   source : String
+  file : String
+  line : Int32
 } derive(@debug.Debug)
-pub fn Event::format(Self, color? : Bool) -> String
+pub fn Event::format(Self, color? : Bool, location? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
 pub fn Event::to_string(Self) -> String
 pub impl Show for Event

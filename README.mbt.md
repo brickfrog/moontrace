@@ -75,7 +75,9 @@ Attach structured fields to any event:
 The `field()` function uses MoonBit's `ToJson` trait dispatch — any type implementing `ToJson` works. For raw `Json` values, use `fields()` instead.
 
 Public event and logger calls capture the caller package via `SourceLoc`,
-available as `event.source`. Internal span lifecycle events have an empty source.
+available as `event.source`, plus the caller's `event.file` (relative to the
+module root) and `event.line`. Internal span lifecycle events have an empty
+source and file and a line of 0.
 Plain event calls inside a span wrapper do not automatically acquire span IDs;
 use span methods or a bound logger for correlation.
 
@@ -459,6 +461,14 @@ Output:
 14:31:44.500 | ERROR | handler — delivery failed  target="leaf-1" exit_code=2
 ```
 
+Pass `location=true` to `@console.subscriber`, `@console.initialize`, or
+`@console.initialize_from_env` to add each event's `file:line` after the
+package:
+
+```
+14:31:43.903 | INFO  | server | src/server/main.mbt:42 — UDS server listening  path=".choir/server.sock"
+```
+
 Human-readable formatting keeps each event on one physical record. C0/C1
 control codes in event messages, field keys, and trace-context diagnostics are
 rendered visibly (`\\n`, `\\r`, `\\t`, or `\\u{001b}`-style escapes). Printable
@@ -512,6 +522,9 @@ Machine-readable JSON output:
 @moontrace.set_subscriber(@json.subscriber(min_level=@moontrace.Warn))
 ```
 
+Each record has `level`, `message`, `timestamp`, `source`, and `fields`, plus
+`file` and `line` when the event has a call-site location.
+
 ### OTLP Export
 
 Convert events and completed spans to OpenTelemetry-compatible JSON:
@@ -542,7 +555,7 @@ s.exit()
 exp.shutdown()  // stop accepting new events, then flush buffered records
 ```
 
-`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, links, and span events such as recorded exceptions. Nested JSON field values become OTLP `arrayValue` and `kvlistValue` attributes rather than strings.
+`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, links, and span events such as recorded exceptions. Nested JSON field values become OTLP `arrayValue` and `kvlistValue` attributes rather than strings. Log records carry the event's call site as `code.file.path` and `code.line.number` attributes.
 
 For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
 

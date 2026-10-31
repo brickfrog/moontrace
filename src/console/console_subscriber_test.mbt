@@ -11,6 +11,8 @@ fn sample_console_event(
     fields,
     timestamp: (52_303_903 : UInt64),
     source,
+    file: "",
+    line: 0,
   }
 }
 
@@ -119,4 +121,22 @@ test "console initialize convenience function" {
   assert_true(output[0].contains(" | "))
   assert_true(output[0].contains(" — "))
   assert_true(output[0].contains("\u001b[33m"))
+}
+
+///|
+test "console subscriber shows file and line when location is enabled" {
+  let output : Array[String] = []
+  let subscriber = @console.subscriber(color=false, location=true, output=fn(
+    s,
+  ) {
+    output.push(s)
+  })
+  subscriber({
+    ..sample_console_event(@moontrace.Info, "hello"),
+    file: "src/server/main.mbt",
+    line: 12,
+  })
+  assert_true(
+    output[0].contains(" | choir/server | src/server/main.mbt:12 — "),
+  )
 }
