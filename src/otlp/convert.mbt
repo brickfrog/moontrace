@@ -67,10 +67,25 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
     severity_number: level_to_severity(event.level),
     severity_text: event.level.to_string(),
     body: event.message,
-    attributes: event.fields.map(fn(f) { field_to_attribute(f) }),
+    attributes: log_record_attributes(event),
     trace_id,
     span_id,
   }
+}
+
+///|
+/// Event fields plus OpenTelemetry `code.file.path` and `code.line.number`
+/// when the event carries a call-site location.
+fn log_record_attributes(event : @moontrace.Event) -> Array[OtlpAttribute] {
+  let attributes = event.fields.map(fn(f) { field_to_attribute(f) })
+  if !event.file.is_empty() {
+    attributes.push({ key: "code.file.path", value: StringVal(event.file), })
+    attributes.push({
+      key: "code.line.number",
+      value: IntVal(event.line.to_int64()),
+    })
+  }
+  attributes
 }
 
 ///|

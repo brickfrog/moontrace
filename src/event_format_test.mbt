@@ -11,6 +11,8 @@ fn sample_event(
     fields,
     timestamp: (52_303_903 : UInt64),
     source,
+    file: "",
+    line: 0,
   }
 }
 

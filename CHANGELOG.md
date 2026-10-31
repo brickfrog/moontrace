@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Upgrade notes:
+
+- `Event` literals need `file` and `line` fields; use `file: "", line: 0` when there is no call site, or `{ ..event, fields }` to copy an existing event (#90).
+
 ### Added
+
+- Events record the caller's `file` (relative to the module root) and `line` from `SourceLoc`. JSON output adds `file` and `line` keys, OTLP log records add `code.file.path` and `code.line.number` attributes, and the console subscriber, `@console.initialize`, `@console.initialize_from_env`, `Event::format`, and `format_event` accept `location=true` to show `file:line`. Span lifecycle events have no location (#90).
 
 - Head sampling at span creation: `set_span_sampler`, `with_span_sampler`, and `reset_span_sampler` install a `SpanSampler` that `span`, `span_with_trace`, `child_span`, and `span_from_remote_context` consult to set the sampled flag. Built-ins are `always_on_sampler`, `always_off_sampler`, `trace_id_ratio_sampler` (same trace-ID hash as `trace_sampler`), `parent_based_sampler`, and `span_sampler` for custom decisions over `SamplingInput`. `Span::is_sampled` reports the decision (#92).
 

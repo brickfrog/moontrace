@@ -88,6 +88,53 @@ fn extract_package(loc : SourceLoc) -> String {
 }
 
 ///|
+/// Extract the file path and start line from a `SourceLoc`, whose string form
+/// is `file:start_line:start_column-end_line:end_column@package/name`. The path
+/// is relative to the module root. Returns `("", 0)` if parsing fails.
+fn extract_file_line(loc : SourceLoc) -> (String, Int32) {
+  parse_file_line_text(loc.to_string())
+}
+
+///|
+fn parse_file_line_text(text : String) -> (String, Int32) {
+  let without_package = match text.rev_split_once("@") {
+    Some((before, _)) => before
+    None => text[:]
+  }
+  let start = match without_package.rev_split_once("-") {
+    Some((before, _)) => before
+    None => return ("", 0)
+  }
+  let file_line = match start.rev_split_once(":") {
+    Some((before, _)) => before
+    None => return ("", 0)
+  }
+  match file_line.rev_split_once(":") {
+    Some((file, line)) =>
+      match parse_line_number(line) {
+        Some(n) if !file.is_empty() => (file.to_owned(), n)
+        _ => ("", 0)
+      }
+    None => ("", 0)
+  }
+}
+
+///|
+fn parse_line_number(digits : StringView) -> Int32? {
+  if digits.is_empty() {
+    return None
+  }
+  let mut n = 0
+  for c in digits {
+    if c < '0' || c > '9' {
+      return None
+    }
+    n = n * 10 + (c.to_int() - '0'.to_int())
+  }
+  Some(n)
+}
+
+///|
 /// Report whether an event at `level` from the caller's package would reach the
 /// installed subscriber after global and module filters. Call arguments are
 /// evaluated even when an event is filtered out, so use this to skip building

@@ -67,6 +67,8 @@ fn combinator_event(
     fields,
     timestamp: (1 : UInt64),
     source,
+    file: "",
+    line: 0,
   }
 }
 

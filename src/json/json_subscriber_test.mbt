@@ -31,6 +31,8 @@ test "json subscriber delegates to event to_json" {
     fields: @moontrace.fields([("count", Json(1))]),
     timestamp: (123 : UInt64),
     source: "brickfrog/moontrace",
+    file: "",
+    line: 0,
   }
   let subscriber = @json.subscriber(output=fn(s) { output.push(s) })
   subscriber(event)

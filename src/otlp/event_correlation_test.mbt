@@ -67,3 +67,28 @@ test "invalid correlation field values are not promoted to OTLP ids" {
     assert_eq(record.span_id, "")
   }
 }
+
+///|
+test "call-site location becomes OTLP code attributes" {
+  let captured : Array[@moontrace.Event] = []
+  @moontrace.with_subscriber(event => captured.push(event), () => {
+    @moontrace.info("located")
+  })
+  let record = @otlp.event_to_log_record(captured[0])
+  let attributes = record.attributes
+  assert_eq(attributes.length(), 2)
+  assert_eq(attributes[0].key, "code.file.path")
+  assert_true(
+    attributes[0].value is StringVal(path) &&
+    path == "src/otlp/event_correlation_test.mbt",
+  )
+  assert_eq(attributes[1].key, "code.line.number")
+  assert_true(attributes[1].value is IntVal(line) && line > 0L)
+
+  let unlocated = @otlp.event_to_log_record({
+    ..captured[0],
+    file: "",
+    line: 0,
+  })
+  assert_eq(unlocated.attributes.length(), 0)
+}

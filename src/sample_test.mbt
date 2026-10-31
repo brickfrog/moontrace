@@ -9,6 +9,8 @@ fn sample_test_event(
     fields,
     timestamp: 123UL,
     source: "brickfrog/moontrace",
+    file: "",
+    line: 0,
   }
 }
 

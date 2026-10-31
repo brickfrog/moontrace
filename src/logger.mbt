@@ -135,8 +135,9 @@ pub fn Logger::event(
   }
   let fields = merge_logger_fields(self.bound_fields, fields)
   match self.associated_span {
-    Some(span) => dispatch_in_span_from_source(span, level, msg, fields, source)
-    None => dispatch_from_source(level, msg, fields, source)
+    Some(span) =>
+      dispatch_in_span_from_source(span, level, msg, fields, source, loc)
+    None => dispatch_from_source(level, msg, fields, source, loc)
   }
 }
 

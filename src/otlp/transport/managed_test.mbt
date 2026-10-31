@@ -6,6 +6,8 @@ fn managed_event(message : String) -> @moontrace.Event {
     fields: [],
     timestamp: 1700000000123UL,
     source: "managed-fixture",
+    file: "",
+    line: 0,
   }
 }
 

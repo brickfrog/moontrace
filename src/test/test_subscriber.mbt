@@ -280,13 +280,7 @@ pub fn LifecycleQuery::with_recorded_field(
 
 ///|
 fn event_snapshot(event : @moontrace.Event) -> @moontrace.Event {
-  {
-    level: event.level,
-    message: event.message,
-    fields: event.fields.copy(),
-    timestamp: event.timestamp,
-    source: event.source,
-  }
+  { ..event, fields: event.fields.copy(), }
 }
 
 ///|
