@@ -124,3 +124,26 @@ test "span JSON includes events only when present" {
   assert_true(json.contains("\"events\":[{\"name\":\"cache_miss\""))
   assert_true(json.contains("\"key\":\"k\""))
 }
+
+///|
+test "completed span snapshots deep-copy field and event JSON" {
+  let completed : Array[@moontrace.Span] = []
+  let nested : Map[String, Json] = Map([("k", Json("original"))])
+  let span = @moontrace.span("work", fields=[@moontrace.field("attr", nested)])
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_span_observer(
+      @moontrace.completed_span_observer(s => completed.push(s)),
+    )
+    span.enter()
+    span.add_event("e", fields=[@moontrace.field("payload", nested)])
+    span.exit()
+  })
+  nested.set("k", Json("changed"))
+  match span.events[0].fields[0].value {
+    Object(obj) => obj.set("k", Json("mutated"))
+    _ => abort("expected object")
+  }
+  let expected = Json(Map([("k", Json("original"))]))
+  assert_eq(completed[0].fields[0].value, expected)
+  assert_eq(completed[0].events[0].fields[0].value, expected)
+}
