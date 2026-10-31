@@ -633,6 +633,8 @@ let traced = @moontrace.trace_sampler(limited.subscriber(), 0.25)
 
 `redact(inner, policy?)` builds a redacted copy of the event for that subscriber. The default policy redacts fields whose names contain `password`, `token`, or `secret`; `redaction_policy(...)` can switch between replacing values and dropping fields.
 
+Deny-list policies also apply to keys inside JSON object and array field values at any depth, so `{"request": {"headers": {"authorization_token": ...}}}` is redacted too. An `allow` list applies only to top-level field names: an allowed field is passed through whole, and every other field is transformed. Redaction applies to events passing through the wrapped subscriber; span fields reach span observers and OTLP span export without it.
+
 See [docs/sampling.md](docs/sampling.md) for the sampling model.
 
 ### Flame Export
