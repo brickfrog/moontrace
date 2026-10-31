@@ -13,6 +13,9 @@ Upgrade notes:
 
 ### Added
 
+- JSON subscriber options for log shippers: `timestamp=Rfc3339`, `flatten=true` (fields become top-level keys; colliding keys are prefixed with `fields.` until unique), `trace_ids=true` (span `trace_id`/`span_id` become top-level keys), and `keys=json_keys(...)` for renaming top-level keys. `@json.event_json` builds the record directly; defaults are unchanged (#97).
+- `brickfrog/moontrace/logfmt` package with `subscriber`, `initialize`, and `format_event` for logfmt output (#40).
+- `format_timestamp_rfc3339` formats millisecond timestamps as RFC 3339 UTC.
 - Events record the caller's `file` (relative to the module root) and `line` from `SourceLoc`. JSON output adds `file` and `line` keys, OTLP log records add `code.file.path` and `code.line.number` attributes unless the event already has fields with those keys, and the console subscriber, `@console.initialize`, `@console.initialize_from_env`, `Event::format`, and `format_event` accept `location=true` to show `file:line`. Span lifecycle events have no location (#90).
 
 - Head sampling at span creation: `set_span_sampler`, `with_span_sampler`, and `reset_span_sampler` install a `SpanSampler` that `span`, `span_with_trace`, `child_span`, and `span_from_remote_context` consult to set the sampled flag. Built-ins are `always_on_sampler`, `always_off_sampler`, `trace_id_ratio_sampler` (same trace-ID hash as `trace_sampler`), `parent_based_sampler`, and `span_sampler` for custom decisions over `SamplingInput`. `Span::is_sampled` reports the decision (#92).

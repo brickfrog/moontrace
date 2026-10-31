@@ -68,6 +68,8 @@ pub fn format_event(Event, Bool, (UInt64) -> String, location? : Bool) -> String
 #deprecated
 pub fn format_timestamp_hms(UInt64) -> String
 
+pub fn format_timestamp_rfc3339(UInt64) -> String
+
 pub fn format_timestamp_utc(UInt64) -> String
 
 pub fn format_traceparent(SpanContext) -> String
