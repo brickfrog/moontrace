@@ -96,3 +96,26 @@ test "json subscriber forwards formatting options" {
     "{\"level\":\"WARN\",\"message\":\"m\",\"timestamp\":\"2026-03-28T14:31:43.903Z\",\"source\":\"brickfrog/app\",\"file\":\"src/app/main.mbt\",\"line\":7,\"k\":true}",
   )
 }
+
+///|
+test "event_json flatten never drops distinct fields" {
+  let event = json_format_event(file="", fields=[
+    @moontrace.field("fields.level", "a"),
+    @moontrace.field("level", "b"),
+    @moontrace.field("dup", 1),
+    @moontrace.field("dup", 2),
+  ])
+  assert_eq(
+    @json.event_json(event, flatten=true).stringify(),
+    "{\"level\":\"WARN\",\"message\":\"m\",\"timestamp\":\"1774708303903\",\"source\":\"brickfrog/app\",\"fields.level\":\"a\",\"fields.fields.level\":\"b\",\"dup\":2}",
+  )
+  let renamed = @json.event_json(
+    json_format_event(file="", fields=[@moontrace.field("level", "b")]),
+    flatten=true,
+    keys=@json.json_keys(message="fields.level"),
+  )
+  assert_eq(
+    renamed.stringify(),
+    "{\"level\":\"WARN\",\"fields.level\":\"m\",\"timestamp\":\"1774708303903\",\"source\":\"brickfrog/app\",\"fields.fields.level\":\"b\"}",
+  )
+}

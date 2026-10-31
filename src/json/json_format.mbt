@@ -44,7 +44,9 @@ pub fn json_keys(
 ///
 /// * `timestamp` selects epoch milliseconds or RFC 3339.
 /// * `flatten` writes fields as top-level keys instead of a nested object. A
-///   field whose key matches a top-level key is written as `fields.<key>`.
+///   field whose key is taken by a top-level key or a different field is
+///   prefixed with `fields.` until it is unique; repeated keys keep the last
+///   value.
 /// * `trace_ids` moves the span-correlated `trace_id` and `span_id` fields to
 ///   top-level keys (the last value wins, as span correlation appends them).
 /// * `keys` renames the top-level keys.
@@ -77,12 +79,16 @@ pub fn event_json(
   }
   if flatten {
     let reserved = record.copy()
+    // Output key -> original field key, so repeated fields keep last-wins
+    // semantics while distinct fields never overwrite each other.
+    let owners : Map[String, String] = Map([])
     for field in fields {
-      let key = if reserved.contains(field.key) {
-        "fields." + field.key
-      } else {
-        field.key
+      let mut key = field.key
+      while reserved.contains(key) ||
+            (owners.get(key) is Some(owner) && owner != field.key) {
+        key = "fields." + key
       }
+      owners.set(key, field.key)
       record.set(key, field.value)
     }
   } else {

@@ -536,8 +536,9 @@ Options reshape records for log shippers that expect flat, ISO-timestamped JSON:
 )
 ```
 
-When flattened, a field whose key matches a top-level key is written as
-`fields.<key>`. `@json.event_json(event, ...)` builds the same record as a
+When flattened, a field whose key is already taken by a top-level key or a
+different field is prefixed with `fields.` until it is unique, so no value is
+dropped. `@json.event_json(event, ...)` builds the same record as a
 `Json` value; with default options it equals `event.to_json()`.
 `@moontrace.format_timestamp_rfc3339` is available for custom formats.
 

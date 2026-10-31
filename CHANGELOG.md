@@ -13,7 +13,7 @@ Upgrade notes:
 
 ### Added
 
-- JSON subscriber options for log shippers: `timestamp=Rfc3339`, `flatten=true` (fields become top-level keys; collisions are written as `fields.<key>`), `trace_ids=true` (span `trace_id`/`span_id` become top-level keys), and `keys=json_keys(...)` for renaming top-level keys. `@json.event_json` builds the record directly; defaults are unchanged (#97).
+- JSON subscriber options for log shippers: `timestamp=Rfc3339`, `flatten=true` (fields become top-level keys; colliding keys are prefixed with `fields.` until unique), `trace_ids=true` (span `trace_id`/`span_id` become top-level keys), and `keys=json_keys(...)` for renaming top-level keys. `@json.event_json` builds the record directly; defaults are unchanged (#97).
 - `brickfrog/moontrace/logfmt` package with `subscriber`, `initialize`, and `format_event` for logfmt output (#40).
 - `format_timestamp_rfc3339` formats millisecond timestamps as RFC 3339 UTC.
 - Events record the caller's `file` (relative to the module root) and `line` from `SourceLoc`. JSON output adds `file` and `line` keys, OTLP log records add `code.file.path` and `code.line.number` attributes unless the event already has fields with those keys, and the console subscriber, `@console.initialize`, `@console.initialize_from_env`, `Event::format`, and `format_event` accept `location=true` to show `file:line`. Span lifecycle events have no location (#90).
