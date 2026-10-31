@@ -75,15 +75,21 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
 
 ///|
 /// Event fields plus OpenTelemetry `code.file.path` and `code.line.number`
-/// when the event carries a call-site location.
+/// when the event carries a call-site location. A field with either key wins
+/// over the captured location so OTLP attribute keys stay unique.
 fn log_record_attributes(event : @moontrace.Event) -> Array[OtlpAttribute] {
   let attributes = event.fields.map(fn(f) { field_to_attribute(f) })
   if !event.file.is_empty() {
-    attributes.push({ key: "code.file.path", value: StringVal(event.file), })
-    attributes.push({
-      key: "code.line.number",
-      value: IntVal(event.line.to_int64()),
-    })
+    let has_field = key => event.fields.iter().any(f => f.key == key)
+    if !has_field("code.file.path") {
+      attributes.push({ key: "code.file.path", value: StringVal(event.file), })
+    }
+    if !has_field("code.line.number") {
+      attributes.push({
+        key: "code.line.number",
+        value: IntVal(event.line.to_int64()),
+      })
+    }
   }
   attributes
 }

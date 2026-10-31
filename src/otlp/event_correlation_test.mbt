@@ -92,3 +92,19 @@ test "call-site location becomes OTLP code attributes" {
   })
   assert_eq(unlocated.attributes.length(), 0)
 }
+
+///|
+test "explicit code attributes win over the captured location" {
+  let captured : Array[@moontrace.Event] = []
+  @moontrace.with_subscriber(event => captured.push(event), () => {
+    @moontrace.info("located", fields=[
+      @moontrace.field("code.file.path", "generated/model.mbt"),
+    ])
+  })
+  let attributes = @otlp.event_to_log_record(captured[0]).attributes
+  let keys = attributes.map(a => a.key)
+  assert_eq(keys, ["code.file.path", "code.line.number"])
+  assert_true(
+    attributes[0].value is StringVal(path) && path == "generated/model.mbt",
+  )
+}
