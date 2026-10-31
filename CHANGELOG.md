@@ -7,28 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-31
+
+Requires the MoonBit 0.10.18 toolchain. Upgrade notes for code that constructs
+moontrace values directly or relies on previous defaults:
+
+- `Span` and `OtlpSpan` literals need `events: []`, and `OtlpLogRecord` literals need `trace_id` and `span_id` (#84, #89, #95).
+- `OtlpValue` has new `ArrayVal` and `KvlistVal` variants; exhaustive matches need new arms (#95).
+- Root spans are now sampled by default (#83), and module filters now also apply to subpackages (#85).
+- Promoted trait methods such as `level.compare(other)` are deprecated (#82).
+
 ### Added
 
+- Explicit bound loggers: `logger(fields?, span?)` binds fields and optional span correlation, `Logger::bind` derives independent children, `Logger::in_span` associates a span, and `trace`/`debug`/`info`/`warn`/`error`/`event` emit through the existing filters and subscriber. Bound JSON is copied for isolation.
+- `@console.initialize_from_env()` installs a stderr console subscriber with Info default, automatic color, and `MOONTRACE_LOG` filters; invalid filters are rejected before any state changes.
+- `with_span`, `with_span_ctx`, and `with_child_span` accept raising callbacks, recording the failure and closing the span exactly once while preserving the original error type and non-raising callers (#75).
+- `ExportReport` and the `export_json_report`/`export_spans_report`/`export_logs_report` transport methods expose OTLP partial-success details (`rejected_spans`, `rejected_log_records`, `error_message`) (#79).
+- `ManagedJsonExporter` (`managed_json_exporter`) connects synchronous tracing to bounded, timed OTLP/HTTP JSON delivery with `run`, `flush`, `shutdown`, and delivery statistics; see [docs/managed-otlp.md](docs/managed-otlp.md) (#80).
+- `with_remote_span_async` runs async request work in a span parented by incoming trace context, with the same lifecycle guarantees as the other async span helpers (#81).
 - `enabled(level)` reports whether an event from the caller's package would reach the installed subscriber, so callers can skip building expensive messages and fields (#87).
 - Bound loggers can carry their own minimum level via `logger(min_level=...)` or `Logger::with_min_level`, replacing the global and module filters for their events so one request or component can be more verbose or stricter. Children inherit it, and `Logger::enabled` applies the same rule (#91).
 - Subscriber combinators `map_events`, `filter_events`, `enrich`, and `with_directives` transform, filter, add computed fields to, or apply package directives to a single subscriber (#88).
 - `Span::record_exception(err)` records a raised error as error status plus an `exception` span event with OpenTelemetry `exception.type`/`exception.message` attributes, and `exception_fields(err)` produces the same attributes for log events. Spans gain `events` and `Span::add_event`; the `with_span` family and `span_async` wrappers record raised errors this way. Code constructing `Span` literals directly must add `events: []` (#89).
 - OTLP span export includes span events (`OtlpSpanEvent`, JSON `events`, protobuf `Span.events`), and nested JSON field values export as OTLP `arrayValue`/`kvlistValue` instead of stringified JSON. `OtlpSpan` gains an `events` field and `OtlpValue` gains `ArrayVal` and `KvlistVal`, so code constructing spans or matching values exhaustively must be updated (#95).
 
-### Deprecated
-
-- MoonBit 0.10.18 deprecates implicitly promoting trait implementations to regular methods. `Show::to_string` on `Event`, `Field`, `Span`, and `TraceFlags`, and `OtlpHttpClient::post` on `AsyncHttpClient`, are now explicit public methods. Promoted `Eq` (`equal`, `not_equal`), `Compare` (`compare`, `op_lt`, `op_le`, `op_gt`, `op_ge`), `Debug::to_repr`, and `Show::output` methods remain only as deprecated, hidden compatibility methods and will be removed in a later release; use `==`, `<`, `Compare::compare(a, b)`, `@debug.to_string`, or the trait methods instead.
-
 ### Changed
 
-- Pinned CI toolchain moves from MoonBit 0.10.11 to 0.10.13 (`moonc v0.10.13+cbb11c36f`, `moon 0.1.20260915`). No source change was required: the removed `f!()` call syntax, `for { }`, `fn name[T]`, `typealias`/`traitalias`/`fnalias`, and `type!` forms are already absent, and no custom `Logger` implementation exists that the new `write_view`/`write_substring` requirement would break.
-- Pinned CI toolchain moves from MoonBit 0.10.15 to 0.10.18 (`moonc v0.10.18+6c83a7f62`, `moon 0.1.20261028`). Builtin `.to_json()` calls now use `Json(value)`, blackbox tests in `@moontrace/test` qualify package names with `@test.`, and generated interfaces now print `Int` as `Int32` with no API change.
+- Pinned CI toolchain moves from MoonBit 0.10.10 to 0.10.18 (`moonc v0.10.18+6c83a7f62`, `moon 0.1.20261028`), via 0.10.11 (#71), 0.10.13 (#72), and 0.10.15 (#75). The removed `f!()`, `for { }`, `fn name[T]`, alias, and `type!` forms were already absent; for 0.10.18, builtin `.to_json()` calls now use `Json(value)`, blackbox tests in `@moontrace/test` qualify package names with `@test.`, and generated interfaces print `Int` as `Int32` with no API change (#82).
 - The managed OTLP exporter's fallback error message now reports `status=503` rather than `status=Some(503)`, and reports no status when none was received.
 - `moonbitlang/core/json` is now a test-only import of `@moontrace/otlp`; it is used solely by `exporter_test.mbt`, and 0.10.13 reports the package-level import as unused.
 - `parse_traceparent` now has regression coverage for non-ASCII headers. Rejection rests on its length and hex validation, which 0.10.13's bracket-slice clamping does not reach: the fixed separator checks keep any surrogate pair wholly inside a slice, so no slice trims and behavior is unchanged.
 
+### Deprecated
+
+- MoonBit 0.10.18 deprecates implicitly promoting trait implementations to regular methods. `Show::to_string` on `Event`, `Field`, `Span`, and `TraceFlags`, and `OtlpHttpClient::post` on `AsyncHttpClient`, are now explicit public methods. Promoted `Eq` (`equal`, `not_equal`), `Compare` (`compare`, `op_lt`, `op_le`, `op_gt`, `op_ge`), `Debug::to_repr`, and `Show::output` methods remain only as deprecated, hidden compatibility methods and will be removed in a later release; use `==`, `<`, `Compare::compare(a, b)`, `@debug.to_string`, or the trait methods instead.
+
 ### Fixed
 
+- Simple tracestate keys must start with a lowercase letter, per the W3C key grammar; keys such as `1vendor` were previously accepted. Digit-leading tenant IDs in multi-tenant keys such as `1tenant@vendor` remain valid (#74).
+- OTLP conversion now converts moontrace's millisecond clocks to nanoseconds for events and spans, saturating on overflow; previously milliseconds were written into nanosecond fields. HTTP 200 responses reporting a partial rejection now mark the export unsuccessful and non-retryable instead of being discarded (#79).
 - Root spans from `span` and `span_with_trace` are now sampled by default (W3C flags `01`), matching the OpenTelemetry default `ParentBased(AlwaysOn)`. Previously they were created with flags `00`, so `traceparent_from_span` told downstream OpenTelemetry services to drop the trace. Child spans and spans from remote context still inherit their parent's flags (#83).
 - OTLP log records from span-associated events now carry top-level `traceId`/`spanId` (protobuf fields 9 and 10) so backends link logs to traces; previously correlation existed only as attributes. Only valid W3C IDs are promoted. `OtlpLogRecord` gains `trace_id` and `span_id` fields, so code constructing it directly must set them (empty strings omit them) (#84).
 - Module filters, `MOONTRACE_LOG`, and env-filter directives now apply to subpackages: `my/app=debug` also matches `my/app/db` (but not `my/apple`), and the longest matching package wins. Previously only the exact package matched, so parent filters silently did nothing for subpackages (#85).
