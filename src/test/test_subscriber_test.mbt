@@ -3,7 +3,7 @@ suberror ExampleFailure
 
 ///|
 fn assert_record_event(
-  records : Array[CapturedRecord],
+  records : Array[@test.CapturedRecord],
   index : Int32,
   message : String,
 ) -> Unit {
@@ -25,9 +25,9 @@ fn assert_record_event(
 
 ///|
 fn assert_record_lifecycle(
-  records : Array[CapturedRecord],
+  records : Array[@test.CapturedRecord],
   index : Int32,
-  kind : SpanLifecycleKind,
+  kind : @test.SpanLifecycleKind,
   span_name : String,
 ) -> Unit {
   if records[index].index != index {
@@ -52,7 +52,7 @@ fn assert_record_lifecycle(
 
 ///|
 test "example capture subscriber replaces manual captured arrays" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
 
   capture.with_install(fn() {
     @moontrace.info("hello")
@@ -61,14 +61,14 @@ test "example capture subscriber replaces manual captured arrays" {
 
   assert_eq(capture.captured_events().length(), 2)
   capture.assert_events_ordered([
-    event_with_level(@moontrace.Info).with_message("hello"),
-    event_with_level(@moontrace.Warn).with_message("careful"),
+    @test.event_with_level(@moontrace.Info).with_message("hello"),
+    @test.event_with_level(@moontrace.Warn).with_message("careful"),
   ])
 }
 
 ///|
 test "ordered and unordered event assertions" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
 
   capture.with_install(fn() {
     @moontrace.debug("first")
@@ -77,20 +77,20 @@ test "ordered and unordered event assertions" {
   })
 
   capture.assert_events_ordered([
-    event_with_message("first"),
-    event_with_message("second"),
-    event_with_message("third"),
+    @test.event_with_message("first"),
+    @test.event_with_message("second"),
+    @test.event_with_message("third"),
   ])
   capture.assert_events_unordered([
-    event_with_level(@moontrace.Error_).with_message("third"),
-    event_with_level(@moontrace.Debug).with_message("first"),
-    event_with_level(@moontrace.Info).with_message("second"),
+    @test.event_with_level(@moontrace.Error_).with_message("third"),
+    @test.event_with_level(@moontrace.Debug).with_message("first"),
+    @test.event_with_level(@moontrace.Info).with_message("second"),
   ])
 }
 
 ///|
 test "event query helpers match level message source field and span" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
   let spans : Array[@moontrace.Span] = []
 
   capture.with_install(fn() {
@@ -115,7 +115,7 @@ test "event query helpers match level message source field and span" {
   assert_eq(capture.events_in_span(span).length(), 2)
   assert_eq(capture.events_in_span_named("request").length(), 2)
   capture.assert_event(
-    event_with_level(@moontrace.Info)
+    @test.event_with_level(@moontrace.Info)
     .with_message("dispatched")
     .with_source(source)
     .with_field_value("tool", "fork_wave")
@@ -125,7 +125,7 @@ test "event query helpers match level message source field and span" {
 
 ///|
 test "span-name correlation handles overlapping spans with same name" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
 
   capture.with_install(fn() {
     let span_a = @moontrace.span("phase")
@@ -148,14 +148,8 @@ test "span-name correlation handles overlapping spans with same name" {
   assert_eq(named_events[4].message, "a still active")
   assert_eq(
     capture
-    .events_matching(event_with_message("both active").with_span_name("phase"))
-    .length(),
-    1,
-  )
-  assert_eq(
-    capture
     .events_matching(
-      event_with_message("a still active").with_span_name("phase"),
+      @test.event_with_message("both active").with_span_name("phase"),
     )
     .length(),
     1,
@@ -163,14 +157,24 @@ test "span-name correlation handles overlapping spans with same name" {
   assert_eq(
     capture
     .events_matching(
-      event_with_message("span.exit phase").with_span_name("phase"),
+      @test.event_with_message("a still active").with_span_name("phase"),
     )
     .length(),
     1,
   )
   assert_eq(
     capture
-    .events_matching(event_with_message("after all").with_span_name("phase"))
+    .events_matching(
+      @test.event_with_message("span.exit phase").with_span_name("phase"),
+    )
+    .length(),
+    1,
+  )
+  assert_eq(
+    capture
+    .events_matching(
+      @test.event_with_message("after all").with_span_name("phase"),
+    )
     .length(),
     0,
   )
@@ -178,7 +182,7 @@ test "span-name correlation handles overlapping spans with same name" {
 
 ///|
 test "span-name correlation handles crossing spans with same name" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
 
   capture.with_install(fn() {
     let span_a = @moontrace.span("phase", fields=[@moontrace.field("span", "a")])
@@ -201,14 +205,16 @@ test "span-name correlation handles crossing spans with same name" {
   assert_eq(named_events[4].message, "b still active")
   assert_eq(
     capture
-    .events_matching(event_with_message("both active").with_span_name("phase"))
+    .events_matching(
+      @test.event_with_message("both active").with_span_name("phase"),
+    )
     .length(),
     1,
   )
   assert_eq(
     capture
     .events_matching(
-      event_with_message("span.exit phase")
+      @test.event_with_message("span.exit phase")
       .with_field_value("span", "a")
       .with_span_name("phase"),
     )
@@ -218,7 +224,7 @@ test "span-name correlation handles crossing spans with same name" {
   assert_eq(
     capture
     .events_matching(
-      event_with_message("b still active").with_span_name("phase"),
+      @test.event_with_message("b still active").with_span_name("phase"),
     )
     .length(),
     1,
@@ -226,7 +232,7 @@ test "span-name correlation handles crossing spans with same name" {
   assert_eq(
     capture
     .events_matching(
-      event_with_message("span.exit phase")
+      @test.event_with_message("span.exit phase")
       .with_field_value("span", "b")
       .with_span_name("phase"),
     )
@@ -235,7 +241,9 @@ test "span-name correlation handles crossing spans with same name" {
   )
   assert_eq(
     capture
-    .events_matching(event_with_message("after all").with_span_name("phase"))
+    .events_matching(
+      @test.event_with_message("after all").with_span_name("phase"),
+    )
     .length(),
     0,
   )
@@ -243,7 +251,7 @@ test "span-name correlation handles crossing spans with same name" {
 
 ///|
 test "span lifecycle ordering around events" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
   let spans : Array[@moontrace.Span] = []
 
   capture.with_install(fn() {
@@ -259,16 +267,18 @@ test "span lifecycle ordering around events" {
   let span = spans[0]
   capture.assert_created_entered_recorded_exited(span)
   capture.assert_lifecycle_ordered([
-    lifecycle_kind(SpanCreated).with_span(span),
-    lifecycle_kind(SpanEntered).with_span(span),
-    lifecycle_kind(SpanRecorded).with_span(span).with_recorded_field("phase"),
-    lifecycle_kind(SpanExited).with_span(span),
-    lifecycle_kind(SpanClosed).with_span(span),
+    @test.lifecycle_kind(SpanCreated).with_span(span),
+    @test.lifecycle_kind(SpanEntered).with_span(span),
+    @test.lifecycle_kind(SpanRecorded)
+    .with_span(span)
+    .with_recorded_field("phase"),
+    @test.lifecycle_kind(SpanExited).with_span(span),
+    @test.lifecycle_kind(SpanClosed).with_span(span),
   ])
   capture.assert_events_ordered([
-    event_with_message("span.enter work").with_span(span),
-    event_with_message("inside").with_span(span),
-    event_with_message("after record").with_span(span),
+    @test.event_with_message("span.enter work").with_span(span),
+    @test.event_with_message("inside").with_span(span),
+    @test.event_with_message("after record").with_span(span),
   ])
   let records = capture.captured_records()
   assert_eq(records.length(), 9)
@@ -283,7 +293,7 @@ test "span lifecycle ordering around events" {
   assert_record_lifecycle(records, 8, SpanClosed, "work")
   assert_eq(
     capture
-    .events_matching(event_with_message("span.exit work").with_span(span))
+    .events_matching(@test.event_with_message("span.exit work").with_span(span))
     .length(),
     0,
   )
@@ -291,14 +301,14 @@ test "span lifecycle ordering around events" {
 
 ///|
 test "missing event diagnostics include query and captured events" {
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
 
   capture.with_install(fn() {
     @moontrace.info("present", fields=[@moontrace.field("tool", "fork")])
   })
 
   let diagnostic = capture.check_event(
-    event_with_level(@moontrace.Error_)
+    @test.event_with_level(@moontrace.Error_)
     .with_message("missing")
     .with_field("request_id"),
   )
@@ -322,7 +332,7 @@ test "scoped install restores global subscriber and observer on return" {
     }),
   )
 
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
   capture.with_install(fn() {
     @moontrace.info("inside")
     let span = @moontrace.span("inside span")
@@ -337,7 +347,7 @@ test "scoped install restores global subscriber and observer on return" {
   assert_eq(
     capture
     .lifecycle_matching(
-      lifecycle_kind(SpanCreated).with_span_name("inside span"),
+      @test.lifecycle_kind(SpanCreated).with_span_name("inside span"),
     )
     .length(),
     1,
@@ -345,7 +355,7 @@ test "scoped install restores global subscriber and observer on return" {
   assert_eq(capture.events_by_message("after").length(), 0)
   assert_eq(
     capture
-    .lifecycle_matching(lifecycle_kind(SpanCreated).with_span(after_span))
+    .lifecycle_matching(@test.lifecycle_kind(SpanCreated).with_span(after_span))
     .length(),
     0,
   )
@@ -369,7 +379,7 @@ test "scoped install restores global subscriber and observer on raise" {
     }),
   )
 
-  let capture = test_subscriber()
+  let capture = @test.test_subscriber()
   fn fail_in_scope() -> Unit raise ExampleFailure {
     capture.with_install(() => {
       @moontrace.info("before failure")
@@ -393,14 +403,14 @@ test "scoped install restores global subscriber and observer on raise" {
   assert_eq(
     capture
     .lifecycle_matching(
-      lifecycle_kind(SpanCreated).with_span_name("failing span"),
+      @test.lifecycle_kind(SpanCreated).with_span_name("failing span"),
     )
     .length(),
     1,
   )
   assert_eq(
     capture
-    .lifecycle_matching(lifecycle_kind(SpanCreated).with_span(after_span))
+    .lifecycle_matching(@test.lifecycle_kind(SpanCreated).with_span(after_span))
     .length(),
     0,
   )

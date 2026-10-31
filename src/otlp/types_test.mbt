@@ -109,24 +109,18 @@ test "otlp span to_json has required fields" {
   let obj = otlp_json_object(span.to_json(), "span")
   assert_otlp_json_eq(
     otlp_json_field(obj, "traceId"),
-    "0000000000000000000000000000000a".to_json(),
+    Json("0000000000000000000000000000000a"),
   )
-  assert_otlp_json_eq(
-    otlp_json_field(obj, "spanId"),
-    "000000000000000b".to_json(),
-  )
-  assert_otlp_json_eq(otlp_json_field(obj, "name"), "test".to_json())
-  assert_otlp_json_eq(otlp_json_field(obj, "kind"), (1).to_json())
-  assert_otlp_json_eq(otlp_json_field(obj, "flags"), (0).to_json())
-  assert_otlp_json_eq(
-    otlp_json_field(obj, "startTimeUnixNano"),
-    "100".to_json(),
-  )
-  assert_otlp_json_eq(otlp_json_field(obj, "endTimeUnixNano"), "200".to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "spanId"), Json("000000000000000b"))
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), Json("test"))
+  assert_otlp_json_eq(otlp_json_field(obj, "kind"), Json(1))
+  assert_otlp_json_eq(otlp_json_field(obj, "flags"), Json(0))
+  assert_otlp_json_eq(otlp_json_field(obj, "startTimeUnixNano"), Json("100"))
+  assert_otlp_json_eq(otlp_json_field(obj, "endTimeUnixNano"), Json("200"))
   assert_no_otlp_json_field(obj, "parentSpanId")
   assert_eq(otlp_json_array(otlp_json_field(obj, "links"), "links").length(), 0)
   let status = otlp_json_object(otlp_json_field(obj, "status"), "status")
-  assert_otlp_json_eq(otlp_json_field(status, "code"), (1).to_json())
+  assert_otlp_json_eq(otlp_json_field(status, "code"), Json(1))
 }
 
 ///|
@@ -148,9 +142,9 @@ test "otlp span to_json includes parentSpanId when set" {
   let obj = otlp_json_object(span.to_json(), "span")
   assert_otlp_json_eq(
     otlp_json_field(obj, "parentSpanId"),
-    "000000000000000c".to_json(),
+    Json("000000000000000c"),
   )
-  assert_otlp_json_eq(otlp_json_field(obj, "flags"), (1).to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "flags"), Json(1))
 }
 
 ///|
@@ -166,15 +160,12 @@ test "otlp link to_json includes tracestate and attributes" {
   let obj = otlp_json_object(link.to_json(), "link")
   assert_otlp_json_eq(
     otlp_json_field(obj, "traceId"),
-    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+    Json("4bf92f3577b34da6a3ce929d0e0e4736"),
   )
-  assert_otlp_json_eq(
-    otlp_json_field(obj, "spanId"),
-    "00f067aa0ba902b7".to_json(),
-  )
+  assert_otlp_json_eq(otlp_json_field(obj, "spanId"), Json("00f067aa0ba902b7"))
   assert_otlp_json_eq(
     otlp_json_field(obj, "traceState"),
-    "rojo=00f067aa0ba902b7".to_json(),
+    Json("rojo=00f067aa0ba902b7"),
   )
   let attributes = otlp_json_array(
     otlp_json_field(obj, "attributes"),
@@ -222,7 +213,7 @@ test "otlp resource constructor maps service metadata to attributes" {
 test "otlp instrumentation scope to_json omits empty version" {
   let scope = @otlp.instrumentation_scope()
   let obj = otlp_json_object(scope.to_json(), "scope")
-  assert_otlp_json_eq(otlp_json_field(obj, "name"), "moontrace".to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), Json("moontrace"))
   assert_no_otlp_json_field(obj, "version")
   assert_eq(
     otlp_json_array(otlp_json_field(obj, "attributes"), "attributes").length(),
@@ -243,8 +234,8 @@ test "otlp instrumentation scope to_json includes version and attributes" {
     ],
   )
   let obj = otlp_json_object(scope.to_json(), "scope")
-  assert_otlp_json_eq(otlp_json_field(obj, "name"), "moontrace-test".to_json())
-  assert_otlp_json_eq(otlp_json_field(obj, "version"), "0.9.3".to_json())
+  assert_otlp_json_eq(otlp_json_field(obj, "name"), Json("moontrace-test"))
+  assert_otlp_json_eq(otlp_json_field(obj, "version"), Json("0.9.3"))
   let attributes = otlp_json_array(
     otlp_json_field(obj, "attributes"),
     "attributes",

@@ -209,20 +209,20 @@ pub fn SpanLinkKind::to_string(self : SpanLinkKind) -> String {
 
 ///|
 pub fn SpanLinkKind::to_json(self : SpanLinkKind) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }
 
 ///|
 pub fn SpanLink::to_json(self : SpanLink) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("trace_id", self.trace_id.to_json())
-  m.set("span_id", self.span_id.to_json())
+  m.set("trace_id", Json(self.trace_id))
+  m.set("span_id", Json(self.span_id))
   m.set("kind", self.kind.to_json())
   m.set("fields", fields_to_json(self.fields))
   if !self.trace_state.is_empty() {
-    m.set("trace_state", self.trace_state.to_json())
+    m.set("trace_state", Json(self.trace_state))
   }
-  m.to_json()
+  Json(m)
 }
 
 ///|

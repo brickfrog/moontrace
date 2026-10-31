@@ -294,6 +294,9 @@ pub impl Show for TraceFlags with fn output(self, logger) {
 }
 
 ///|
+pub extend TraceFlags with Show::{to_string}
+
+///|
 fn is_trace_state_key_start(unit : Int32, allow_digit : Bool) -> Bool {
   (unit >= 97 && unit <= 122) || (allow_digit && unit >= 48 && unit <= 57)
 }

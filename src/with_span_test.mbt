@@ -22,11 +22,9 @@ test "with_span returns closure result" {
 test "with_span passes fields to span" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.with_span(
-    "op",
-    fields=@moontrace.fields([("key", "val".to_json())]),
-    fn() {  },
-  )
+  @moontrace.with_span("op", fields=@moontrace.fields([("key", Json("val"))]), fn() {
+
+  })
   // Just verify enter event has the field
   assert_eq(captured.length(), 2)
   assert_eq(captured[0].message, "span.enter op")

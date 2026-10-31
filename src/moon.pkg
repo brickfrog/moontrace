@@ -1,10 +1,10 @@
 import {
+  "moonbitlang/core/debug",
   "moonbitlang/core/env",
   "moonbitlang/core/random",
 }
 
 import {
-  "moonbitlang/core/debug",
   "moonbitlang/async",
   "brickfrog/moontrace/test",
 } for "test"

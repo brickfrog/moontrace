@@ -6,8 +6,11 @@ pub impl Show for Field with fn output(self, logger) {
 }
 
 ///|
+pub extend Field with Show::{to_string}
+
+///|
 pub fn Field::to_json(self : Field) -> Json {
   let m : Map[String, Json] = Map([])
   m.set(self.key, self.value)
-  m.to_json()
+  Json(m)
 }

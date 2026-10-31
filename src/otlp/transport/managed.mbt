@@ -315,7 +315,10 @@ async fn ManagedJsonExporter::send(
           match report.outcome.error {
             Some(error) => error.to_string()
             None =>
-              "OTLP HTTP export failed: status=\{report.outcome.status_code}"
+              match report.outcome.status_code {
+                Some(code) => "OTLP HTTP export failed: status=\{code}"
+                None => "OTLP HTTP export failed"
+              }
           },
         )
       }
@@ -385,7 +388,7 @@ async fn ManagedJsonExporter::wait_until(
         state.draining = false
       }
       while state.completed < target {
-        let batch = state.queue.try_get() catch { error => raise error }
+        let batch = state.queue.try_get()
         match batch {
           Some(batch) => self.send(batch)
           None => raise Failure("managed exporter lost an accepted batch")

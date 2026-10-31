@@ -44,13 +44,9 @@ fn assert_span_correlation(
   event : @moontrace.Event,
   span : @moontrace.Span,
 ) -> Unit {
-  assert_span_event_field(event, "trace_id", span.trace_id.to_json())
-  assert_span_event_field(event, "span_id", span.span_id.to_json())
-  assert_span_event_field(
-    event,
-    "parent_span_id",
-    span.parent_span_id.to_json(),
-  )
+  assert_span_event_field(event, "trace_id", Json(span.trace_id))
+  assert_span_event_field(event, "span_id", Json(span.span_id))
+  assert_span_event_field(event, "parent_span_id", Json(span.parent_span_id))
 }
 
 ///|
@@ -67,7 +63,7 @@ test "Span::info carries root span correlation fields" {
   assert_eq(captured[0].level, @moontrace.Info)
   assert_eq(captured[0].message, "root event")
   assert_span_correlation(captured[0], root)
-  assert_span_event_field(captured[0], "work", "root".to_json())
+  assert_span_event_field(captured[0], "work", Json("root"))
 
   let json = captured[0].to_json().stringify()
   assert_true(json.contains("\"trace_id\":\"\{root.trace_id}\""))
@@ -160,10 +156,10 @@ test "explicit span correlation field collisions use canonical span values" {
       span,
       "collision",
       fields=@moontrace.fields([
-        ("trace_id", "explicit-trace".to_json()),
-        ("span_id", "explicit-span".to_json()),
-        ("parent_span_id", "explicit-parent".to_json()),
-        ("keep", "explicit".to_json()),
+        ("trace_id", Json("explicit-trace")),
+        ("span_id", Json("explicit-span")),
+        ("parent_span_id", Json("explicit-parent")),
+        ("keep", Json("explicit")),
       ]),
     )
   })
@@ -173,7 +169,7 @@ test "explicit span correlation field collisions use canonical span values" {
   assert_eq(span_event_field_count(captured[0], "span_id"), 1)
   assert_eq(span_event_field_count(captured[0], "parent_span_id"), 1)
   assert_span_correlation(captured[0], span)
-  assert_span_event_field(captured[0], "keep", "explicit".to_json())
+  assert_span_event_field(captured[0], "keep", Json("explicit"))
 }
 
 ///|

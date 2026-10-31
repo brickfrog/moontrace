@@ -84,7 +84,7 @@ test "span preserves custom fields" {
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
   let s = @moontrace.span(
     "op",
-    fields=@moontrace.fields([("tool", "test".to_json())]),
+    fields=@moontrace.fields([("tool", Json("test"))]),
   )
   s.enter()
   s.exit()

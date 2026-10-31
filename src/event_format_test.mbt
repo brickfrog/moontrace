@@ -39,8 +39,8 @@ test "event format includes fields" {
     @moontrace.Info,
     "msg",
     fields=@moontrace.fields([
-      ("key", "val".to_json()),
-      ("detail", "needs attention".to_json()),
+      ("key", Json("val")),
+      ("detail", Json("needs attention")),
     ]),
   )
   assert_eq(
@@ -68,7 +68,7 @@ test "event format colors the padded level only" {
   let event = sample_event(
     @moontrace.Warn,
     "colored",
-    fields=@moontrace.fields([("service", "choir".to_json())]),
+    fields=@moontrace.fields([("service", Json("choir"))]),
   )
   assert_eq(
     event.format(color=true),
@@ -82,8 +82,8 @@ test "event format two spaces before fields one between" {
     @moontrace.Info,
     "listening",
     fields=@moontrace.fields([
-      ("service", "choir".to_json()),
-      ("path", ".choir/server.sock".to_json()),
+      ("service", Json("choir")),
+      ("path", Json(".choir/server.sock")),
     ]),
   )
   assert_eq(
@@ -97,7 +97,7 @@ test "event format escapes control characters in messages and field keys" {
   let event = sample_event(
     @moontrace.Info,
     "line1\nline2\r\t\u001b\u007f\u009f",
-    fields=@moontrace.fields([("key\n\u001b", "printable 汉字 \\n".to_json())]),
+    fields=@moontrace.fields([("key\n\u001b", Json("printable 汉字 \\n"))]),
   )
   assert_eq(
     event.format(),

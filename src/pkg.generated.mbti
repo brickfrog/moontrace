@@ -9,7 +9,7 @@ import {
 // Values
 pub fn apply_env_filter(ParsedFilter) -> Unit
 
-pub fn buffer((Event) -> Unit, capacity? : Int) -> EventBuffer
+pub fn buffer((Event) -> Unit, capacity? : Int32) -> EventBuffer
 
 pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind) -> Span
 
@@ -93,7 +93,7 @@ pub fn parse_traceparent(String) -> Result[SpanContext, TraceContextError]
 
 pub fn parse_tracestate(String) -> Result[TraceState, TraceContextError]
 
-pub fn rate_limiter((Event) -> Unit, Int, UInt64, clock? : () -> UInt64) -> RateLimiter
+pub fn rate_limiter((Event) -> Unit, Int32, UInt64, clock? : () -> UInt64) -> RateLimiter
 
 pub fn ratio_sampler((Event) -> Unit, Double, rand? : () -> Double) -> RatioSampler
 
@@ -208,15 +208,16 @@ pub(all) struct Event {
 } derive(@debug.Debug)
 pub fn Event::format(Self, color? : Bool) -> String
 pub fn Event::to_json(Self) -> Json
+pub fn Event::to_string(Self) -> String
 pub impl Show for Event
 
 pub(all) struct EventBuffer {
   mut events : Array[Event]
-  capacity : Int
+  capacity : Int32
   inner : (Event) -> Unit
 }
 pub fn EventBuffer::flush(Self) -> Unit
-pub fn EventBuffer::len(Self) -> Int
+pub fn EventBuffer::len(Self) -> Int32
 pub fn EventBuffer::subscriber(Self) -> (Event) -> Unit
 
 pub(all) struct Field {
@@ -224,6 +225,7 @@ pub(all) struct Field {
   value : Json
 } derive(@debug.Debug)
 pub fn Field::to_json(Self) -> Json
+pub fn Field::to_string(Self) -> String
 pub impl Show for Field
 
 pub(all) enum Level {
@@ -264,27 +266,27 @@ pub fn ParsedFilter::apply(Self) -> Unit
 
 pub(all) struct RateLimiter {
   inner : (Event) -> Unit
-  limit : Int
+  limit : Int32
   window_ns : UInt64
   clock : () -> UInt64
   mut window_start : UInt64
-  mut count : Int
-  mut kept : Int
-  mut dropped : Int
+  mut count : Int32
+  mut kept : Int32
+  mut dropped : Int32
 }
-pub fn RateLimiter::dropped(Self) -> Int
-pub fn RateLimiter::kept(Self) -> Int
+pub fn RateLimiter::dropped(Self) -> Int32
+pub fn RateLimiter::kept(Self) -> Int32
 pub fn RateLimiter::subscriber(Self) -> (Event) -> Unit
 
 pub(all) struct RatioSampler {
   inner : (Event) -> Unit
   ratio : Double
   rand : () -> Double
-  mut kept : Int
-  mut dropped : Int
+  mut kept : Int32
+  mut dropped : Int32
 }
-pub fn RatioSampler::dropped(Self) -> Int
-pub fn RatioSampler::kept(Self) -> Int
+pub fn RatioSampler::dropped(Self) -> Int32
+pub fn RatioSampler::kept(Self) -> Int32
 pub fn RatioSampler::subscriber(Self) -> (Event) -> Unit
 
 pub(all) enum RedactionMode {
@@ -308,7 +310,7 @@ pub(all) struct Span {
   trace_id : String
   span_id : String
   parent_span_id : String
-  mut trace_flags : Int
+  mut trace_flags : Int32
   mut trace_state : TraceState
   mut kind : SpanKind
   mut start_time : UInt64
@@ -337,6 +339,7 @@ pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
 pub fn Span::to_json(Self) -> Json
+pub fn Span::to_string(Self) -> String
 #callsite(autofill(loc))
 pub fn Span::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
@@ -354,7 +357,7 @@ pub struct SpanContext {
 } derive(@debug.Debug)
 pub fn SpanContext::is_remote(Self) -> Bool
 pub fn SpanContext::is_sampled(Self) -> Bool
-pub fn SpanContext::trace_flags_int(Self) -> Int
+pub fn SpanContext::trace_flags_int(Self) -> Int32
 pub fn SpanContext::traceparent(Self) -> String
 
 pub struct SpanId {
@@ -371,7 +374,7 @@ pub(all) enum SpanKind {
   Producer
   Consumer
 } derive(Compare, Eq, @debug.Debug)
-pub fn SpanKind::to_int(Self) -> Int
+pub fn SpanKind::to_int(Self) -> Int32
 pub fn SpanKind::to_json(Self) -> Json
 pub fn SpanKind::to_string(Self) -> String
 pub impl Show for SpanKind
@@ -408,7 +411,7 @@ pub(all) enum SpanStatus {
   Ok
   SpanError
 } derive(Compare, Eq, @debug.Debug)
-pub fn SpanStatus::to_int(Self) -> Int
+pub fn SpanStatus::to_int(Self) -> Int32
 pub fn SpanStatus::to_json(Self) -> Json
 pub fn SpanStatus::to_string(Self) -> String
 pub impl Show for SpanStatus
@@ -425,14 +428,15 @@ pub fn TraceContextError::to_string(Self) -> String
 pub impl Show for TraceContextError
 
 pub struct TraceFlags {
-  flags : Int
+  flags : Int32
 } derive(Compare, Eq, @debug.Debug)
 pub fn TraceFlags::from_hex(String) -> Result[Self, TraceContextError]
-pub fn TraceFlags::from_int(Int) -> Result[Self, TraceContextError]
+pub fn TraceFlags::from_int(Int32) -> Result[Self, TraceContextError]
 pub fn TraceFlags::is_sampled(Self) -> Bool
 pub fn TraceFlags::sampled() -> Self
 pub fn TraceFlags::to_hex(Self) -> String
-pub fn TraceFlags::to_int(Self) -> Int
+pub fn TraceFlags::to_int(Self) -> Int32
+pub fn TraceFlags::to_string(Self) -> String
 pub fn TraceFlags::unsampled() -> Self
 pub fn TraceFlags::with_sampled(Self, Bool) -> Self
 pub impl Show for TraceFlags
@@ -447,11 +451,11 @@ pub impl Show for TraceId
 pub(all) struct TraceSampler {
   inner : (Event) -> Unit
   ratio : Double
-  mut kept : Int
-  mut dropped : Int
+  mut kept : Int32
+  mut dropped : Int32
 }
-pub fn TraceSampler::dropped(Self) -> Int
-pub fn TraceSampler::kept(Self) -> Int
+pub fn TraceSampler::dropped(Self) -> Int32
+pub fn TraceSampler::kept(Self) -> Int32
 pub fn TraceSampler::subscriber(Self) -> (Event) -> Unit
 
 pub struct TraceState {
@@ -461,7 +465,7 @@ pub fn TraceState::empty() -> Self
 pub fn TraceState::from_entries(Array[TraceStateEntry]) -> Result[Self, TraceContextError]
 pub fn TraceState::get(Self, String) -> String?
 pub fn TraceState::is_empty(Self) -> Bool
-pub fn TraceState::len(Self) -> Int
+pub fn TraceState::len(Self) -> Int32
 pub fn TraceState::set(Self, String, String) -> Result[Self, TraceContextError]
 pub fn TraceState::to_header(Self) -> String
 

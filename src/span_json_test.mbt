@@ -39,10 +39,7 @@ fn assert_no_span_json_field(obj : Map[String, Json], key : String) -> Unit {
 
 ///|
 test "span to_json has correct structure" {
-  let s = @moontrace.span(
-    "test",
-    fields=@moontrace.fields([("k", "v".to_json())]),
-  )
+  let s = @moontrace.span("test", fields=@moontrace.fields([("k", Json("v"))]))
   let j = s.to_json()
   let str = j.stringify()
   assert_true(str.contains("\"name\":\"test\""))
@@ -92,20 +89,20 @@ test "span to_json includes links separate from parent_span_id" {
   let span_obj = span_json_object(child.to_json(), "span")
   assert_span_json_eq(
     span_json_field(span_obj, "parent_span_id"),
-    parent.span_id.to_json(),
+    Json(parent.span_id),
   )
   let links = span_json_array(span_json_field(span_obj, "links"), "links")
   assert_eq(links.length(), 1)
   let link = span_json_object(links[0], "link")
   assert_span_json_eq(
     span_json_field(link, "trace_id"),
-    predecessor.trace_id.to_json(),
+    Json(predecessor.trace_id),
   )
   assert_span_json_eq(
     span_json_field(link, "span_id"),
-    predecessor.span_id.to_json(),
+    Json(predecessor.span_id),
   )
-  assert_span_json_eq(span_json_field(link, "kind"), "FOLLOWS_FROM".to_json())
+  assert_span_json_eq(span_json_field(link, "kind"), Json("FOLLOWS_FROM"))
   assert_no_span_json_field(link, "trace_state")
 }
 
@@ -128,14 +125,14 @@ test "span to_json includes remote link tracestate" {
   let link = span_json_object(links[0], "link")
   assert_span_json_eq(
     span_json_field(link, "trace_id"),
-    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+    Json("4bf92f3577b34da6a3ce929d0e0e4736"),
   )
   assert_span_json_eq(
     span_json_field(link, "span_id"),
-    "00f067aa0ba902b7".to_json(),
+    Json("00f067aa0ba902b7"),
   )
   assert_span_json_eq(
     span_json_field(link, "trace_state"),
-    "rojo=00f067aa0ba902b7".to_json(),
+    Json("rojo=00f067aa0ba902b7"),
   )
 }

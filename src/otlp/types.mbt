@@ -106,23 +106,23 @@ pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
   match self {
     StringVal(s) => {
       let m : Map[String, Json] = Map([])
-      m.set("stringValue", s.to_json())
-      m.to_json()
+      m.set("stringValue", Json(s))
+      Json(m)
     }
     IntVal(i) => {
       let m : Map[String, Json] = Map([])
-      m.set("intValue", i.to_string().to_json())
-      m.to_json()
+      m.set("intValue", Json(i.to_string()))
+      Json(m)
     }
     BoolVal(b) => {
       let m : Map[String, Json] = Map([])
-      m.set("boolValue", b.to_json())
-      m.to_json()
+      m.set("boolValue", Json(b))
+      Json(m)
     }
     DoubleVal(d) => {
       let m : Map[String, Json] = Map([])
-      m.set("doubleValue", d.to_json())
-      m.to_json()
+      m.set("doubleValue", Json(d))
+      Json(m)
     }
   }
 }
@@ -130,74 +130,74 @@ pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
 ///|
 pub fn OtlpAttribute::to_json(self : OtlpAttribute) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("key", self.key.to_json())
+  m.set("key", Json(self.key))
   m.set("value", self.value.to_json())
-  m.to_json()
+  Json(m)
 }
 
 ///|
 pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("traceId", self.trace_id.to_json())
-  m.set("spanId", self.span_id.to_json())
+  m.set("traceId", Json(self.trace_id))
+  m.set("spanId", Json(self.span_id))
   if !self.trace_state.is_empty() {
-    m.set("traceState", self.trace_state.to_json())
+    m.set("traceState", Json(self.trace_state))
   }
-  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
-  m.to_json()
+  m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  Json(m)
 }
 
 ///|
 pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("traceId", self.trace_id.to_json())
-  m.set("spanId", self.span_id.to_json())
+  m.set("traceId", Json(self.trace_id))
+  m.set("spanId", Json(self.span_id))
   if !self.parent_span_id.is_empty() {
-    m.set("parentSpanId", self.parent_span_id.to_json())
+    m.set("parentSpanId", Json(self.parent_span_id))
   }
-  m.set("flags", self.flags.to_json())
-  m.set("name", self.name.to_json())
-  m.set("kind", self.kind.to_json())
-  m.set("startTimeUnixNano", self.start_time_unix_nano.to_string().to_json())
-  m.set("endTimeUnixNano", self.end_time_unix_nano.to_string().to_json())
-  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
-  m.set("links", self.links.map(fn(link) { link.to_json() }).to_json())
+  m.set("flags", Json(self.flags))
+  m.set("name", Json(self.name))
+  m.set("kind", Json(self.kind))
+  m.set("startTimeUnixNano", Json(self.start_time_unix_nano.to_string()))
+  m.set("endTimeUnixNano", Json(self.end_time_unix_nano.to_string()))
+  m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  m.set("links", Json(self.links.map(fn(link) { link.to_json() })))
   let status : Map[String, Json] = Map([])
-  status.set("code", self.status_code.to_json())
+  status.set("code", Json(self.status_code))
   if !self.status_message.is_empty() {
-    status.set("message", self.status_message.to_json())
+    status.set("message", Json(self.status_message))
   }
-  m.set("status", status.to_json())
-  m.to_json()
+  m.set("status", Json(status))
+  Json(m)
 }
 
 ///|
 pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("timeUnixNano", self.time_unix_nano.to_string().to_json())
-  m.set("severityNumber", self.severity_number.to_json())
-  m.set("severityText", self.severity_text.to_json())
+  m.set("timeUnixNano", Json(self.time_unix_nano.to_string()))
+  m.set("severityNumber", Json(self.severity_number))
+  m.set("severityText", Json(self.severity_text))
   let body : Map[String, Json] = Map([])
-  body.set("stringValue", self.body.to_json())
-  m.set("body", body.to_json())
-  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
-  m.to_json()
+  body.set("stringValue", Json(self.body))
+  m.set("body", Json(body))
+  m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  Json(m)
 }
 
 ///|
 pub fn Resource::to_json(self : Resource) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
-  m.to_json()
+  m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  Json(m)
 }
 
 ///|
 pub fn InstrumentationScope::to_json(self : InstrumentationScope) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("name", self.name.to_json())
+  m.set("name", Json(self.name))
   if !self.version.is_empty() {
-    m.set("version", self.version.to_json())
+    m.set("version", Json(self.version))
   }
-  m.set("attributes", self.attributes.map(fn(a) { a.to_json() }).to_json())
-  m.to_json()
+  m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  Json(m)
 }

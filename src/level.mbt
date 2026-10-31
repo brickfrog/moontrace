@@ -25,7 +25,7 @@ pub impl Show for Level with fn output(self, logger) {
 
 ///|
 pub fn Level::to_json(self : Level) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }
 
 ///|

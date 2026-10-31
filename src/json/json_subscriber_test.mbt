@@ -14,7 +14,7 @@ test "json subscriber outputs json" {
 test "json subscriber includes fields" {
   let output : Array[String] = []
   @moontrace.set_subscriber(@json.subscriber(output=fn(s) { output.push(s) }))
-  @moontrace.info("msg", fields=@moontrace.fields([("tool", "fork".to_json())]))
+  @moontrace.info("msg", fields=@moontrace.fields([("tool", Json("fork"))]))
   assert_eq(output.length(), 1)
   // output[0] should contain "tool" and "fork"
   assert_true(output[0].contains("tool"))
@@ -28,7 +28,7 @@ test "json subscriber delegates to event to_json" {
   let event = @moontrace.Event::{
     level: @moontrace.Info,
     message: "msg",
-    fields: @moontrace.fields([("count", (1).to_json())]),
+    fields: @moontrace.fields([("count", Json(1))]),
     timestamp: (123 : UInt64),
     source: "brickfrog/moontrace",
   }

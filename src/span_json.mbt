@@ -1,24 +1,24 @@
 ///|
 pub fn Span::to_json(self : Span) -> Json {
   let m : Map[String, Json] = Map([])
-  m.set("name", self.name.to_json())
-  m.set("trace_id", self.trace_id.to_json())
-  m.set("span_id", self.span_id.to_json())
+  m.set("name", Json(self.name))
+  m.set("trace_id", Json(self.trace_id))
+  m.set("span_id", Json(self.span_id))
   if !self.parent_span_id.is_empty() {
-    m.set("parent_span_id", self.parent_span_id.to_json())
+    m.set("parent_span_id", Json(self.parent_span_id))
   }
   m.set("kind", self.kind.to_json())
-  m.set("active", self.active.to_json())
-  m.set("start_time_ns", self.start_time.to_json())
-  m.set("end_time_ns", self.end_time.to_json())
-  m.set("duration_ns", self.duration().to_json())
+  m.set("active", Json(self.active))
+  m.set("start_time_ns", Json(self.start_time))
+  m.set("end_time_ns", Json(self.end_time))
+  m.set("duration_ns", Json(self.duration()))
   if self.status != Unset {
     m.set("status", self.status.to_json())
     if !self.status_message.is_empty() {
-      m.set("status_message", self.status_message.to_json())
+      m.set("status_message", Json(self.status_message))
     }
   }
   m.set("fields", fields_to_json(self.fields))
-  m.set("links", self.links.map(fn(link) { link.to_json() }).to_json())
-  m.to_json()
+  m.set("links", Json(self.links.map(fn(link) { link.to_json() })))
+  Json(m)
 }
