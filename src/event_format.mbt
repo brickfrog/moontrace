@@ -92,3 +92,58 @@ fn format_source(source : String) -> String {
     None => source
   }
 }
+
+///|
+/// Format a millisecond Unix timestamp as an RFC 3339 UTC timestamp with
+/// millisecond precision, for example `2026-03-28T14:31:43.903Z`.
+pub fn format_timestamp_rfc3339(timestamp : UInt64) -> String {
+  let total_seconds = timestamp / 1000UL
+  let millis = timestamp % 1000UL
+  let seconds_of_day = total_seconds % 86400UL
+  let (year, month, day) = civil_from_days(
+    (total_seconds / 86400UL).reinterpret_as_int64(),
+  )
+  let buf = StringBuilder()
+  buf.write_string(year.to_string().pad_start(4, '0'))
+  buf.write_string("-")
+  buf.write_string(month.to_string().pad_start(2, '0'))
+  buf.write_string("-")
+  buf.write_string(day.to_string().pad_start(2, '0'))
+  buf.write_string("T")
+  buf.write_string((seconds_of_day / 3600UL).to_string().pad_start(2, '0'))
+  buf.write_string(":")
+  buf.write_string((seconds_of_day / 60UL % 60UL).to_string().pad_start(2, '0'))
+  buf.write_string(":")
+  buf.write_string((seconds_of_day % 60UL).to_string().pad_start(2, '0'))
+  buf.write_string(".")
+  buf.write_string(millis.to_string().pad_start(3, '0'))
+  buf.write_string("Z")
+  buf.to_string()
+}
+
+///|
+/// Convert days since 1970-01-01 to a proleptic Gregorian (year, month, day).
+/// Uses Howard Hinnant's `civil_from_days` algorithm for non-negative days.
+fn civil_from_days(days : Int64) -> (Int64, Int64, Int64) {
+  let z = days + 719468L
+  let era = z / 146097L
+  let day_of_era = z - era * 146097L
+  let year_of_era = (
+      day_of_era -
+      day_of_era / 1460L +
+      day_of_era / 36524L -
+      day_of_era / 146096L
+    ) /
+    365L
+  let day_of_year = day_of_era -
+    (365L * year_of_era + year_of_era / 4L - year_of_era / 100L)
+  let shifted_month = (5L * day_of_year + 2L) / 153L
+  let day = day_of_year - (153L * shifted_month + 2L) / 5L + 1L
+  let month = if shifted_month < 10L {
+    shifted_month + 3L
+  } else {
+    shifted_month - 9L
+  }
+  let year = year_of_era + era * 400L
+  (if month <= 2L { year + 1L } else { year }, month, day)
+}

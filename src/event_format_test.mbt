@@ -120,3 +120,29 @@ test "level_color returns ANSI codes for each level" {
   assert_eq(@moontrace.level_color(@moontrace.Warn), "\u001b[33m")
   assert_eq(@moontrace.level_color(@moontrace.Error_), "\u001b[31m")
 }
+
+///|
+test "format_timestamp_rfc3339 renders UTC calendar dates" {
+  assert_eq(
+    @moontrace.format_timestamp_rfc3339(0UL),
+    "1970-01-01T00:00:00.000Z",
+  )
+  // 2026-03-28T14:31:43.903Z
+  assert_eq(
+    @moontrace.format_timestamp_rfc3339(1774708303903UL),
+    "2026-03-28T14:31:43.903Z",
+  )
+  // Leap day and the last millisecond of a leap year.
+  assert_eq(
+    @moontrace.format_timestamp_rfc3339(951782400000UL),
+    "2000-02-29T00:00:00.000Z",
+  )
+  assert_eq(
+    @moontrace.format_timestamp_rfc3339(1735689599999UL),
+    "2024-12-31T23:59:59.999Z",
+  )
+  assert_eq(
+    @moontrace.format_timestamp_rfc3339(4102444800000UL),
+    "2100-01-01T00:00:00.000Z",
+  )
+}

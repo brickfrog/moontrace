@@ -525,6 +525,42 @@ Machine-readable JSON output:
 Each record has `level`, `message`, `timestamp`, `source`, and `fields`, plus
 `file` and `line` when the event has a call-site location.
 
+Options reshape records for log shippers that expect flat, ISO-timestamped JSON:
+
+```moonbit
+@json.initialize(
+  timestamp=Rfc3339,    // "2026-03-28T14:31:43.903Z" instead of epoch ms
+  flatten=true,         // fields become top-level keys
+  trace_ids=true,       // span trace_id/span_id become top-level keys
+  keys=@json.json_keys(timestamp="@timestamp", level="log.level"),
+)
+```
+
+When flattened, a field whose key matches a top-level key is written as
+`fields.<key>`. `@json.event_json(event, ...)` builds the same record as a
+`Json` value; with default options it equals `event.to_json()`.
+`@moontrace.format_timestamp_rfc3339` is available for custom formats.
+
+### logfmt Subscriber
+
+`brickfrog/moontrace/logfmt` writes one logfmt line per event, which Loki,
+Logstash, and Heroku parse natively:
+
+```moonbit
+@logfmt.initialize(min_level=@moontrace.Info)
+```
+
+```
+ts=2026-03-28T14:31:43.903Z level=info msg="server started" source=brickfrog/choir caller=src/server/main.mbt:42 port=8080
+```
+
+Levels are lowercase. `source` and `caller` are omitted when unknown. String
+fields are written as text and other JSON values in compact JSON. Values are
+quoted when empty or containing spaces, `=`, `"`, or control characters. Fields
+named `ts`, `level`, `msg`, `source`, or `caller` are written as `fields.<key>`.
+`format_timestamp=...` replaces the RFC 3339 timestamp, and
+`@logfmt.format_event(event)` returns a single line.
+
 ### OTLP Export
 
 Convert events and completed spans to OpenTelemetry-compatible JSON:

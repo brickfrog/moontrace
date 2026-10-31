@@ -6,13 +6,33 @@ import {
 }
 
 // Values
-pub fn initialize(min_level? : @moontrace.Level, output? : (String) -> Unit) -> Unit
+pub fn event_json(@moontrace.Event, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> Json
 
-pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit) -> (@moontrace.Event) -> Unit
+pub fn initialize(min_level? : @moontrace.Level, output? : (String) -> Unit, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> Unit
+
+pub fn json_keys(level? : String, message? : String, timestamp? : String, source? : String, file? : String, line? : String, fields? : String, trace_id? : String, span_id? : String) -> JsonKeys
+
+pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> (@moontrace.Event) -> Unit
 
 // Errors
 
 // Types and methods
+pub(all) struct JsonKeys {
+  level : String
+  message : String
+  timestamp : String
+  source : String
+  file : String
+  line : String
+  fields : String
+  trace_id : String
+  span_id : String
+}
+
+pub(all) enum TimestampFormat {
+  EpochMillis
+  Rfc3339
+}
 
 // Type aliases
 

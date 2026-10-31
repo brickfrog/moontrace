@@ -12,7 +12,8 @@ request and async context explicit.
 - `src/` contains events, fields, levels, spans, bound loggers, filters, context,
   subscriber composition, sampling, and redaction. Subscribers are
   `(Event) -> Unit` functions, not a trait; `emit` is package-private.
-- `src/console/` and `src/json/` provide console and JSON subscribers.
+- `src/console/`, `src/json/`, and `src/logfmt/` provide console, JSON, and
+  logfmt subscribers.
 - `src/otlp/` handles OTLP conversion and buffering; `src/otlp/transport/` handles
   async HTTP transport and JSON/protobuf encoding.
 - `src/span_async/` provides async span wrappers; `src/flame/` observes completed
