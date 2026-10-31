@@ -278,6 +278,18 @@ fn write_any_value(
     BoolVal(value) => protobuf_bool_field(writer, 2, value)
     IntVal(value) => protobuf_int64_field(writer, 3, value)
     DoubleVal(value) => protobuf_double_field(writer, 4, value)
+    ArrayVal(values) =>
+      protobuf_message_field(writer, 5, writer => {
+        for value in values {
+          protobuf_message_field(writer, 1, writer => {
+            write_any_value(writer, value)
+          })
+        }
+      })
+    KvlistVal(entries) =>
+      protobuf_message_field(writer, 6, writer => {
+        write_key_values(writer, 1, entries)
+      })
   }
 }
 
@@ -370,6 +382,13 @@ fn write_span(writer : &@protobuf.Writer, span : @otlp.OtlpSpan) -> Unit raise {
   protobuf_fixed64_field(writer, 7, span.start_time_unix_nano)
   protobuf_fixed64_field(writer, 8, span.end_time_unix_nano)
   write_key_values(writer, 9, span.attributes)
+  for event in span.events {
+    protobuf_message_field(writer, 11, writer => {
+      protobuf_fixed64_field(writer, 1, event.time_unix_nano)
+      protobuf_string_field(writer, 2, event.name)
+      write_key_values(writer, 3, event.attributes)
+    })
+  }
   for link in span.links {
     protobuf_message_field(writer, 13, writer => write_span_link(writer, link))
   }

@@ -366,6 +366,7 @@ fn test_span(name : String) -> @otlp.OtlpSpan {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    events: [],
     links: [],
     status_code: 1,
     status_message: "",

@@ -168,6 +168,11 @@ pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
     start_time_unix_nano: milliseconds_to_nanoseconds(span.start_time),
     end_time_unix_nano: milliseconds_to_nanoseconds(span.end_time),
     attributes: span.fields.map(fn(f) { field_to_attribute(f) }),
+    events: span.events.map(event => OtlpSpanEvent::{
+      time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
+      name: event.name,
+      attributes: event.fields.map(field_to_attribute),
+    }),
     links: links_to_otlp(span.links),
     status_code,
     status_message: span.status_message,

@@ -88,17 +88,27 @@ pub(all) struct OtlpSpan {
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[OtlpAttribute]
+  events : Array[OtlpSpanEvent]
   links : Array[OtlpLink]
   status_code : Int32
   status_message : String
 } derive(@debug.Debug)
 pub fn OtlpSpan::to_json(Self) -> Json
 
+pub(all) struct OtlpSpanEvent {
+  time_unix_nano : UInt64
+  name : String
+  attributes : Array[OtlpAttribute]
+} derive(@debug.Debug)
+pub fn OtlpSpanEvent::to_json(Self) -> Json
+
 pub(all) enum OtlpValue {
   StringVal(String)
   IntVal(Int64)
   BoolVal(Bool)
   DoubleVal(Double)
+  ArrayVal(Array[OtlpValue])
+  KvlistVal(Array[OtlpAttribute])
 } derive(@debug.Debug)
 pub fn OtlpValue::to_json(Self) -> Json
 

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bound loggers can carry their own minimum level via `logger(min_level=...)` or `Logger::with_min_level`, replacing the global and module filters for their events so one request or component can be more verbose or stricter. Children inherit it, and `Logger::enabled` applies the same rule (#91).
 - Subscriber combinators `map_events`, `filter_events`, `enrich`, and `with_directives` transform, filter, add computed fields to, or apply package directives to a single subscriber (#88).
 - `Span::record_exception(err)` records a raised error as error status plus an `exception` span event with OpenTelemetry `exception.type`/`exception.message` attributes, and `exception_fields(err)` produces the same attributes for log events. Spans gain `events` and `Span::add_event`; the `with_span` family and `span_async` wrappers record raised errors this way. Code constructing `Span` literals directly must add `events: []` (#89).
+- OTLP span export includes span events (`OtlpSpanEvent`, JSON `events`, protobuf `Span.events`), and nested JSON field values export as OTLP `arrayValue`/`kvlistValue` instead of stringified JSON. `OtlpSpan` gains an `events` field and `OtlpValue` gains `ArrayVal` and `KvlistVal`, so code constructing spans or matching values exhaustively must be updated (#95).
 
 ### Deprecated
 
