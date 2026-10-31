@@ -13,7 +13,13 @@ pub fn always_on_sampler() -> SpanSampler
 
 pub fn apply_env_filter(ParsedFilter) -> Unit
 
+pub fn breadcrumbs((Event) -> Unit, capacity? : Int32, trigger? : Level) -> Breadcrumbs
+
 pub fn buffer((Event) -> Unit, capacity? : Int32) -> EventBuffer
+
+pub fn burst_key_level_message(Event) -> String
+
+pub fn burst_sampler((Event) -> Unit, Int32, Int32, UInt64, key? : (Event) -> String, buckets? : Int32, clock? : () -> UInt64) -> BurstSampler
 
 pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind) -> Span
 
@@ -223,6 +229,23 @@ pub fn[T] with_trace_state(() -> T raise?) -> T raise?
 // Errors
 
 // Types and methods
+pub struct Breadcrumbs {
+  // private fields
+}
+pub fn Breadcrumbs::clear(Self) -> Unit
+pub fn Breadcrumbs::dropped(Self) -> Int32
+pub fn Breadcrumbs::flush(Self) -> Unit
+pub fn Breadcrumbs::flushed(Self) -> Int32
+pub fn Breadcrumbs::len(Self) -> Int32
+pub fn Breadcrumbs::subscriber(Self) -> (Event) -> Unit
+
+pub struct BurstSampler {
+  // private fields
+}
+pub fn BurstSampler::dropped(Self) -> Int32
+pub fn BurstSampler::kept(Self) -> Int32
+pub fn BurstSampler::subscriber(Self) -> (Event) -> Unit
+
 pub(all) enum EnvFilterError {
   InvalidLevel(String)
   MalformedDirective(String)

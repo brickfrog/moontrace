@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `burst_sampler(inner, first, thereafter, window_ns, key?, buckets?, clock?)` keeps the first `first` events per key in each window, then every `thereafter`-th, with bounded hash-bucket counters and `kept()`/`dropped()` (#100).
+- `breadcrumbs(inner, capacity?, trigger?)` holds recent events below `trigger` (default `Error_`) and forwards them, oldest first, only when a triggering event arrives; `flush()`, `clear()`, `len()`, `flushed()`, and `dropped()` manage and report the ring (#100).
+
 ## [0.16.0] - 2026-10-31
 
 Requires the MoonBit 0.10.18 toolchain. Upgrade notes for code that constructs

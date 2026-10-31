@@ -38,6 +38,43 @@ println("kept=\{limited.kept()} dropped=\{limited.dropped()}")
 clock is `@env.now`; tests can inject `clock=fn() { ... }` to advance windows
 deterministically.
 
+## Burst Sampling
+
+```moonbit
+let burst = @moontrace.burst_sampler(
+  @json.subscriber(),
+  10,              // keep the first 10 per key in each window
+  100,             // then every 100th
+  1_000_000_000UL, // one-second windows
+)
+@moontrace.set_subscriber(burst.subscriber())
+```
+
+`burst_sampler` limits repeated log lines without silencing them entirely, like
+zap's `Initial`/`Thereafter` sampler. The default key is the event's level and
+message; pass `key=fn(event) { ... }` to group differently. `thereafter = 0`
+drops everything past `first` until the window resets. Counts live in a fixed
+number of hash buckets (`buckets=4096` by default), so memory stays bounded;
+keys that share a bucket share a count. `kept()` and `dropped()` report totals,
+and `clock=` makes windows deterministic in tests.
+
+## Breadcrumbs
+
+```moonbit
+let crumbs = @moontrace.breadcrumbs(@json.subscriber(), capacity=50)
+@moontrace.set_subscriber(@moontrace.compose([
+  @console.subscriber(min_level=@moontrace.Info),
+  crumbs.subscriber(),
+]))
+```
+
+`breadcrumbs` holds the most recent events below `trigger` (default `Error_`)
+and forwards nothing until a triggering event arrives. That event first flushes
+the held events, oldest first, then is forwarded itself, so the JSON output
+above contains each error with up to 50 events of lead-up context. The oldest
+held event is discarded when the ring is full (`dropped()`). `flush()` forwards
+held events on demand, for example at shutdown, and `clear()` discards them.
+
 ## Head Trace Sampling
 
 ```moonbit
