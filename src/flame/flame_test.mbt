@@ -25,6 +25,7 @@ fn test_span_with_trace(
     name,
     fields: [],
     links: [],
+    events: [],
     trace_id,
     span_id,
     parent_span_id,

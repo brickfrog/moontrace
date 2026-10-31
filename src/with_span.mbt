@@ -1,7 +1,7 @@
 ///|
-fn span_error_message(throw_error : () -> String raise) -> String {
+fn record_raised(s : Span, throw_error : () -> Unit raise) -> Unit {
   throw_error() catch {
-    error => "\{error}"
+    error => s.record_exception(error)
   }
 }
 
@@ -13,10 +13,9 @@ fn[T] run_in_span(s : Span, f : (Span) -> T raise?) -> T raise? {
   defer s.exit()
   f(s) catch {
     err => {
-      // Widen the polymorphic error through a typed raise for formatting,
+      // Widen the polymorphic error through a typed raise for recording,
       // then rethrow the original below to preserve the callback error type.
-      let message = span_error_message(fn() raise { raise err })
-      s.record_error(message)
+      record_raised(s, fn() raise { raise err })
       raise err
     }
   }

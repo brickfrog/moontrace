@@ -25,6 +25,14 @@ fn json_to_otlp_value(value : Json) -> OtlpValue {
       }
     True => BoolVal(true)
     False => BoolVal(false)
+    Array(values) => ArrayVal(values.map(json_to_otlp_value))
+    Object(entries) => {
+      let attributes : Array[OtlpAttribute] = []
+      for key, nested in entries {
+        attributes.push({ key, value: json_to_otlp_value(nested), })
+      }
+      KvlistVal(attributes)
+    }
     _ => StringVal(value.stringify())
   }
 }

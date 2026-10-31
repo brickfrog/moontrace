@@ -49,6 +49,8 @@ pub fn error_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> 
 #callsite(autofill(loc))
 pub fn event_in_span(Span, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
+pub fn exception_fields(Error, type_name? : String) -> Array[Field]
+
 pub fn[T : ToJson] field(String, T) -> Field
 
 pub fn fields(Array[(String, Json)]) -> Array[Field]
@@ -321,6 +323,7 @@ pub(all) struct Span {
   name : String
   fields : Array[Field]
   links : Array[SpanLink]
+  events : Array[SpanEvent]
   trace_id : String
   span_id : String
   parent_span_id : String
@@ -333,6 +336,7 @@ pub(all) struct Span {
   mut status : SpanStatus
   mut status_message : String
 } derive(@debug.Debug)
+pub fn Span::add_event(Self, String, fields? : Array[Field]) -> Unit
 #callsite(autofill(loc))
 pub fn Span::debug(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::duration(Self) -> UInt64
@@ -351,6 +355,7 @@ pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn Span::link_context(Self, SpanContext, fields? : Array[Field]) -> Unit
 pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
+pub fn Span::record_exception(Self, Error, type_name? : String, fields? : Array[Field]) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
 pub fn Span::to_json(Self) -> Json
 pub fn Span::to_string(Self) -> String
@@ -373,6 +378,12 @@ pub fn SpanContext::is_remote(Self) -> Bool
 pub fn SpanContext::is_sampled(Self) -> Bool
 pub fn SpanContext::trace_flags_int(Self) -> Int32
 pub fn SpanContext::traceparent(Self) -> String
+
+pub(all) struct SpanEvent {
+  name : String
+  timestamp : UInt64
+  fields : Array[Field]
+} derive(@debug.Debug)
 
 pub struct SpanId {
   value : String

@@ -248,6 +248,30 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 `record_error` sets the span status to `SpanError`, records the error message as a field, and includes both in the span's exit event and JSON output.
 
+For a raised `Error`, `record_exception` does the same and also adds an
+`exception` span event with OpenTelemetry `exception.type` and
+`exception.message` attributes, which tracing backends render on the span
+timeline. `with_span`, `with_span_ctx`, `with_child_span`, and the
+`span_async` wrappers use it for raised errors (async cancellation is still
+recorded as `Cancelled` without an exception event).
+
+```mbt
+@moontrace.with_span_ctx("payment", fn(s) {
+  charge_card() catch {
+    err => {
+      s.record_exception(err, fields=[@moontrace.field("retryable", false)])
+      @moontrace.error("charge failed", fields=@moontrace.exception_fields(err))
+    }
+  }
+})
+```
+
+MoonBit has no runtime type names, so `exception.type` is the leading
+identifier of the error's display string (`Failure(boom)` gives `Failure`), or
+`Error` when there is none; pass `type_name=` for a precise name. Stack traces
+are not captured. `Span::add_event(name, fields=...)` records other span events,
+such as retries or cache misses; events added after a span exits are ignored.
+
 ### Convenience Wrappers
 
 `with_span`, `with_span_ctx`, and `with_child_span` accept callbacks that raise.
@@ -518,7 +542,7 @@ s.exit()
 exp.shutdown()  // stop accepting new events, then flush buffered records
 ```
 
-`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, and links.
+`span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, links, and span events such as recorded exceptions. Nested JSON field values become OTLP `arrayValue` and `kvlistValue` attributes rather than strings.
 
 For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
 

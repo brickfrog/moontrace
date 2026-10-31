@@ -32,3 +32,8 @@ pub extend Resource with @debug.Debug::{to_repr}
 #deprecated("use `@debug.to_string` or `Debug::to_repr` instead")
 #doc(hidden)
 pub extend InstrumentationScope with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `@debug.to_string` or `Debug::to_repr` instead")
+#doc(hidden)
+pub extend OtlpSpanEvent with @debug.Debug::{to_repr}

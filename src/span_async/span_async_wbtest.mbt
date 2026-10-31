@@ -67,6 +67,7 @@ async test "with_span_async exits and records errors" {
   assert_eq(span.active, false)
   assert_eq(span.status, @moontrace.SpanError)
   assert_true(span_has_field(span, "error"))
+  assert_eq(span.events.map(e => e.name), ["exception"])
 }
 
 ///|
@@ -94,6 +95,7 @@ async test "with_child_span_async exits on structured cancellation" {
   assert_eq(span.status, @moontrace.SpanError)
   assert_true(span.status_message.contains("Cancelled"))
   assert_true(span_has_field(span, "error"))
+  assert_eq(span.events.length(), 0)
 }
 
 ///|

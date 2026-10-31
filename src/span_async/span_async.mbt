@@ -58,7 +58,11 @@ async fn[T] run_in_span_async(
   defer s.exit()
   f(s) catch {
     err => {
-      s.record_error(error_message(err))
+      if @async.is_cancellation_error(err) {
+        s.record_error(error_message(err))
+      } else {
+        s.record_exception(err)
+      }
       raise err
     }
   }

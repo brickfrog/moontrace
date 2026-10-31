@@ -10,6 +10,7 @@ fn encoding_test_span(name : String) -> @otlp.OtlpSpan {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    events: [],
     links: [],
     status_code: 1,
     status_message: "",
@@ -57,6 +58,8 @@ priv struct DecodedAnyValue {
   bool_value : Bool?
   int_value : Int64?
   double_value : Double?
+  array_values : Array[DecodedAnyValue]?
+  kvlist_values : Array[DecodedKeyValue]?
 }
 
 ///|
@@ -94,6 +97,7 @@ priv struct DecodedSpan {
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[DecodedKeyValue]
+  events : Array[DecodedSpanEvent]
   status : DecodedStatus
 }
 
@@ -144,7 +148,14 @@ priv struct DecodedLogsRequest {
 
 ///|
 fn decoded_any_default() -> DecodedAnyValue {
-  { string_value: None, bool_value: None, int_value: None, double_value: None, }
+  {
+    string_value: None,
+    bool_value: None,
+    int_value: None,
+    double_value: None,
+    array_values: None,
+    kvlist_values: None,
+  }
 }
 
 ///|
@@ -308,6 +319,8 @@ fn decode_any_value(body : Bytes) -> DecodedAnyValue {
             bool_value: value.bool_value,
             int_value: value.int_value,
             double_value: value.double_value,
+            array_values: value.array_values,
+            kvlist_values: value.kvlist_values,
           }
         }
         2 => {
@@ -317,6 +330,8 @@ fn decode_any_value(body : Bytes) -> DecodedAnyValue {
             bool_value: Some(read_bool_field(reader, "AnyValue.bool_value")),
             int_value: value.int_value,
             double_value: value.double_value,
+            array_values: value.array_values,
+            kvlist_values: value.kvlist_values,
           }
         }
         3 => {
@@ -326,6 +341,8 @@ fn decode_any_value(body : Bytes) -> DecodedAnyValue {
             bool_value: value.bool_value,
             int_value: Some(read_int64_field(reader, "AnyValue.int_value")),
             double_value: value.double_value,
+            array_values: value.array_values,
+            kvlist_values: value.kvlist_values,
           }
         }
         4 => {
@@ -337,6 +354,34 @@ fn decode_any_value(body : Bytes) -> DecodedAnyValue {
             double_value: Some(
               read_double_field(reader, "AnyValue.double_value"),
             ),
+            array_values: value.array_values,
+            kvlist_values: value.kvlist_values,
+          }
+        }
+        5 => {
+          assert_wire_type(wire_type, 2, "AnyValue.array_value")
+          value = {
+            ..value,
+            array_values: Some(
+              decode_repeated(
+                read_bytes_field(reader, "AnyValue.array_value"),
+                "ArrayValue",
+                decode_any_value,
+              ),
+            ),
+          }
+        }
+        6 => {
+          assert_wire_type(wire_type, 2, "AnyValue.kvlist_value")
+          value = {
+            ..value,
+            kvlist_values: Some(
+              decode_repeated(
+                read_bytes_field(reader, "AnyValue.kvlist_value"),
+                "KeyValueList",
+                decode_key_value,
+              ),
+            ),
           }
         }
         _ => skip_unknown(reader, wire_type, "AnyValue")
@@ -347,6 +392,76 @@ fn decode_any_value(body : Bytes) -> DecodedAnyValue {
     err => decode_fail("AnyValue", "\{err}")
   }
   value
+}
+
+///|
+/// Decode a message whose only field is `repeated T values = 1`.
+fn[T] decode_repeated(
+  body : Bytes,
+  context : String,
+  decode : (Bytes) -> T,
+) -> Array[T] {
+  let reader = @protobuf.BytesReader::from_bytes(body)
+  let values : Array[T] = []
+  try {
+    for ;; {
+      let (field, wire_type) = reader |> @protobuf.read_tag()
+      match field {
+        1 => {
+          assert_wire_type(wire_type, 2, context + ".values")
+          values.push(decode(read_bytes_field(reader, context + ".values")))
+        }
+        _ => skip_unknown(reader, wire_type, context)
+      }
+    }
+  } catch {
+    @protobuf.EndOfStream => ()
+    err => decode_fail(context, "\{err}")
+  }
+  values
+}
+
+///|
+priv struct DecodedSpanEvent {
+  time_unix_nano : UInt64
+  name : String
+  attributes : Array[DecodedKeyValue]
+}
+
+///|
+fn decode_span_event(body : Bytes) -> DecodedSpanEvent {
+  let reader = @protobuf.BytesReader::from_bytes(body)
+  let mut time_unix_nano = 0UL
+  let mut name = ""
+  let attributes : Array[DecodedKeyValue] = []
+  try {
+    for ;; {
+      let (field, wire_type) = reader |> @protobuf.read_tag()
+      match field {
+        1 => {
+          assert_wire_type(wire_type, 1, "Span.Event.time_unix_nano")
+          time_unix_nano = read_fixed64_field(
+            reader, "Span.Event.time_unix_nano",
+          )
+        }
+        2 => {
+          assert_wire_type(wire_type, 2, "Span.Event.name")
+          name = read_string_field(reader, "Span.Event.name")
+        }
+        3 => {
+          assert_wire_type(wire_type, 2, "Span.Event.attributes")
+          attributes.push(
+            decode_key_value(read_bytes_field(reader, "Span.Event.attributes")),
+          )
+        }
+        _ => skip_unknown(reader, wire_type, "Span.Event")
+      }
+    }
+  } catch {
+    @protobuf.EndOfStream => ()
+    err => decode_fail("Span.Event", "\{err}")
+  }
+  { time_unix_nano, name, attributes, }
 }
 
 ///|
@@ -480,6 +595,7 @@ fn decode_span(body : Bytes) -> DecodedSpan {
   let mut start_time_unix_nano = 0UL
   let mut end_time_unix_nano = 0UL
   let attributes : Array[DecodedKeyValue] = []
+  let events : Array[DecodedSpanEvent] = []
   let mut status = decoded_status_default()
   try {
     for ;; {
@@ -523,6 +639,12 @@ fn decode_span(body : Bytes) -> DecodedSpan {
             decode_key_value(read_bytes_field(reader, "Span.attributes")),
           )
         }
+        11 => {
+          assert_wire_type(wire_type, 2, "Span.events")
+          events.push(
+            decode_span_event(read_bytes_field(reader, "Span.events")),
+          )
+        }
         15 => {
           assert_wire_type(wire_type, 2, "Span.status")
           status = decode_status(read_bytes_field(reader, "Span.status"))
@@ -548,6 +670,7 @@ fn decode_span(body : Bytes) -> DecodedSpan {
     start_time_unix_nano,
     end_time_unix_nano,
     attributes,
+    events,
     status,
   }
 }
@@ -906,6 +1029,27 @@ fn protobuf_test_span() -> @otlp.OtlpSpan {
     attributes: [
       @otlp.OtlpAttribute::{ key: "answer", value: @otlp.IntVal(42L), },
       @otlp.OtlpAttribute::{ key: "ratio", value: @otlp.DoubleVal(2.5), },
+      @otlp.OtlpAttribute::{
+        key: "nested",
+        value: @otlp.KvlistVal([
+          @otlp.OtlpAttribute::{
+            key: "tags",
+            value: @otlp.ArrayVal([@otlp.StringVal("a"), @otlp.IntVal(2L)]),
+          },
+        ]),
+      },
+    ],
+    events: [
+      @otlp.OtlpSpanEvent::{
+        time_unix_nano: (150 : UInt64),
+        name: "exception",
+        attributes: [
+          @otlp.OtlpAttribute::{
+            key: "exception.type",
+            value: @otlp.StringVal("Failure"),
+          },
+        ],
+      },
     ],
     links: [],
     status_code: 2,
@@ -1010,13 +1154,39 @@ test "protobuf encoder encodes spans with protobuf content type bytes" {
   assert_true(decoded_span.status.code == 2)
   assert_int_value(find_attribute(decoded_span.attributes, "answer"), 42L)
   assert_double_value(find_attribute(decoded_span.attributes, "ratio"), 2.5)
+  match find_attribute(decoded_span.attributes, "nested").kvlist_values {
+    Some([tags]) => {
+      assert_eq(tags.key, "tags")
+      match tags.value.array_values {
+        Some([first, second]) => {
+          assert_string_value(first, "a")
+          assert_int_value(second, 2L)
+        }
+        _ => abort("expected two array values")
+      }
+    }
+    _ => abort("expected one kvlist entry")
+  }
+  assert_eq(decoded_span.events.length(), 1)
+  assert_true(decoded_span.events[0].time_unix_nano == 150UL)
+  assert_eq(decoded_span.events[0].name, "exception")
+  assert_string_value(
+    find_attribute(decoded_span.events[0].attributes, "exception.type"),
+    "Failure",
+  )
 }
 
 ///|
 test "protobuf trace request matches golden bytes" {
   let resource = protobuf_test_resource()
   let scope = protobuf_test_scope()
-  let span = protobuf_test_span()
+  // Golden bytes predate span events and nested values; keep them pinned.
+  let base = protobuf_test_span()
+  let span = {
+    ..base,
+    attributes: [base.attributes[0], base.attributes[1]],
+    events: [],
+  }
   let payload = unwrap_payload(
     @transport.protobuf_encoder().encode_spans([span], resource~, scope~),
   )
@@ -1103,6 +1273,7 @@ test "protobuf encoder reports invalid id errors" {
     start_time_unix_nano: (100 : UInt64),
     end_time_unix_nano: (200 : UInt64),
     attributes: [],
+    events: [],
     links: [],
     status_code: 2,
     status_message: "boom",

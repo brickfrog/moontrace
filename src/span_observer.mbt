@@ -28,11 +28,25 @@ pub(all) struct SpanLifecycleObserver {
 let global_span_observer : Ref[SpanLifecycleObserver?] = { val: None, }
 
 ///|
+/// Copy fields and their nested JSON so delivered observations stay isolated
+/// from later span changes and from other observers.
+fn snapshot_fields(fields : Array[Field]) -> Array[Field] {
+  fields.map(field => Field::{
+    key: field.key,
+    value: copy_logger_json(field.value),
+  })
+}
+
+///|
 fn span_snapshot(span : Span) -> Span {
   {
     name: span.name,
-    fields: span.fields.copy(),
+    fields: snapshot_fields(span.fields),
     links: span.links.map(fn(link) { link_snapshot(link) }),
+    events: span.events.map(event => {
+      ..event,
+      fields: snapshot_fields(event.fields),
+    }),
     trace_id: span.trace_id,
     span_id: span.span_id,
     parent_span_id: span.parent_span_id,
@@ -53,7 +67,7 @@ fn link_snapshot(link : SpanLink) -> SpanLink {
     trace_id: link.trace_id,
     span_id: link.span_id,
     kind: link.kind,
-    fields: link.fields.copy(),
+    fields: snapshot_fields(link.fields),
     trace_state: link.trace_state,
   }
 }

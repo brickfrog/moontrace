@@ -20,5 +20,19 @@ pub fn Span::to_json(self : Span) -> Json {
   }
   m.set("fields", fields_to_json(self.fields))
   m.set("links", Json(self.links.map(fn(link) { link.to_json() })))
+  if !self.events.is_empty() {
+    m.set(
+      "events",
+      Json(
+        self.events.map(event => {
+          let entry : Map[String, Json] = Map([])
+          entry.set("name", Json(event.name))
+          entry.set("timestamp", Json(event.timestamp))
+          entry.set("fields", fields_to_json(event.fields))
+          Json(entry)
+        }),
+      ),
+    )
+  }
   Json(m)
 }

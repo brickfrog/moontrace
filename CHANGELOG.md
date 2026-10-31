@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `enabled(level)` reports whether an event from the caller's package would reach the installed subscriber, so callers can skip building expensive messages and fields (#87).
 - Bound loggers can carry their own minimum level via `logger(min_level=...)` or `Logger::with_min_level`, replacing the global and module filters for their events so one request or component can be more verbose or stricter. Children inherit it, and `Logger::enabled` applies the same rule (#91).
 - Subscriber combinators `map_events`, `filter_events`, `enrich`, and `with_directives` transform, filter, add computed fields to, or apply package directives to a single subscriber (#88).
+- `Span::record_exception(err)` records a raised error as error status plus an `exception` span event with OpenTelemetry `exception.type`/`exception.message` attributes, and `exception_fields(err)` produces the same attributes for log events. Spans gain `events` and `Span::add_event`; the `with_span` family and `span_async` wrappers record raised errors this way. Code constructing `Span` literals directly must add `events: []` (#89).
+- OTLP span export includes span events (`OtlpSpanEvent`, JSON `events`, protobuf `Span.events`), and nested JSON field values export as OTLP `arrayValue`/`kvlistValue` instead of stringified JSON. `OtlpSpan` gains an `events` field and `OtlpValue` gains `ArrayVal` and `KvlistVal`, so code constructing spans or matching values exhaustively must be updated (#95).
 
 ### Deprecated
 
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OTLP log records from span-associated events now carry top-level `traceId`/`spanId` (protobuf fields 9 and 10) so backends link logs to traces; previously correlation existed only as attributes. Only valid W3C IDs are promoted. `OtlpLogRecord` gains `trace_id` and `span_id` fields, so code constructing it directly must set them (empty strings omit them) (#84).
 - Module filters, `MOONTRACE_LOG`, and env-filter directives now apply to subpackages: `my/app=debug` also matches `my/app/db` (but not `my/apple`), and the longest matching package wins. Previously only the exact package matched, so parent filters silently did nothing for subpackages (#85).
 - Deny-list redaction now also applies to keys inside nested JSON objects and arrays, so secrets inside structured field values are no longer passed through. Allow-list policies keep their top-level behavior (#86).
+- Completed-span observations now deep-copy nested JSON in span fields, link fields, and span event fields, so later span changes or other observers cannot alter an already delivered observation.
 
 ## [0.14.0] - 2026-08-26
 

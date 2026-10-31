@@ -6,6 +6,8 @@ pub(all) enum OtlpValue {
   IntVal(Int64)
   BoolVal(Bool)
   DoubleVal(Double)
+  ArrayVal(Array[OtlpValue])
+  KvlistVal(Array[OtlpAttribute])
 } derive(Debug)
 
 ///|
@@ -23,6 +25,13 @@ pub(all) struct OtlpLink {
 } derive(Debug)
 
 ///|
+pub(all) struct OtlpSpanEvent {
+  time_unix_nano : UInt64
+  name : String
+  attributes : Array[OtlpAttribute]
+} derive(Debug)
+
+///|
 pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
@@ -33,6 +42,7 @@ pub(all) struct OtlpSpan {
   start_time_unix_nano : UInt64
   end_time_unix_nano : UInt64
   attributes : Array[OtlpAttribute]
+  events : Array[OtlpSpanEvent]
   links : Array[OtlpLink]
   status_code : Int32 // 0=UNSET, 1=OK, 2=ERROR
   status_message : String
@@ -126,6 +136,20 @@ pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
       m.set("doubleValue", Json(d))
       Json(m)
     }
+    ArrayVal(values) => {
+      let inner : Map[String, Json] = Map([])
+      inner.set("values", Json(values.map(v => v.to_json())))
+      let m : Map[String, Json] = Map([])
+      m.set("arrayValue", Json(inner))
+      Json(m)
+    }
+    KvlistVal(entries) => {
+      let inner : Map[String, Json] = Map([])
+      inner.set("values", Json(entries.map(a => a.to_json())))
+      let m : Map[String, Json] = Map([])
+      m.set("kvlistValue", Json(inner))
+      Json(m)
+    }
   }
 }
 
@@ -150,6 +174,15 @@ pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
 }
 
 ///|
+pub fn OtlpSpanEvent::to_json(self : OtlpSpanEvent) -> Json {
+  let m : Map[String, Json] = Map([])
+  m.set("timeUnixNano", Json(self.time_unix_nano.to_string()))
+  m.set("name", Json(self.name))
+  m.set("attributes", Json(self.attributes.map(a => a.to_json())))
+  Json(m)
+}
+
+///|
 pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   let m : Map[String, Json] = Map([])
   m.set("traceId", Json(self.trace_id))
@@ -163,6 +196,9 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   m.set("startTimeUnixNano", Json(self.start_time_unix_nano.to_string()))
   m.set("endTimeUnixNano", Json(self.end_time_unix_nano.to_string()))
   m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  if !self.events.is_empty() {
+    m.set("events", Json(self.events.map(event => event.to_json())))
+  }
   m.set("links", Json(self.links.map(fn(link) { link.to_json() })))
   let status : Map[String, Json] = Map([])
   status.set("code", Json(self.status_code))
