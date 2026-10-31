@@ -752,7 +752,7 @@ let traced = @moontrace.trace_sampler(limited.subscriber(), 0.25)
 @moontrace.set_subscriber(traced.subscriber())
 ```
 
-`ratio_sampler`, `rate_limiter`, and `trace_sampler` each expose `subscriber()`, `kept()`, and `dropped()`. `should_sample_trace(trace_id, ratio)` is available when you need the deterministic trace sampling decision without installing a subscriber.
+`ratio_sampler`, `rate_limiter`, `burst_sampler`, and `trace_sampler` each expose `subscriber()`, `kept()`, and `dropped()`. `burst_sampler(inner, first, thereafter, window_ns)` keeps the first `first` events per level and message in each window, then every `thereafter`-th. `breadcrumbs(inner, capacity=50)` holds recent events below Error and forwards them only when an error arrives, giving each error its lead-up context. `should_sample_trace(trace_id, ratio)` is available when you need the deterministic trace sampling decision without installing a subscriber.
 
 Spans are sampled when they are created. The default sampler samples root spans, and child spans follow their parent. To sample a fraction of new traces while honoring incoming decisions:
 
