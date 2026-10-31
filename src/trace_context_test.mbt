@@ -489,7 +489,7 @@ test "span_with_trace remains backwards compatible" {
   let ctx = expect_context(@moontrace.span_context_from_span(s))
   assert_eq(ctx.trace_id, trace_id)
   assert_eq(ctx.span_id, s.span_id)
-  assert_true(!ctx.is_sampled())
+  assert_true(ctx.is_sampled())
   assert_eq(
     expect_header(@moontrace.traceparent_from_span(s)),
     ctx.traceparent(),
@@ -521,4 +521,25 @@ test "tracestate simple keys require a lowercase letter start" {
   )
   assert_eq(ctx.traceparent(), traceparent)
   assert_true(ctx.trace_state.is_empty())
+}
+
+///|
+test "root spans are sampled by default and children inherit the flag" {
+  let root = @moontrace.span("root")
+  assert_true(@moontrace.span_trace_flags(root).is_sampled())
+  let header = expect_header(@moontrace.traceparent_from_span(root))
+  assert_true(header.has_suffix("-01"))
+
+  let child = @moontrace.child_span(root, "child")
+  assert_true(@moontrace.span_trace_flags(child).is_sampled())
+
+  let unsampled_parent = expect_context(
+    @moontrace.parse_traceparent(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00",
+    ),
+  )
+  let remote = @moontrace.span_from_remote_context(unsampled_parent, "remote")
+  assert_true(!@moontrace.span_trace_flags(remote).is_sampled())
+  let remote_child = @moontrace.child_span(remote, "remote-child")
+  assert_true(!@moontrace.span_trace_flags(remote_child).is_sampled())
 }
