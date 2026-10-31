@@ -38,13 +38,47 @@ pub fn field_to_attribute(field : @moontrace.Field) -> OtlpAttribute {
 
 ///|
 pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
+  let trace_id = match event_string_field(event, "trace_id") {
+    Some(value) =>
+      match @moontrace.TraceId::parse(value) {
+        Ok(_) => value
+        Err(_) => ""
+      }
+    None => ""
+  }
+  let span_id = match (trace_id, event_string_field(event, "span_id")) {
+    ("", _) | (_, None) => ""
+    (_, Some(value)) =>
+      match @moontrace.SpanId::parse(value) {
+        Ok(_) => value
+        Err(_) => ""
+      }
+  }
   {
     time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
     severity_number: level_to_severity(event.level),
     severity_text: event.level.to_string(),
     body: event.message,
     attributes: event.fields.map(fn(f) { field_to_attribute(f) }),
+    trace_id,
+    span_id,
   }
+}
+
+///|
+/// Return the last string value for `key`; span-associated events append
+/// their protected correlation fields after caller fields.
+fn event_string_field(event : @moontrace.Event, key : String) -> String? {
+  let mut found = None
+  for field in event.fields {
+    if field.key == key {
+      match field.value {
+        String(value) => found = Some(value)
+        _ => ()
+      }
+    }
+  }
+  found
 }
 
 // Wrap log records in OTLP resourceLogs envelope

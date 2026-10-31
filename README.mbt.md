@@ -144,6 +144,8 @@ Filter log levels by package:
 
 Module names are extracted automatically from `SourceLoc` at each call site. No manual tagging needed. A package filter overrides the global minimum level for matching packages, so it can be more verbose or stricter than the default.
 
+A filter also applies to subpackages: `my/app` matches `my/app` and `my/app/db`, but not `my/apple`. When several filters match, the longest package path wins, so `my/app=debug,my/app/db=warn` keeps `my/app/db` and its subpackages at Warn.
+
 EnvFilter-style directives configure the same state from a string:
 
 ```moonbit
@@ -427,7 +429,7 @@ escaping and is unchanged.
 
 Use `@console.initialize_from_env()` for application startup. It installs a
 console subscriber using `eprintln` and defaults to Info. `MOONTRACE_LOG` sets
-the global and exact-package filters using the directives described above.
+the global and package filters using the directives described above.
 
 ```moonbit
 fn main {
@@ -535,6 +537,11 @@ Moontrace event and span clocks use milliseconds. `event_to_log_record` and
 if the result cannot fit. Directly constructed `OtlpLogRecord` and `OtlpSpan`
 timestamps already use nanoseconds; JSON and protobuf encoders preserve them.
 
+`event_to_log_record` also sets the log record's top-level `trace_id` and
+`span_id` from span-associated events, so backends can link logs to traces.
+Only valid W3C IDs are promoted; other events leave both empty, and the
+encoders omit empty IDs. The correlation fields remain as attributes too.
+
 Successful HTTP responses are parsed as OTLP JSON. Empty/whitespace-only bodies
 are accepted for compatibility; malformed nonempty responses return a
 non-retryable `Request` error. A partial rejection sets `ExportOutcome.success`
@@ -625,6 +632,8 @@ let traced = @moontrace.trace_sampler(limited.subscriber(), 0.25)
 `ratio_sampler`, `rate_limiter`, and `trace_sampler` each expose `subscriber()`, `kept()`, and `dropped()`. `should_sample_trace(trace_id, ratio)` is available when you need the deterministic trace sampling decision without installing a subscriber.
 
 `redact(inner, policy?)` builds a redacted copy of the event for that subscriber. The default policy redacts fields whose names contain `password`, `token`, or `secret`; `redaction_policy(...)` can switch between replacing values and dropping fields.
+
+Deny-list policies also apply to keys inside JSON object and array field values at any depth, so `{"request": {"headers": {"authorization_token": ...}}}` is redacted too. An `allow` list applies only to top-level field names: an allowed field is passed through whole, and every other field is transformed. Redaction applies to events passing through the wrapped subscriber; span fields reach span observers and OTLP span export without it.
 
 See [docs/sampling.md](docs/sampling.md) for the sampling model.
 

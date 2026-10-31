@@ -181,6 +181,8 @@ test "otlp log record to_json" {
     time_unix_nano: (12345 : UInt64),
     severity_number: 9,
     severity_text: "INFO",
+    trace_id: "",
+    span_id: "",
     body: "hello",
     attributes: [],
   }

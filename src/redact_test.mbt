@@ -274,3 +274,79 @@ test "redact is per subscriber and does not mutate the original event" {
   assert_eq(original_fields[1].key, "password")
   assert_redaction_json_eq(original_fields[1].value, Json("secret-password"))
 }
+
+///|
+test "redact replaces denied keys inside nested objects and arrays" {
+  let request : Map[String, Json] = Map([
+    ("method", Json("POST")),
+    ("headers", Json(Map([("authorization_token", Json("Bearer abc"))]))),
+    (
+      "credentials",
+      Json([Json(Map([("user", Json("ana")), ("password", Json("pw"))]))]),
+    ),
+  ])
+  let event = redaction_capture(
+    redaction_sample_event([@moontrace.field("request", Json(request))]),
+  )
+  assert_redaction_field(
+    event,
+    0,
+    "request",
+    Json(
+      Map([
+        ("method", Json("POST")),
+        ("headers", Json(Map([("authorization_token", Json("[REDACTED]"))]))),
+        (
+          "credentials",
+          Json([
+            Json(Map([("user", Json("ana")), ("password", Json("[REDACTED]"))])),
+          ]),
+        ),
+      ]),
+    ),
+  )
+}
+
+///|
+test "redact drop mode removes denied nested keys" {
+  let policy = @moontrace.redaction_policy(mode=@moontrace.Drop)
+  let auth : Map[String, Json] = Map([
+    ("token", Json("abc")),
+    ("scheme", Json("bearer")),
+  ])
+  let event = redaction_capture(
+    redaction_sample_event([
+      @moontrace.field("auth", Json(Map([("inner", Json(auth))]))),
+    ]),
+    policy~,
+  )
+  assert_redaction_field(
+    event,
+    0,
+    "auth",
+    Json(Map([("inner", Json(Map([("scheme", Json("bearer"))])))])),
+  )
+}
+
+///|
+test "redact leaves nested scalars and allow-listed fields unchanged" {
+  let nested = Json(Map([("password", Json("pw")), ("count", Json(2))]))
+  let allow_policy = @moontrace.redaction_policy(allow=Some(["profile"]))
+  let allowed = redaction_capture(
+    redaction_sample_event([@moontrace.field("profile", nested)]),
+    policy=allow_policy,
+  )
+  assert_redaction_field(allowed, 0, "profile", nested)
+
+  let scalars = redaction_capture(
+    redaction_sample_event([
+      @moontrace.field("items", Json([Json(1), Json("two"), Json(true)])),
+    ]),
+  )
+  assert_redaction_field(
+    scalars,
+    0,
+    "items",
+    Json([Json(1), Json("two"), Json(true)]),
+  )
+}

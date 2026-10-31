@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `moonbitlang/core/json` is now a test-only import of `@moontrace/otlp`; it is used solely by `exporter_test.mbt`, and 0.10.13 reports the package-level import as unused.
 - `parse_traceparent` now has regression coverage for non-ASCII headers. Rejection rests on its length and hex validation, which 0.10.13's bracket-slice clamping does not reach: the fixed separator checks keep any surrogate pair wholly inside a slice, so no slice trims and behavior is unchanged.
 
+### Fixed
+
+- Root spans from `span` and `span_with_trace` are now sampled by default (W3C flags `01`), matching the OpenTelemetry default `ParentBased(AlwaysOn)`. Previously they were created with flags `00`, so `traceparent_from_span` told downstream OpenTelemetry services to drop the trace. Child spans and spans from remote context still inherit their parent's flags (#83).
+- OTLP log records from span-associated events now carry top-level `traceId`/`spanId` (protobuf fields 9 and 10) so backends link logs to traces; previously correlation existed only as attributes. Only valid W3C IDs are promoted. `OtlpLogRecord` gains `trace_id` and `span_id` fields, so code constructing it directly must set them (empty strings omit them) (#84).
+- Module filters, `MOONTRACE_LOG`, and env-filter directives now apply to subpackages: `my/app=debug` also matches `my/app/db` (but not `my/apple`), and the longest matching package wins. Previously only the exact package matched, so parent filters silently did nothing for subpackages (#85).
+- Deny-list redaction now also applies to keys inside nested JSON objects and arrays, so secrets inside structured field values are no longer passed through. Allow-list policies keep their top-level behavior (#86).
+
 ## [0.14.0] - 2026-08-26
 
 ### Changed

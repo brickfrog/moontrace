@@ -227,6 +227,8 @@ fn exporter_test_log_record(body : String) -> @otlp.OtlpLogRecord {
     time_unix_nano: (100 : UInt64),
     severity_number: 9,
     severity_text: "INFO",
+    trace_id: "",
+    span_id: "",
     body,
     attributes: [],
   }

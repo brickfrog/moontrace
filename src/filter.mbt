@@ -23,14 +23,27 @@ pub fn clear_module_filters() -> Unit {
 ///|
 /// Resolve the effective minimum level for a source package.
 ///
-/// A package-specific filter overrides the global minimum level for matching
-/// SourceLoc packages. Sources without a package-specific filter fall back to
-/// the global minimum level.
+/// A package filter applies to that package and its subpackages: `my/app`
+/// matches `my/app` and `my/app/db`, but not `my/apple`. The longest matching
+/// package path wins, so an exact filter overrides a parent filter. Sources
+/// without a matching filter fall back to the global minimum level.
 fn effective_min(source : String) -> Level {
-  match module_filters.val.get(source) {
-    Some(min) => min
-    None => global_min_level.val
+  let filters = module_filters.val
+  if filters.is_empty() {
+    return global_min_level.val
   }
+  let mut prefix = source
+  while true {
+    match filters.get(prefix) {
+      Some(min) => return min
+      None => ()
+    }
+    match prefix.rev_split_once("/") {
+      Some((parent, _)) => prefix = parent.to_owned()
+      None => break
+    }
+  }
+  global_min_level.val
 }
 
 ///|

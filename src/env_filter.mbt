@@ -43,8 +43,9 @@ fn parse_env_filter_level(level : String) -> Result[Level, EnvFilterError] {
 ///|
 /// Parse a compact filter directive string.
 ///
-/// Supported directives are comma-separated bare levels (`info`) and exact
-/// package filters (`brickfrog/moontrace=debug`). Empty directives are skipped,
+/// Supported directives are comma-separated bare levels (`info`) and package
+/// filters (`brickfrog/moontrace=debug`). A package filter also applies to its
+/// subpackages; the longest matching package wins. Empty directives are skipped,
 /// duplicate defaults or package filters are accepted, and the last directive
 /// wins. If no bare default is present, the parsed default is `Info`.
 pub fn parse_env_filter(

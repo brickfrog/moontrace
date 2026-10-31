@@ -22,6 +22,8 @@ fn encoding_test_log_record(body : String) -> @otlp.OtlpLogRecord {
     time_unix_nano: (100 : UInt64),
     severity_number: 9,
     severity_text: "INFO",
+    trace_id: "",
+    span_id: "",
     body,
     attributes: [],
   }
@@ -119,6 +121,8 @@ priv struct DecodedLogRecord {
   severity_text : String
   body : DecodedAnyValue
   attributes : Array[DecodedKeyValue]
+  trace_id : Bytes
+  span_id : Bytes
 }
 
 ///|
@@ -646,6 +650,8 @@ fn decode_log_record(body : Bytes) -> DecodedLogRecord {
   let mut severity_text = ""
   let mut body_value = decoded_any_default()
   let attributes : Array[DecodedKeyValue] = []
+  let mut trace_id = b""
+  let mut span_id = b""
   try {
     for ;; {
       let (field, wire_type) = reader |> @protobuf.read_tag()
@@ -678,6 +684,14 @@ fn decode_log_record(body : Bytes) -> DecodedLogRecord {
             decode_key_value(read_bytes_field(reader, "LogRecord.attributes")),
           )
         }
+        9 => {
+          assert_wire_type(wire_type, 2, "LogRecord.trace_id")
+          trace_id = read_bytes_field(reader, "LogRecord.trace_id")
+        }
+        10 => {
+          assert_wire_type(wire_type, 2, "LogRecord.span_id")
+          span_id = read_bytes_field(reader, "LogRecord.span_id")
+        }
         _ => skip_unknown(reader, wire_type, "LogRecord")
       }
     }
@@ -691,6 +705,8 @@ fn decode_log_record(body : Bytes) -> DecodedLogRecord {
     severity_text,
     body: body_value,
     attributes,
+    trace_id,
+    span_id,
   }
 }
 
@@ -903,6 +919,8 @@ fn protobuf_test_log_record() -> @otlp.OtlpLogRecord {
     time_unix_nano: (300 : UInt64),
     severity_number: 17,
     severity_text: "ERROR",
+    trace_id: "0000000000000000000000000000000c",
+    span_id: "000000000000000d",
     body: "log body",
     attributes: [
       @otlp.OtlpAttribute::{ key: "log.attr", value: @otlp.StringVal("value"), },
@@ -1055,6 +1073,22 @@ test "protobuf encoder encodes logs with protobuf content type bytes" {
     "value",
   )
   assert_bool_value(find_attribute(decoded_record.attributes, "log.ok"), true)
+  assert_true(
+    decoded_record.trace_id ==
+    bytes_from_hex("0000000000000000000000000000000c"),
+  )
+  assert_true(decoded_record.span_id == bytes_from_hex("000000000000000d"))
+}
+
+///|
+test "protobuf encoder omits empty log record ids" {
+  let payload = unwrap_payload(
+    @transport.protobuf_encoder().encode_logs([encoding_test_log_record("x")]),
+  )
+  let request = decode_logs_request(payload.body)
+  let record = request.resource_logs[0].scope_logs[0].log_records[0]
+  assert_eq(record.trace_id.length(), 0)
+  assert_eq(record.span_id.length(), 0)
 }
 
 ///|

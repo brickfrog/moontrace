@@ -73,6 +73,8 @@ pub(all) struct OtlpLogRecord {
   severity_text : String
   body : String
   attributes : Array[OtlpAttribute]
+  trace_id : String
+  span_id : String
 } derive(@debug.Debug)
 pub fn OtlpLogRecord::to_json(Self) -> Json
 
