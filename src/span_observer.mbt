@@ -240,8 +240,18 @@ pub fn SpanLink::to_json(self : SpanLink) -> Json {
 }
 
 ///|
-fn notify_span_created(span : Span) -> Unit {
+/// The installed observer, if `span` should be observed. Unsampled spans are
+/// not delivered to observers.
+fn observer_for(span : Span) -> SpanLifecycleObserver? {
   match global_span_observer.val {
+    Some(observer) if span.is_sampled() => Some(observer)
+    _ => None
+  }
+}
+
+///|
+fn notify_span_created(span : Span) -> Unit {
+  match observer_for(span) {
     Some(observer) => (observer.on_created)(span_snapshot(span))
     None => ()
   }
@@ -249,7 +259,7 @@ fn notify_span_created(span : Span) -> Unit {
 
 ///|
 fn notify_span_entered(span : Span) -> Unit {
-  match global_span_observer.val {
+  match observer_for(span) {
     Some(observer) => (observer.on_entered)(span_snapshot(span))
     None => ()
   }
@@ -257,7 +267,7 @@ fn notify_span_entered(span : Span) -> Unit {
 
 ///|
 fn notify_span_recorded(span : Span, field : Field) -> Unit {
-  match global_span_observer.val {
+  match observer_for(span) {
     Some(observer) => (observer.on_recorded)(span_snapshot(span), field)
     None => ()
   }
@@ -265,7 +275,7 @@ fn notify_span_recorded(span : Span, field : Field) -> Unit {
 
 ///|
 fn notify_span_exited(span : Span) -> Unit {
-  match global_span_observer.val {
+  match observer_for(span) {
     Some(observer) => (observer.on_exited)(span_snapshot(span))
     None => ()
   }
@@ -273,7 +283,7 @@ fn notify_span_exited(span : Span) -> Unit {
 
 ///|
 fn notify_span_closed(span : Span) -> Unit {
-  match global_span_observer.val {
+  match observer_for(span) {
     Some(observer) => (observer.on_closed)(span_snapshot(span))
     None => ()
   }
@@ -281,7 +291,7 @@ fn notify_span_closed(span : Span) -> Unit {
 
 ///|
 fn notify_span_linked(span : Span, link : SpanLink) -> Unit {
-  match global_span_observer.val {
+  match observer_for(span) {
     Some(observer) =>
       (observer.on_linked)(span_snapshot(span), link_snapshot(link))
     None => ()

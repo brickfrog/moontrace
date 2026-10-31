@@ -2,6 +2,7 @@
 priv struct TraceStateSnapshot {
   subscriber : ((Event) -> Unit)?
   span_observer : SpanLifecycleObserver?
+  span_sampler : SpanSampler
   min_level : Level
   context : Map[String, Json]
   filters : Map[String, Level]
@@ -12,6 +13,7 @@ fn snapshot_trace_state() -> TraceStateSnapshot {
   {
     subscriber: global_subscriber.val,
     span_observer: global_span_observer.val,
+    span_sampler: global_span_sampler.val,
     min_level: global_min_level.val,
     context: global_context.val.copy(),
     filters: module_filters.val.copy(),
@@ -22,6 +24,7 @@ fn snapshot_trace_state() -> TraceStateSnapshot {
 fn restore_trace_state(snapshot : TraceStateSnapshot) -> Unit {
   global_subscriber.val = snapshot.subscriber
   global_span_observer.val = snapshot.span_observer
+  global_span_sampler.val = snapshot.span_sampler
   global_min_level.val = snapshot.min_level
   global_context.val = snapshot.context
   module_filters.val = snapshot.filters
@@ -30,9 +33,9 @@ fn restore_trace_state(snapshot : TraceStateSnapshot) -> Unit {
 ///|
 /// Run `f` with the current tracing globals guarded by a synchronous scope.
 ///
-/// The subscriber, span observer, global minimum level, global context fields,
-/// and module filters are snapshotted before `f` runs and restored when `f`
-/// returns or raises. This is only a synchronous guard for the current call
+/// The subscriber, span observer, span sampler, global minimum level, global
+/// context fields, and module filters are snapshotted before `f` runs and
+/// restored when `f` returns or raises. This is only a synchronous guard for the current call
 /// stack; it is not task-local storage and does not propagate tracing state
 /// across async tasks.
 pub fn[T] with_trace_state(f : () -> T raise?) -> T raise? {
