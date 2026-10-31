@@ -45,6 +45,8 @@ pub(all) struct OtlpLogRecord {
   severity_text : String
   body : String
   attributes : Array[OtlpAttribute]
+  trace_id : String
+  span_id : String
 } derive(Debug)
 
 ///|
@@ -181,6 +183,12 @@ pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
   body.set("stringValue", Json(self.body))
   m.set("body", Json(body))
   m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  if !self.trace_id.is_empty() {
+    m.set("traceId", Json(self.trace_id))
+  }
+  if !self.span_id.is_empty() {
+    m.set("spanId", Json(self.span_id))
+  }
   Json(m)
 }
 

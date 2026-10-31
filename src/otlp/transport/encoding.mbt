@@ -436,6 +436,16 @@ fn write_log_record(
     write_any_value(writer, StringVal(record.body))
   })
   write_key_values(writer, 6, record.attributes)
+  protobuf_bytes_field(
+    writer,
+    9,
+    optional_hex_id_bytes("log_record.trace_id", record.trace_id, 16),
+  )
+  protobuf_bytes_field(
+    writer,
+    10,
+    optional_hex_id_bytes("log_record.span_id", record.span_id, 8),
+  )
 }
 
 ///|

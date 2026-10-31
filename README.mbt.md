@@ -535,6 +535,11 @@ Moontrace event and span clocks use milliseconds. `event_to_log_record` and
 if the result cannot fit. Directly constructed `OtlpLogRecord` and `OtlpSpan`
 timestamps already use nanoseconds; JSON and protobuf encoders preserve them.
 
+`event_to_log_record` also sets the log record's top-level `trace_id` and
+`span_id` from span-associated events, so backends can link logs to traces.
+Only valid W3C IDs are promoted; other events leave both empty, and the
+encoders omit empty IDs. The correlation fields remain as attributes too.
+
 Successful HTTP responses are parsed as OTLP JSON. Empty/whitespace-only bodies
 are accepted for compatibility; malformed nonempty responses return a
 non-retryable `Request` error. A partial rejection sets `ExportOutcome.success`
