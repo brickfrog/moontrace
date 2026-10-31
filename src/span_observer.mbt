@@ -33,6 +33,7 @@ fn span_snapshot(span : Span) -> Span {
     name: span.name,
     fields: span.fields.copy(),
     links: span.links.map(fn(link) { link_snapshot(link) }),
+    events: span.events.map(event => { ..event, fields: event.fields.copy(), }),
     trace_id: span.trace_id,
     span_id: span.span_id,
     parent_span_id: span.parent_span_id,

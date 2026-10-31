@@ -248,6 +248,30 @@ Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex c
 
 `record_error` sets the span status to `SpanError`, records the error message as a field, and includes both in the span's exit event and JSON output.
 
+For a raised `Error`, `record_exception` does the same and also adds an
+`exception` span event with OpenTelemetry `exception.type` and
+`exception.message` attributes, which tracing backends render on the span
+timeline. `with_span`, `with_span_ctx`, `with_child_span`, and the
+`span_async` wrappers use it for raised errors (async cancellation is still
+recorded as `Cancelled` without an exception event).
+
+```mbt
+@moontrace.with_span_ctx("payment", fn(s) {
+  charge_card() catch {
+    err => {
+      s.record_exception(err, fields=[@moontrace.field("retryable", false)])
+      @moontrace.error("charge failed", fields=@moontrace.exception_fields(err))
+    }
+  }
+})
+```
+
+MoonBit has no runtime type names, so `exception.type` is the leading
+identifier of the error's display string (`Failure(boom)` gives `Failure`), or
+`Error` when there is none; pass `type_name=` for a precise name. Stack traces
+are not captured. `Span::add_event(name, fields=...)` records other span events,
+such as retries or cache misses; events added after a span exits are ignored.
+
 ### Convenience Wrappers
 
 `with_span`, `with_span_ctx`, and `with_child_span` accept callbacks that raise.

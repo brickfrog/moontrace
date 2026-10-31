@@ -267,3 +267,8 @@ pub extend SpanId with Show::{output}
 #deprecated("use `Show::output` instead")
 #doc(hidden)
 pub extend TraceFlags with Show::{output}
+
+///|
+#deprecated("use `@debug.to_string` or `Debug::to_repr` instead")
+#doc(hidden)
+pub extend SpanEvent with @debug.Debug::{to_repr}
