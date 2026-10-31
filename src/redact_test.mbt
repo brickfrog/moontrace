@@ -95,11 +95,11 @@ test "redaction mode show uses uppercase" {
 test "default redaction policy redacts sensitive fields and preserves event shape" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("user", "ada".to_json()),
-      ("user_password", "secret-password".to_json()),
-      ("api_token", "token-value".to_json()),
-      ("client_secret", "secret-value".to_json()),
-      ("status", "denied".to_json()),
+      ("user", Json("ada")),
+      ("user_password", Json("secret-password")),
+      ("api_token", Json("token-value")),
+      ("client_secret", Json("secret-value")),
+      ("status", Json("denied")),
     ]),
   )
 
@@ -110,22 +110,22 @@ test "default redaction policy redacts sensitive fields and preserves event shap
   assert_eq(redacted.timestamp, (12345 : UInt64))
   assert_eq(redacted.source, "brickfrog/moontrace")
   assert_eq(redacted.fields.length(), 5)
-  assert_redaction_field(redacted, 0, "user", "ada".to_json())
-  assert_redaction_field(redacted, 1, "user_password", "[REDACTED]".to_json())
-  assert_redaction_field(redacted, 2, "api_token", "[REDACTED]".to_json())
-  assert_redaction_field(redacted, 3, "client_secret", "[REDACTED]".to_json())
-  assert_redaction_field(redacted, 4, "status", "denied".to_json())
+  assert_redaction_field(redacted, 0, "user", Json("ada"))
+  assert_redaction_field(redacted, 1, "user_password", Json("[REDACTED]"))
+  assert_redaction_field(redacted, 2, "api_token", Json("[REDACTED]"))
+  assert_redaction_field(redacted, 3, "client_secret", Json("[REDACTED]"))
+  assert_redaction_field(redacted, 4, "status", Json("denied"))
 }
 
 ///|
 test "drop mode removes denied fields and preserves surviving order" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("user", "ada".to_json()),
-      ("password", "secret-password".to_json()),
-      ("action", "login".to_json()),
-      ("session_token", "token-value".to_json()),
-      ("status", "denied".to_json()),
+      ("user", Json("ada")),
+      ("password", Json("secret-password")),
+      ("action", Json("login")),
+      ("session_token", Json("token-value")),
+      ("status", Json("denied")),
     ]),
   )
   let policy = @moontrace.redaction_policy(mode=@moontrace.Drop)
@@ -133,18 +133,18 @@ test "drop mode removes denied fields and preserves surviving order" {
   let redacted = redaction_capture(event, policy~)
 
   assert_eq(redacted.fields.length(), 3)
-  assert_redaction_field(redacted, 0, "user", "ada".to_json())
-  assert_redaction_field(redacted, 1, "action", "login".to_json())
-  assert_redaction_field(redacted, 2, "status", "denied".to_json())
+  assert_redaction_field(redacted, 0, "user", Json("ada"))
+  assert_redaction_field(redacted, 1, "action", Json("login"))
+  assert_redaction_field(redacted, 2, "status", Json("denied"))
 }
 
 ///|
 test "allowlist mode redacts fields outside exact allowed keys" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("user", "ada".to_json()),
-      ("role", "admin".to_json()),
-      ("tenant", "prod".to_json()),
+      ("user", Json("ada")),
+      ("role", Json("admin")),
+      ("tenant", Json("prod")),
     ]),
   )
   let policy = @moontrace.redaction_policy(
@@ -156,18 +156,18 @@ test "allowlist mode redacts fields outside exact allowed keys" {
   let redacted = redaction_capture(event, policy~)
 
   assert_eq(redacted.fields.length(), 3)
-  assert_redaction_field(redacted, 0, "user", "ada".to_json())
-  assert_redaction_field(redacted, 1, "role", "<private>".to_json())
-  assert_redaction_field(redacted, 2, "tenant", "prod".to_json())
+  assert_redaction_field(redacted, 0, "user", Json("ada"))
+  assert_redaction_field(redacted, 1, "role", Json("<private>"))
+  assert_redaction_field(redacted, 2, "tenant", Json("prod"))
 }
 
 ///|
 test "allowlist drop mode omits fields outside exact allowed keys" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("user", "ada".to_json()),
-      ("user_id", "u-1".to_json()),
-      ("tenant", "prod".to_json()),
+      ("user", Json("ada")),
+      ("user_id", Json("u-1")),
+      ("tenant", Json("prod")),
     ]),
   )
   let policy = @moontrace.redaction_policy(
@@ -179,35 +179,35 @@ test "allowlist drop mode omits fields outside exact allowed keys" {
   let redacted = redaction_capture(event, policy~)
 
   assert_eq(redacted.fields.length(), 2)
-  assert_redaction_field(redacted, 0, "user", "ada".to_json())
-  assert_redaction_field(redacted, 1, "tenant", "prod".to_json())
+  assert_redaction_field(redacted, 0, "user", Json("ada"))
+  assert_redaction_field(redacted, 1, "tenant", Json("prod"))
 }
 
 ///|
 test "redaction matching is case insensitive" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("Authorization", "bearer abc".to_json()),
-      ("USER_TOKEN", "token-value".to_json()),
-      ("safe", true.to_json()),
+      ("Authorization", Json("bearer abc")),
+      ("USER_TOKEN", Json("token-value")),
+      ("safe", Json(true)),
     ]),
   )
   let policy = @moontrace.redaction_policy(deny=["authorization", "token"])
 
   let redacted = redaction_capture(event, policy~)
 
-  assert_redaction_field(redacted, 0, "Authorization", "[REDACTED]".to_json())
-  assert_redaction_field(redacted, 1, "USER_TOKEN", "[REDACTED]".to_json())
-  assert_redaction_field(redacted, 2, "safe", true.to_json())
+  assert_redaction_field(redacted, 0, "Authorization", Json("[REDACTED]"))
+  assert_redaction_field(redacted, 1, "USER_TOKEN", Json("[REDACTED]"))
+  assert_redaction_field(redacted, 2, "safe", Json(true))
 }
 
 ///|
 test "redacted event to_json includes placeholders and omits dropped fields" {
   let event = redaction_sample_event(
     @moontrace.fields([
-      ("user", "ada".to_json()),
-      ("password", "secret-password".to_json()),
-      ("token", "token-value".to_json()),
+      ("user", Json("ada")),
+      ("password", Json("secret-password")),
+      ("token", Json("token-value")),
     ]),
   )
   let redacted = redaction_capture(event)
@@ -221,11 +221,11 @@ test "redacted event to_json includes placeholders and omits dropped fields" {
   )
   assert_redaction_json_eq(
     redaction_json_field(redacted_fields, "password"),
-    "[REDACTED]".to_json(),
+    Json("[REDACTED]"),
   )
   assert_redaction_json_eq(
     redaction_json_field(redacted_fields, "token"),
-    "[REDACTED]".to_json(),
+    Json("[REDACTED]"),
   )
 
   let dropped_root = redaction_json_object(dropped.to_json(), "dropped event")
@@ -235,7 +235,7 @@ test "redacted event to_json includes placeholders and omits dropped fields" {
   )
   assert_redaction_json_eq(
     redaction_json_field(dropped_fields, "user"),
-    "ada".to_json(),
+    Json("ada"),
   )
   assert_no_redaction_json_field(dropped_fields, "password")
   assert_no_redaction_json_field(dropped_fields, "token")
@@ -244,8 +244,8 @@ test "redacted event to_json includes placeholders and omits dropped fields" {
 ///|
 test "redact is per subscriber and does not mutate the original event" {
   let original_fields = @moontrace.fields([
-    ("user", "ada".to_json()),
-    ("password", "secret-password".to_json()),
+    ("user", Json("ada")),
+    ("password", Json("secret-password")),
   ])
   let event = redaction_sample_event(original_fields)
   let redacted_seen : Array[@moontrace.Event] = []
@@ -259,26 +259,18 @@ test "redact is per subscriber and does not mutate the original event" {
 
   assert_eq(redacted_seen.length(), 1)
   assert_eq(original_seen.length(), 1)
-  assert_redaction_field(redacted_seen[0], 0, "user", "ada".to_json())
-  assert_redaction_field(
-    redacted_seen[0],
-    1,
-    "password",
-    "[REDACTED]".to_json(),
-  )
-  assert_redaction_field(original_seen[0], 0, "user", "ada".to_json())
+  assert_redaction_field(redacted_seen[0], 0, "user", Json("ada"))
+  assert_redaction_field(redacted_seen[0], 1, "password", Json("[REDACTED]"))
+  assert_redaction_field(original_seen[0], 0, "user", Json("ada"))
   assert_redaction_field(
     original_seen[0],
     1,
     "password",
-    "secret-password".to_json(),
+    Json("secret-password"),
   )
   assert_eq(event.fields.length(), 2)
-  assert_redaction_field(event, 1, "password", "secret-password".to_json())
+  assert_redaction_field(event, 1, "password", Json("secret-password"))
   assert_eq(original_fields.length(), 2)
   assert_eq(original_fields[1].key, "password")
-  assert_redaction_json_eq(
-    original_fields[1].value,
-    "secret-password".to_json(),
-  )
+  assert_redaction_json_eq(original_fields[1].value, Json("secret-password"))
 }

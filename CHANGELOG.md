@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- MoonBit 0.10.18 deprecates implicitly promoting trait implementations to regular methods. `Show::to_string` on `Event`, `Field`, `Span`, and `TraceFlags`, and `OtlpHttpClient::post` on `AsyncHttpClient`, are now explicit public methods. Promoted `Eq` (`equal`, `not_equal`), `Compare` (`compare`, `op_lt`, `op_le`, `op_gt`, `op_ge`), `Debug::to_repr`, and `Show::output` methods remain only as deprecated, hidden compatibility methods and will be removed in a later release; use `==`, `<`, `Compare::compare(a, b)`, `@debug.to_string`, or the trait methods instead.
+
 ### Changed
 
 - Pinned CI toolchain moves from MoonBit 0.10.11 to 0.10.13 (`moonc v0.10.13+cbb11c36f`, `moon 0.1.20260915`). No source change was required: the removed `f!()` call syntax, `for { }`, `fn name[T]`, `typealias`/`traitalias`/`fnalias`, and `type!` forms are already absent, and no custom `Logger` implementation exists that the new `write_view`/`write_substring` requirement would break.
+- Pinned CI toolchain moves from MoonBit 0.10.15 to 0.10.18 (`moonc v0.10.18+6c83a7f62`, `moon 0.1.20261028`). Builtin `.to_json()` calls now use `Json(value)`, blackbox tests in `@moontrace/test` qualify package names with `@test.`, and generated interfaces now print `Int` as `Int32` with no API change.
+- The managed OTLP exporter's fallback error message now reports `status=503` rather than `status=Some(503)`, and reports no status when none was received.
 - `moonbitlang/core/json` is now a test-only import of `@moontrace/otlp`; it is used solely by `exporter_test.mbt`, and 0.10.13 reports the package-level import as unused.
 - `parse_traceparent` now has regression coverage for non-ASCII headers. Rejection rests on its length and hex validation, which 0.10.13's bracket-slice clamping does not reach: the fixed separator checks keep any surrogate pair wholly inside a slice, so no slice trims and behavior is unchanged.
 

@@ -61,12 +61,12 @@ test "with_trace_state restores all globals after normal return" {
   assert_eq(@moontrace.get_min_level(), @moontrace.Warn)
   assert_eq(inner_events.length(), 1)
   assert_eq(inner_events[0].message, "inside")
-  assert_field(inner_events[0], "scope", "inner".to_json())
+  assert_field(inner_events[0], "scope", Json("inner"))
   assert_eq(has_field(inner_events[0], "inner_only"), true)
 
   assert_eq(base_events.length(), 1)
   assert_eq(base_events[0].message, "after scope")
-  assert_field(base_events[0], "scope", "base".to_json())
+  assert_field(base_events[0], "scope", Json("base"))
   assert_eq(has_field(base_events[0], "inner_only"), false)
   reset_trace_state()
 }
@@ -105,10 +105,10 @@ test "scoped helpers restore nested state in LIFO order" {
   assert_eq(captured[1].message, "inner")
   assert_eq(captured[2].message, "allowed by module override")
   assert_eq(captured[3].message, "outer after")
-  assert_field(captured[0], "scope", "outer".to_json())
-  assert_field(captured[1], "scope", "inner".to_json())
-  assert_field(captured[2], "scope", "outer".to_json())
-  assert_field(captured[3], "scope", "outer".to_json())
+  assert_field(captured[0], "scope", Json("outer"))
+  assert_field(captured[1], "scope", Json("inner"))
+  assert_field(captured[2], "scope", Json("outer"))
+  assert_field(captured[3], "scope", Json("outer"))
   reset_trace_state()
 }
 
@@ -147,11 +147,11 @@ test "with_trace_state restores all globals after raised failure" {
   assert_eq(@moontrace.get_min_level(), @moontrace.Warn)
   assert_eq(inner_events.length(), 1)
   assert_eq(inner_events[0].message, "before failure")
-  assert_field(inner_events[0], "scope", "inner".to_json())
+  assert_field(inner_events[0], "scope", Json("inner"))
 
   assert_eq(base_events.length(), 1)
   assert_eq(base_events[0].message, "after failure")
-  assert_field(base_events[0], "scope", "base".to_json())
+  assert_field(base_events[0], "scope", Json("base"))
   assert_eq(has_field(base_events[0], "inner_only"), false)
   reset_trace_state()
 }

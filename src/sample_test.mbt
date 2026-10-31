@@ -265,9 +265,9 @@ test "samplers forward the original event without mutation" {
   assert_sample_field(
     captured[0],
     "trace_id",
-    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+    Json("4bf92f3577b34da6a3ce929d0e0e4736"),
   )
-  assert_sample_field(captured[0], "password", "secret".to_json())
+  assert_sample_field(captured[0], "password", Json("secret"))
 }
 
 ///|
@@ -296,6 +296,6 @@ test "samplers compose with compose and redact layers" {
   assert_eq(side_channel[0], "login")
   assert_eq(sampler.kept(), 1)
   assert_eq(sampler.dropped(), 0)
-  assert_sample_field(sampled[0], "user", "ada".to_json())
-  assert_sample_field(sampled[0], "password", "[REDACTED]".to_json())
+  assert_sample_field(sampled[0], "user", Json("ada"))
+  assert_sample_field(sampled[0], "password", Json("[REDACTED]"))
 }

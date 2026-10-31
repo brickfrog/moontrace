@@ -1,5 +1,5 @@
 ///|
-suberror AsyncSpanTestErr derive(Debug)
+suberror AsyncSpanTestErr
 
 ///|
 fn span_has_field(span : @moontrace.Span, key : String) -> Bool {
@@ -151,7 +151,7 @@ async test "remote async span preserves incoming propagation and returns callbac
 ///|
 suberror RemoteSpanError {
   RemoteSpanError(Int32)
-} derive(Debug)
+}
 
 ///|
 async test "remote async span records failure while preserving the original typed error" {

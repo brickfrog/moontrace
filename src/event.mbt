@@ -111,9 +111,9 @@ fn span_event_fields(span : Span, fields : Array[Field]) -> Array[Field] {
       merged.push(field)
     }
   })
-  merged.push({ key: "trace_id", value: span.trace_id.to_json(), })
-  merged.push({ key: "span_id", value: span.span_id.to_json(), })
-  merged.push({ key: "parent_span_id", value: span.parent_span_id.to_json(), })
+  merged.push({ key: "trace_id", value: Json(span.trace_id), })
+  merged.push({ key: "span_id", value: Json(span.span_id), })
+  merged.push({ key: "parent_span_id", value: Json(span.parent_span_id), })
   merged
 }
 
@@ -327,9 +327,9 @@ pub fn trace(
 pub fn Event::to_json(self : Event) -> Json {
   let m : Map[String, Json] = Map([])
   m.set("level", self.level.to_json())
-  m.set("message", self.message.to_json())
-  m.set("timestamp", self.timestamp.to_json())
-  m.set("source", self.source.to_json())
+  m.set("message", Json(self.message))
+  m.set("timestamp", Json(self.timestamp))
+  m.set("source", Json(self.source))
   m.set("fields", fields_to_json(self.fields))
-  m.to_json()
+  Json(m)
 }

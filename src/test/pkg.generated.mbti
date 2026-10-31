@@ -35,7 +35,7 @@ pub fn[T] with_test_subscriber(TestSubscriber, () -> T raise?) -> T raise?
 
 // Types and methods
 pub struct CapturedRecord {
-  index : Int
+  index : Int32
   event : @moontrace.Event?
   lifecycle : SpanLifecycleEvent?
 } derive(@debug.Debug)
@@ -69,7 +69,7 @@ pub fn LifecycleQuery::with_span(Self, @moontrace.Span) -> Self
 pub fn LifecycleQuery::with_span_name(Self, String) -> Self
 
 pub struct SpanLifecycleEvent {
-  index : Int
+  index : Int32
   kind : SpanLifecycleKind
   span : @moontrace.Span
   field : @moontrace.Field?

@@ -107,3 +107,6 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
     Err(Request("moonbitlang/async/http is not available on this target"))
   }
 }
+
+///|
+pub extend AsyncHttpClient with OtlpHttpClient::{post}

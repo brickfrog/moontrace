@@ -24,7 +24,7 @@ test "console subscriber formats pipe-separated output" {
     sample_console_event(
       @moontrace.Debug,
       "no listen_tcp configured",
-      fields=@moontrace.fields([("service", "choir".to_json())]),
+      fields=@moontrace.fields([("service", Json("choir"))]),
     ),
   )
   assert_eq(output.length(), 1)
@@ -44,7 +44,7 @@ test "console subscriber omits empty source" {
     sample_console_event(
       @moontrace.Info,
       "follow up",
-      fields=@moontrace.fields([("detail", "needs attention".to_json())]),
+      fields=@moontrace.fields([("detail", Json("needs attention"))]),
       source="",
     ),
   )

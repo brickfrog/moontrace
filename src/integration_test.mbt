@@ -7,7 +7,7 @@ test "full pipeline: subscribe, emit, capture, verify" {
   // Emit events at all levels
   @moontrace.trace("t")
   @moontrace.debug("d")
-  @moontrace.info("i", fields=@moontrace.fields([("key", "val".to_json())]))
+  @moontrace.info("i", fields=@moontrace.fields([("key", Json("val"))]))
   @moontrace.warn("w")
   @moontrace.error("e")
 
@@ -77,10 +77,7 @@ test "full pipeline: event to_json roundtrip" {
 
   @moontrace.info(
     "hello",
-    fields=@moontrace.fields([
-      ("count", (42).to_json()),
-      ("tag", "test".to_json()),
-    ]),
+    fields=@moontrace.fields([("count", Json(42)), ("tag", Json("test"))]),
   )
 
   let json_str = captured[0].to_json().stringify()

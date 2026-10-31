@@ -66,10 +66,10 @@ pub fn SpanStatus::to_int(self : SpanStatus) -> Int32 {
 
 ///|
 pub fn SpanStatus::to_json(self : SpanStatus) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }
 
 ///|
 pub fn SpanKind::to_json(self : SpanKind) -> Json {
-  self.to_string().to_json()
+  Json(self.to_string())
 }

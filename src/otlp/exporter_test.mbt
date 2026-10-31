@@ -244,10 +244,7 @@ test "otlp exporter captures events as log records" {
   let envelope = parse_exporter_json(output[0])
   assert_eq(exporter_log_records(envelope).length(), 2)
   let scope = exporter_log_scope(envelope)
-  assert_exporter_json_eq(
-    exporter_json_field(scope, "name"),
-    "moontrace".to_json(),
-  )
+  assert_exporter_json_eq(exporter_json_field(scope, "name"), Json("moontrace"))
   assert_eq(exporter_log_resource_attributes(envelope).length(), 0)
   @moontrace.clear_subscriber()
 }
@@ -268,12 +265,12 @@ test "otlp exporter manual flush" {
   )
   assert_exporter_json_eq(
     exporter_json_field(record, "severityText"),
-    "WARN".to_json(),
+    Json("WARN"),
   )
   let body = exporter_json_object(exporter_json_field(record, "body"), "body")
   assert_exporter_json_eq(
     exporter_json_field(body, "stringValue"),
-    "alert".to_json(),
+    Json("alert"),
   )
   @moontrace.clear_subscriber()
 }
@@ -282,7 +279,7 @@ test "otlp exporter manual flush" {
 test "otlp span conversion" {
   let s = @moontrace.span(
     "work",
-    fields=@moontrace.fields([("key", "val".to_json())]),
+    fields=@moontrace.fields([("key", Json("val"))]),
   )
   s.enter()
   s.exit()
@@ -311,17 +308,14 @@ test "otlp span conversion carries trace flags" {
   let otlp_span = @otlp.span_to_otlp(child)
   assert_eq(otlp_span.flags, 1)
   let span_json = exporter_json_object(otlp_span.to_json(), "span")
-  assert_exporter_json_eq(
-    exporter_json_field(span_json, "flags"),
-    (1).to_json(),
-  )
+  assert_exporter_json_eq(exporter_json_field(span_json, "flags"), Json(1))
   assert_exporter_json_eq(
     exporter_json_field(span_json, "traceId"),
-    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_json(),
+    Json("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
   )
   assert_exporter_json_eq(
     exporter_json_field(span_json, "parentSpanId"),
-    "bbbbbbbbbbbbbbbb".to_json(),
+    Json("bbbbbbbbbbbbbbbb"),
   )
 }
 
@@ -340,7 +334,7 @@ test "otlp span conversion keeps parentSpanId separate from links" {
   let span_json = exporter_json_object(otlp_span.to_json(), "span")
   assert_exporter_json_eq(
     exporter_json_field(span_json, "parentSpanId"),
-    parent.span_id.to_json(),
+    Json(parent.span_id),
   )
   let links = exporter_json_array(
     exporter_json_field(span_json, "links"),
@@ -350,11 +344,11 @@ test "otlp span conversion keeps parentSpanId separate from links" {
   let link = exporter_json_object(links[0], "link")
   assert_exporter_json_eq(
     exporter_json_field(link, "traceId"),
-    predecessor.trace_id.to_json(),
+    Json(predecessor.trace_id),
   )
   assert_exporter_json_eq(
     exporter_json_field(link, "spanId"),
-    predecessor.span_id.to_json(),
+    Json(predecessor.span_id),
   )
   let attributes = exporter_json_array(
     exporter_json_field(link, "attributes"),
@@ -387,15 +381,15 @@ test "otlp span conversion exports remote context links with tracestate" {
   let link = exporter_json_object(links[0], "link")
   assert_exporter_json_eq(
     exporter_json_field(link, "traceId"),
-    "4bf92f3577b34da6a3ce929d0e0e4736".to_json(),
+    Json("4bf92f3577b34da6a3ce929d0e0e4736"),
   )
   assert_exporter_json_eq(
     exporter_json_field(link, "spanId"),
-    "00f067aa0ba902b7".to_json(),
+    Json("00f067aa0ba902b7"),
   )
   assert_exporter_json_eq(
     exporter_json_field(link, "traceState"),
-    "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE".to_json(),
+    Json("rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"),
   )
   let attributes = exporter_json_array(
     exporter_json_field(link, "attributes"),
@@ -411,7 +405,7 @@ test "otlp exporter captures completed spans through observer" {
   @moontrace.set_span_observer(exp.span_observer())
   let s = @moontrace.span(
     "observed",
-    fields=@moontrace.fields([("key", "val".to_json())]),
+    fields=@moontrace.fields([("key", Json("val"))]),
   )
   s.enter()
   s.exit()
@@ -419,10 +413,7 @@ test "otlp exporter captures completed spans through observer" {
   assert_eq(output.length(), 1)
   let spans = exporter_spans(parse_exporter_json(output[0]))
   let span = exporter_json_object(exporter_single_json(spans, "spans"), "span")
-  assert_exporter_json_eq(
-    exporter_json_field(span, "name"),
-    "observed".to_json(),
-  )
+  assert_exporter_json_eq(exporter_json_field(span, "name"), Json("observed"))
   assert_eq(
     exporter_json_array(exporter_json_field(span, "attributes"), "attributes").length(),
     1,
@@ -443,7 +434,7 @@ test "otlp exporter captures reopened span only once" {
   assert_eq(output.length(), 1)
   let spans = exporter_spans(parse_exporter_json(output[0]))
   let span = exporter_json_object(exporter_single_json(spans, "spans"), "span")
-  assert_exporter_json_eq(exporter_json_field(span, "name"), "single".to_json())
+  assert_exporter_json_eq(exporter_json_field(span, "name"), Json("single"))
 }
 
 ///|
@@ -455,10 +446,7 @@ test "otlp wrap_spans produces valid envelope" {
   let envelope = @otlp.wrap_spans([otlp_span])
   assert_eq(exporter_spans(envelope).length(), 1)
   let scope = exporter_span_scope(envelope)
-  assert_exporter_json_eq(
-    exporter_json_field(scope, "name"),
-    "moontrace".to_json(),
-  )
+  assert_exporter_json_eq(exporter_json_field(scope, "name"), Json("moontrace"))
   @moontrace.clear_subscriber()
 }
 
@@ -502,11 +490,11 @@ test "otlp wrap_spans carries resource and scope attributes" {
   let scope_obj = exporter_span_scope(envelope)
   assert_exporter_json_eq(
     exporter_json_field(scope_obj, "name"),
-    "moontrace-tests".to_json(),
+    Json("moontrace-tests"),
   )
   assert_exporter_json_eq(
     exporter_json_field(scope_obj, "version"),
-    "0.1.0".to_json(),
+    Json("0.1.0"),
   )
   assert_exporter_attribute_string(
     exporter_scope_attributes(scope_obj),
@@ -550,11 +538,11 @@ test "otlp wrap_log_records carries resource and scope attributes" {
   let scope_obj = exporter_log_scope(envelope)
   assert_exporter_json_eq(
     exporter_json_field(scope_obj, "name"),
-    "moontrace-log-tests".to_json(),
+    Json("moontrace-log-tests"),
   )
   assert_exporter_json_eq(
     exporter_json_field(scope_obj, "version"),
-    "0.2.0".to_json(),
+    Json("0.2.0"),
   )
   assert_exporter_attribute_string(
     exporter_scope_attributes(scope_obj),
@@ -593,7 +581,7 @@ test "otlp exporter uses resource and scope on capacity flush" {
   )
   assert_exporter_json_eq(
     exporter_json_field(exporter_log_scope(log_envelope), "name"),
-    "capacity-scope".to_json(),
+    Json("capacity-scope"),
   )
   let span_envelope = parse_exporter_json(span_output[0])
   assert_exporter_attribute_string(
@@ -603,7 +591,7 @@ test "otlp exporter uses resource and scope on capacity flush" {
   )
   assert_exporter_json_eq(
     exporter_json_field(exporter_span_scope(span_envelope), "version"),
-    "1.0.0".to_json(),
+    Json("1.0.0"),
   )
 }
 
@@ -742,7 +730,7 @@ test "otlp exporter snapshots scope attributes at construction" {
   let scope_obj = exporter_log_scope(parse_exporter_json(output[0]))
   assert_exporter_json_eq(
     exporter_json_field(scope_obj, "name"),
-    "snapshot-scope".to_json(),
+    Json("snapshot-scope"),
   )
   let attributes = exporter_scope_attributes(scope_obj)
   assert_exporter_attribute_string(attributes, "kept", "yes")
@@ -774,9 +762,9 @@ test "otlp id generation is unique and hex" {
 
 ///|
 test "otlp field conversion preserves types" {
-  let str_field = @moontrace.Field::{ key: "s", value: "hello".to_json(), }
-  let num_field = @moontrace.Field::{ key: "n", value: (42).to_json(), }
-  let bool_field = @moontrace.Field::{ key: "b", value: true.to_json(), }
+  let str_field = @moontrace.Field::{ key: "s", value: Json("hello"), }
+  let num_field = @moontrace.Field::{ key: "n", value: Json(42), }
+  let bool_field = @moontrace.Field::{ key: "b", value: Json(true), }
 
   let sa = @otlp.field_to_attribute(str_field)
   let na = @otlp.field_to_attribute(num_field)

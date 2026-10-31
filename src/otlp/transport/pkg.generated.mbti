@@ -8,17 +8,17 @@ import {
 }
 
 // Values
-pub fn async_http_client(timeout_ms? : Int) -> AsyncHttpClient
+pub fn async_http_client(timeout_ms? : Int32) -> AsyncHttpClient
 
 pub fn classify_error(TransportError) -> RetryClass
 
-pub fn classify_status(Int) -> RetryClass
+pub fn classify_status(Int32) -> RetryClass
 
 pub fn default_headers() -> Map[String, String]
 
 pub fn json_encoder() -> OtlpEncoder
 
-pub fn managed_json_exporter(OtlpHttpTransport, batch_size? : Int, queue_capacity? : Int, max_payload_bytes? : Int, max_pending_bytes? : Int, flush_interval_ms? : Int, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> ManagedJsonExporter
+pub fn managed_json_exporter(OtlpHttpTransport, batch_size? : Int32, queue_capacity? : Int32, max_payload_bytes? : Int32, max_pending_bytes? : Int32, flush_interval_ms? : Int32, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> ManagedJsonExporter
 
 pub fn otlp_json_content_type() -> String
 
@@ -26,19 +26,20 @@ pub fn otlp_protobuf_content_type() -> String
 
 pub fn parse_export_response(String) -> Result[ExportPartialSuccess?, TransportError]
 
-pub fn parse_retry_after_ms(Map[String, String]) -> Int?
+pub fn parse_retry_after_ms(Map[String, String]) -> Int32?
 
 pub fn protobuf_encoder() -> OtlpEncoder
 
-pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int, base_backoff_ms? : Int) -> OtlpHttpTransport
+pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
 
 // Errors
 
 // Types and methods
 pub(all) struct AsyncHttpClient {
-  timeout_ms : Int
+  timeout_ms : Int32
   mut is_shut_down : Bool
 }
+pub async fn AsyncHttpClient::post(Self, String, String, Map[String, String]) -> Result[HttpResponse, TransportError]
 pub fn AsyncHttpClient::shutdown(Self) -> Unit
 pub impl OtlpHttpClient for AsyncHttpClient
 
@@ -51,8 +52,8 @@ pub impl Show for EncodingError
 
 pub(all) struct ExportOutcome {
   success : Bool
-  attempts : Int
-  status_code : Int?
+  attempts : Int32
+  status_code : Int32?
   error : TransportError?
   retry_class : RetryClass
 } derive(Compare, Eq, @debug.Debug)
@@ -69,9 +70,9 @@ pub(all) struct ExportReport {
 } derive(Compare, Eq, @debug.Debug)
 
 pub(all) struct HttpResponse {
-  status_code : Int
+  status_code : Int32
   body : String
-  retry_after_ms : Int?
+  retry_after_ms : Int32?
 } derive(Compare, Eq, @debug.Debug)
 
 pub(all) struct ManagedExportStats {
@@ -80,10 +81,10 @@ pub(all) struct ManagedExportStats {
   failed_batches : Int64
   dropped_batches : Int64
   dropped_records : Int64
-  pending_batches : Int
-  pending_bytes : Int
-  buffered_logs : Int
-  buffered_spans : Int
+  pending_batches : Int32
+  pending_bytes : Int32
+  buffered_logs : Int32
+  buffered_spans : Int32
   closing : Bool
   closed : Bool
   worker_running : Bool
@@ -115,8 +116,8 @@ pub(all) struct OtlpHttpTransport {
   traces_path : String
   logs_path : String
   headers : Map[String, String]
-  max_retries : Int
-  base_backoff_ms : Int
+  max_retries : Int32
+  base_backoff_ms : Int32
   mut is_shut_down : Bool
 }
 pub async fn OtlpHttpTransport::export_json(Self, String, String) -> Result[ExportOutcome, TransportError]

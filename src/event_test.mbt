@@ -4,7 +4,7 @@ test "subscriber captures events" {
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
 
   @moontrace.info("hello")
-  @moontrace.warn("careful", fields=@moontrace.fields([("x", (1).to_json())]))
+  @moontrace.warn("careful", fields=@moontrace.fields([("x", Json(1))]))
 
   assert_eq(captured.length(), 2)
   assert_eq(captured[0].level, @moontrace.Info)
@@ -34,7 +34,7 @@ test "trace emits event" {
 test "event to_json has correct structure" {
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.info("hello", fields=@moontrace.fields([("key", "val".to_json())]))
+  @moontrace.info("hello", fields=@moontrace.fields([("key", Json("val"))]))
   let json = captured[0].to_json()
   let s = json.stringify()
   // Verify the JSON string contains expected keys and values with correct structure

@@ -35,3 +35,6 @@ pub impl Show for Span with fn output(self, logger) {
   buf.write_string(")")
   logger.write_string(buf.to_string())
 }
+
+///|
+pub extend Span with Show::{to_string}

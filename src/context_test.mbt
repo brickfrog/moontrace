@@ -16,7 +16,7 @@ test "explicit fields appear after context fields" {
   @moontrace.set_global_field("ctx", "global")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.info("msg", fields=@moontrace.fields([("local", "val".to_json())]))
+  @moontrace.info("msg", fields=@moontrace.fields([("local", Json("val"))]))
   @moontrace.clear_global_fields()
   @moontrace.clear_subscriber()
   let fields = captured[0].fields
@@ -30,15 +30,12 @@ test "explicit fields override context on collision" {
   @moontrace.set_global_field("key", "context")
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.info(
-    "msg",
-    fields=@moontrace.fields([("key", "explicit".to_json())]),
-  )
+  @moontrace.info("msg", fields=@moontrace.fields([("key", Json("explicit"))]))
   @moontrace.clear_global_fields()
   @moontrace.clear_subscriber()
   // Should only have one "key" field with the explicit value
   let mut count = 0
-  let mut seen_value = "".to_json()
+  let mut seen_value = Json("")
   captured[0].fields.each(fn(f) {
     if f.key == "key" {
       count = count + 1
@@ -46,7 +43,7 @@ test "explicit fields override context on collision" {
     }
   })
   assert_eq(count, 1)
-  @debug.assert_eq(seen_value, "explicit".to_json())
+  @debug.assert_eq(seen_value, Json("explicit"))
 }
 
 ///|
@@ -91,7 +88,7 @@ test "get global field returns value" {
   let v = @moontrace.get_global_field("key")
   @moontrace.clear_global_fields()
   match v {
-    Some(val) => @debug.assert_eq(val, "val".to_json())
+    Some(val) => @debug.assert_eq(val, Json("val"))
     None => abort("expected Some")
   }
 }
@@ -101,7 +98,7 @@ test "no context has zero overhead" {
   // No global fields set — fast path should use fields directly
   let captured = []
   @moontrace.set_subscriber(fn(e) { captured.push(e) })
-  @moontrace.info("fast", fields=@moontrace.fields([("x", (1).to_json())]))
+  @moontrace.info("fast", fields=@moontrace.fields([("x", Json(1))]))
   @moontrace.clear_subscriber()
   assert_eq(captured[0].fields.length(), 1)
   assert_eq(captured[0].fields[0].key, "x")
