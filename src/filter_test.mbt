@@ -73,3 +73,55 @@ test "span events bypass module filtering" {
   @moontrace.clear_subscriber()
   assert_eq(captured.length(), 2)
 }
+
+///|
+test "enabled is false without a subscriber" {
+  @moontrace.with_trace_state(() => {
+    @moontrace.clear_subscriber()
+    assert_true(!@moontrace.enabled(@moontrace.Error_))
+  })
+}
+
+///|
+test "enabled follows global and module filters for the caller package" {
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_subscriber(fn(_) { () })
+    @moontrace.set_min_level(@moontrace.Info)
+    assert_true(!@moontrace.enabled(@moontrace.Debug))
+    assert_true(@moontrace.enabled(@moontrace.Info))
+
+    @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Trace)
+    assert_true(@moontrace.enabled(@moontrace.Trace))
+
+    @moontrace.set_module_filter("brickfrog/moontrace", @moontrace.Error_)
+    assert_true(!@moontrace.enabled(@moontrace.Warn))
+  })
+}
+
+///|
+#callsite(autofill(loc))
+fn enabled_through_wrapper(level : @moontrace.Level, loc~ : SourceLoc) -> Bool {
+  @moontrace.enabled(level, loc~)
+}
+
+///|
+test "enabled agrees with emission and forwards caller metadata" {
+  @moontrace.with_trace_state(() => {
+    let captured : Array[@moontrace.Event] = []
+    @moontrace.set_subscriber(fn(e) { captured.push(e) })
+    @moontrace.set_min_level(@moontrace.Warn)
+    for
+      level in [
+        @moontrace.Trace,
+        @moontrace.Debug,
+        @moontrace.Info,
+        @moontrace.Warn,
+        @moontrace.Error_,
+      ] {
+      let before = captured.length()
+      @moontrace.event_in_span(@moontrace.span("probe"), level, "probe")
+      assert_eq(captured.length() > before, @moontrace.enabled(level))
+      assert_eq(enabled_through_wrapper(level), @moontrace.enabled(level))
+    }
+  })
+}

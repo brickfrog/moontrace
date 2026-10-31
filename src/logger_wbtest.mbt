@@ -275,3 +275,64 @@ test "logger redaction follows global merging and span correlation" {
     assert_eq(logger_value(seen[1], "global_secret"), Some(Json("new")))
   })
 }
+
+///|
+test "logger min level can be more verbose than global and module filters" {
+  with_trace_state(() => {
+    let events : Array[Event] = []
+    set_subscriber(e => events.push(e))
+    set_min_level(Warn)
+    set_module_filter("brickfrog/moontrace", Error_)
+    let request = logger(fields=[field("request_id", "r1")], min_level=Debug)
+    request.trace("dropped")
+    request.debug("kept")
+    request.info("kept")
+    logger().warn("dropped by module filter")
+    assert_eq(events.map(e => e.message), ["kept", "kept"])
+    assert_eq(events[0].level, Debug)
+  })
+}
+
+///|
+test "logger min level can be stricter than global filters" {
+  with_trace_state(() => {
+    let events : Array[Event] = []
+    set_subscriber(e => events.push(e))
+    set_min_level(Trace)
+    let quiet = logger().with_min_level(Error_)
+    quiet.warn("dropped")
+    quiet.error("kept")
+    assert_eq(events.map(e => e.message), ["kept"])
+  })
+}
+
+///|
+test "derived loggers inherit min level without changing the original" {
+  with_trace_state(() => {
+    let events : Array[Event] = []
+    set_subscriber(e => events.push(e))
+    set_min_level(Info)
+    let base = logger()
+    let verbose = base.with_min_level(Trace)
+    let span = span("work")
+    verbose.bind([field("k", "v")]).trace("bound")
+    verbose.in_span(span).debug("in span")
+    base.debug("dropped")
+    assert_eq(events.map(e => e.message), ["bound", "in span"])
+    assert_eq(logger_value(events[1], "span_id"), Some(Json(span.span_id)))
+  })
+}
+
+///|
+test "logger enabled uses the logger min level and requires a subscriber" {
+  with_trace_state(() => {
+    clear_subscriber()
+    let verbose = logger(min_level=Trace)
+    assert_true(!verbose.enabled(Error_))
+    set_subscriber(_ => ())
+    set_min_level(Warn)
+    assert_true(verbose.enabled(Trace))
+    assert_true(!logger().enabled(Info))
+    assert_true(logger().enabled(Warn))
+  })
+}

@@ -129,6 +129,22 @@ future bound fields. This isolation costs allocations for enabled events;
 filtered events skip field copying. Global context, filters, and the subscriber
 are read at emission time, so existing subscriber redaction still applies.
 
+A logger can carry its own minimum level, set with `logger(min_level=...)` or
+`with_min_level(level)`. It replaces the global and module filters for that
+logger's events, so it can be more verbose than the global level (debug a single
+request) or stricter (quiet one noisy component). `bind`, `in_span`, and
+`with_min_level` children inherit it; loggers without one use the global and
+module filters. `logger.enabled(level)` applies the same rule.
+
+```moonbit
+@moontrace.set_min_level(@moontrace.Warn)
+let traced = @moontrace.logger(
+  fields=[@moontrace.field("request_id", "req-8")],
+  min_level=@moontrace.Debug,
+)
+traced.debug("emitted despite the global Warn level")
+```
+
 Pass the logger to async tasks explicitly. There is no implicit current span,
 global field installation, or automatic task-local propagation. Keep the
 parent logger when an uncorrelated logger is also needed.
@@ -584,6 +600,39 @@ Filter events for any subscriber:
 )
 ```
 
+Each subscriber can also have its own package directives, predicate, transform,
+or computed fields. These wrappers only affect the subscriber they wrap:
+
+```moonbit
+let file_filter = match @moontrace.parse_env_filter("info,my/app/db=trace") {
+  Ok(filter) => filter
+  Err(err) => abort(err.to_string())
+}
+@moontrace.set_subscriber(@moontrace.compose([
+  @moontrace.with_directives(@json.subscriber(), file_filter),
+  @moontrace.filter_events(@console.subscriber(), e => e.level >= @moontrace.Warn),
+]))
+
+let enriched = @moontrace.enrich(@json.subscriber(), _ => [
+  @moontrace.field("host", "web-1"),
+])
+let renamed = @moontrace.map_events(@json.subscriber(), e => {
+  Some({ ..e, message: "[api] " + e.message })
+})
+```
+
+- `with_directives(inner, filter)` applies a `ParsedFilter` to one subscriber
+  using the same longest-prefix package rule as global filters. Global filters
+  run first, so it can only narrow what that subscriber receives.
+- `filter_events(inner, predicate)` forwards matching events.
+- `map_events(inner, transform)` rewrites an event, or drops it with `None`.
+- `enrich(inner, compute)` adds per-event computed fields; the event's own
+  fields win on key collisions, as with global fields.
+
+Unlike `intercept`, which observes events, these can change or drop what the
+wrapped subscriber sees. Place `redact` innermost so it also covers fields added
+by `enrich` or `map_events`.
+
 ### Utility Subscribers
 
 ```mbt
@@ -690,6 +739,16 @@ Set a global minimum level to skip event allocation entirely:
 ```moonbit
 @moontrace.set_min_level(@moontrace.Info)
 // trace() and debug() calls now short-circuit before allocating Event
+```
+
+Call arguments are evaluated before filtering, so a filtered-out call still builds
+its message and fields. Guard expensive ones with `enabled`, which checks the
+installed subscriber and the global and module filters for the caller's package:
+
+```moonbit
+if @moontrace.enabled(@moontrace.Debug) {
+  @moontrace.debug("cache state", fields=[@moontrace.field("entries", dump_cache())])
+}
 ```
 
 Global context fields use a fast path — zero allocation overhead when no context is set.

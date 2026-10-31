@@ -54,3 +54,114 @@ test "compose with with_filter" {
   assert_eq(errors_only[0], "e")
   @moontrace.clear_subscriber()
 }
+
+///|
+fn combinator_event(
+  level : @moontrace.Level,
+  source : String,
+  fields : Array[@moontrace.Field],
+) -> @moontrace.Event {
+  @moontrace.Event::{
+    level,
+    message: "m",
+    fields,
+    timestamp: (1 : UInt64),
+    source,
+  }
+}
+
+///|
+test "map_events transforms or drops events for one subscriber" {
+  let mapped : Array[@moontrace.Event] = []
+  let original : Array[@moontrace.Event] = []
+  let sub = @moontrace.compose([
+    @moontrace.map_events(e => mapped.push(e), e => {
+      if e.level == @moontrace.Debug {
+        None
+      } else {
+        Some({ ..e, message: "rewritten", })
+      }
+    }),
+    e => original.push(e),
+  ])
+  sub(combinator_event(@moontrace.Info, "a", []))
+  sub(combinator_event(@moontrace.Debug, "a", []))
+  assert_eq(mapped.map(e => e.message), ["rewritten"])
+  assert_eq(original.map(e => e.message), ["m", "m"])
+}
+
+///|
+test "filter_events forwards only matching events" {
+  let seen : Array[@moontrace.Event] = []
+  let sub = @moontrace.filter_events(e => seen.push(e), e => e.source == "keep")
+  sub(combinator_event(@moontrace.Info, "keep", []))
+  sub(combinator_event(@moontrace.Info, "drop", []))
+  assert_eq(seen.map(e => e.source), ["keep"])
+}
+
+///|
+test "enrich adds computed fields and event fields win" {
+  let seen : Array[@moontrace.Event] = []
+  let sub = @moontrace.enrich(e => seen.push(e), e => {
+    [
+      @moontrace.field("host", "h1"),
+      @moontrace.field("level_name", e.level.to_string()),
+      @moontrace.field("user", "computed"),
+      @moontrace.field("host", "h2"),
+    ]
+  })
+  let event = combinator_event(@moontrace.Warn, "a", [
+    @moontrace.field("user", "explicit"),
+  ])
+  sub(event)
+  assert_eq(seen[0].fields.map(f => f.key), ["host", "level_name", "user"])
+  assert_eq(seen[0].fields.map(f => f.value), [
+    Json("h2"),
+    Json("WARN"),
+    Json("explicit"),
+  ])
+  assert_eq(event.fields.length(), 1)
+}
+
+///|
+test "with_directives filters one subscriber by package prefix" {
+  let filter = match
+    @moontrace.parse_env_filter("warn,my/app=debug,my/app/db=error") {
+    Ok(filter) => filter
+    Err(err) => abort("unexpected directive error: \{err}")
+  }
+  let seen : Array[@moontrace.Event] = []
+  let sub = @moontrace.with_directives(e => seen.push(e), filter)
+  filter.module_filters.set("my/other", @moontrace.Trace)
+  sub(combinator_event(@moontrace.Debug, "my/app/http", []))
+  sub(combinator_event(@moontrace.Warn, "my/app/db/pool", []))
+  sub(combinator_event(@moontrace.Error_, "my/app/db", []))
+  sub(combinator_event(@moontrace.Info, "my/other", []))
+  sub(combinator_event(@moontrace.Warn, "", []))
+  assert_eq(seen.map(e => e.source), ["my/app/http", "my/app/db", ""])
+}
+
+///|
+test "map_events isolates in-place changes from other subscribers" {
+  let original : Array[@moontrace.Event] = []
+  let nested : Map[String, Json] = Map([("token", Json("t"))])
+  let sub = @moontrace.compose([
+    @moontrace.map_events(_ => (), e => {
+      match e.fields[1].value {
+        Object(obj) => obj.set("token", Json("changed"))
+        _ => ()
+      }
+      e.fields.clear()
+      Some(e)
+    }),
+    e => original.push(e),
+  ])
+  sub(
+    combinator_event(@moontrace.Info, "a", [
+      @moontrace.field("user", "u"),
+      @moontrace.field("auth", Json(nested)),
+    ]),
+  )
+  assert_eq(original[0].fields.length(), 2)
+  assert_eq(original[0].fields[1].value, Json(Map([("token", Json("t"))])))
+}

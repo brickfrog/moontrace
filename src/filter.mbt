@@ -28,9 +28,19 @@ pub fn clear_module_filters() -> Unit {
 /// package path wins, so an exact filter overrides a parent filter. Sources
 /// without a matching filter fall back to the global minimum level.
 fn effective_min(source : String) -> Level {
-  let filters = module_filters.val
+  resolve_module_level(module_filters.val, global_min_level.val, source)
+}
+
+///|
+/// Resolve `source` against package filters by longest matching package path,
+/// falling back to `default_level`.
+fn resolve_module_level(
+  filters : Map[String, Level],
+  default_level : Level,
+  source : String,
+) -> Level {
   if filters.is_empty() {
-    return global_min_level.val
+    return default_level
   }
   let mut prefix = source
   while true {
@@ -43,7 +53,7 @@ fn effective_min(source : String) -> Level {
       None => break
     }
   }
-  global_min_level.val
+  default_level
 }
 
 ///|
@@ -75,4 +85,15 @@ fn extract_package(loc : SourceLoc) -> String {
     Some((_, pkg)) => if pkg.is_empty() { "unknown" } else { pkg.to_owned() }
     None => "unknown"
   }
+}
+
+///|
+/// Report whether an event at `level` from the caller's package would reach the
+/// installed subscriber after global and module filters. Call arguments are
+/// evaluated even when an event is filtered out, so use this to skip building
+/// expensive messages or fields. Wrappers should forward their own `loc`.
+#callsite(autofill(loc))
+pub fn enabled(level : Level, loc~ : SourceLoc) -> Bool {
+  global_subscriber.val is Some(_) &&
+  should_log_module(extract_package(loc), level)
 }
