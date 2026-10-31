@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub fn always_off_sampler() -> SpanSampler
+
+pub fn always_on_sampler() -> SpanSampler
+
 pub fn apply_env_filter(ParsedFilter) -> Unit
 
 pub fn buffer((Event) -> Unit, capacity? : Int32) -> EventBuffer
@@ -96,6 +100,8 @@ pub fn next_trace_id() -> String
 
 pub fn noop() -> (Event) -> Unit
 
+pub fn parent_based_sampler(SpanSampler) -> SpanSampler
+
 pub fn parse_env_filter(String) -> Result[ParsedFilter, EnvFilterError]
 
 pub fn parse_span_context(String, tracestate? : String) -> Result[SpanContext, TraceContextError]
@@ -114,6 +120,8 @@ pub fn redaction_policy(deny? : Array[String], allow? : Array[String]?, mode? : 
 
 pub fn remove_global_field(String) -> Unit
 
+pub fn reset_span_sampler() -> Unit
+
 pub fn sample_trace_decision(TraceFlags?, String, Double) -> Bool
 
 pub fn set_filter_from_directives(String) -> Result[Unit, EnvFilterError]
@@ -125,6 +133,8 @@ pub fn set_min_level(Level) -> Unit
 pub fn set_module_filter(String, Level) -> Unit
 
 pub fn set_span_observer(SpanLifecycleObserver) -> Unit
+
+pub fn set_span_sampler(SpanSampler) -> Unit
 
 pub fn set_subscriber((Event) -> Unit) -> Unit
 
@@ -148,6 +158,8 @@ pub fn span_link(Span, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
 
 pub fn span_link_from_context(SpanContext, kind? : SpanLinkKind, fields? : Array[Field]) -> SpanLink
 
+pub fn span_sampler((SamplingInput) -> Bool) -> SpanSampler
+
 pub fn span_trace_flags(Span) -> TraceFlags
 
 pub fn span_trace_state(Span) -> TraceState
@@ -162,6 +174,8 @@ pub fn trace_flags_sampled() -> TraceFlags
 pub fn trace_flags_unsampled() -> TraceFlags
 
 pub fn trace_id(String) -> Result[TraceId, TraceContextError]
+
+pub fn trace_id_ratio_sampler(Double) -> SpanSampler
 
 #callsite(autofill(loc))
 pub fn trace_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -197,6 +211,8 @@ pub fn[T] with_module_filter(String, Level, () -> T raise?) -> T raise?
 pub fn[T] with_span(String, fields? : Array[Field], () -> T raise?) -> T raise?
 
 pub fn[T] with_span_ctx(String, fields? : Array[Field], (Span) -> T raise?) -> T raise?
+
+pub fn[T] with_span_sampler(SpanSampler, () -> T raise?) -> T raise?
 
 pub fn[T] with_subscriber((Event) -> Unit, () -> T raise?) -> T raise?
 
@@ -319,6 +335,15 @@ pub(all) struct RedactionPolicy {
   placeholder : String
 } derive(@debug.Debug)
 
+pub(all) struct SamplingInput {
+  trace_id : String
+  name : String
+  kind : SpanKind
+  fields : Array[Field]
+  parent : TraceFlags?
+  parent_is_remote : Bool
+}
+
 pub(all) struct Span {
   name : String
   fields : Array[Field]
@@ -351,6 +376,7 @@ pub fn Span::follows_from_context(Self, SpanContext, fields? : Array[Field]) -> 
 #callsite(autofill(loc))
 pub fn Span::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::is_active(Self) -> Bool
+pub fn Span::is_sampled(Self) -> Bool
 pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn Span::link_context(Self, SpanContext, fields? : Array[Field]) -> Unit
 pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
@@ -430,6 +456,11 @@ pub(all) enum SpanLinkKind {
 pub fn SpanLinkKind::to_json(Self) -> Json
 pub fn SpanLinkKind::to_string(Self) -> String
 pub impl Show for SpanLinkKind
+
+pub struct SpanSampler {
+  // private fields
+}
+pub fn SpanSampler::should_sample(Self, SamplingInput) -> Bool
 
 pub(all) enum SpanStatus {
   Unset

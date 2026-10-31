@@ -744,7 +744,14 @@ pub fn span_from_remote_context(
     ctx.trace_id,
     ctx.span_id,
     kind,
-    trace_flags=ctx.flags.to_int(),
+    trace_flags=sampled_trace_flags(
+      ctx.trace_id,
+      name,
+      kind,
+      fields,
+      parent=Some(ctx.flags),
+      parent_is_remote=true,
+    ),
     trace_state=ctx.trace_state,
   )
   notify_span_created(s)

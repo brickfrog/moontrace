@@ -23,15 +23,16 @@ pub fn span(
   fields~ : Array[Field] = [],
   kind~ : SpanKind = Internal,
 ) -> Span {
+  let trace_id = next_trace_id()
   let s = {
     name,
     fields,
     links: [],
     events: [],
-    trace_id: next_trace_id(),
+    trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
-    trace_flags: TraceFlags::sampled().to_int(),
+    trace_flags: sampled_trace_flags(trace_id, name, kind, fields),
     trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
@@ -59,7 +60,7 @@ pub fn span_with_trace(
     trace_id,
     span_id: next_span_id(),
     parent_span_id: "",
-    trace_flags: TraceFlags::sampled().to_int(),
+    trace_flags: sampled_trace_flags(trace_id, name, kind, fields),
     trace_state: TraceState::empty(),
     kind,
     start_time: @env.now(),
@@ -85,7 +86,13 @@ pub fn child_span(
     parent.trace_id,
     parent.span_id,
     kind,
-    trace_flags=parent.trace_flags,
+    trace_flags=sampled_trace_flags(
+      parent.trace_id,
+      name,
+      kind,
+      fields,
+      parent=Some(span_trace_flags(parent)),
+    ),
     trace_state=parent.trace_state,
   )
   notify_span_linked(s, span_link(parent, kind=SpanChildOf))

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Head sampling at span creation: `set_span_sampler`, `with_span_sampler`, and `reset_span_sampler` install a `SpanSampler` that `span`, `span_with_trace`, `child_span`, and `span_from_remote_context` consult to set the sampled flag. Built-ins are `always_on_sampler`, `always_off_sampler`, `trace_id_ratio_sampler` (same trace-ID hash as `trace_sampler`), `parent_based_sampler`, and `span_sampler` for custom decisions over `SamplingInput`. `Span::is_sampled` reports the decision (#92).
+
+### Changed
+
+- Span observers, and therefore the OTLP and flame exporters, no longer receive unsampled spans. Unsampled spans still get IDs and propagate their sampled flag. The default sampler, `parent_based_sampler(always_on_sampler())`, matches the previous flag behavior (#92).
+
 ## [0.15.0] - 2026-10-31
 
 Requires the MoonBit 0.10.18 toolchain. Upgrade notes for code that constructs
