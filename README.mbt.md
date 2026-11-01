@@ -912,8 +912,11 @@ Each series is keyed by span name and kind and holds `count`, `errors`
 (spans closed with `SpanError`), duration sum, min, and max, and a histogram
 over OpenTelemetry's default bounds (pass `buckets_ms=` to change them). Bounds
 are inclusive upper limits in milliseconds, with a final overflow bucket. Only
-spans delivered to observers count, so unsampled and level-disabled spans are
-excluded. Combine with exporters through `compose_span_observers`.
+spans delivered to observers count: unsampled spans are excluded, and so are
+spans created with `level=` whose level is filtered out (see Span Levels).
+Event filters don't otherwise apply, so spans without a level are always
+counted even when their `span.enter`/`span.exit` events are filtered. Combine
+with exporters through `compose_span_observers`.
 
 ### Flame Export
 

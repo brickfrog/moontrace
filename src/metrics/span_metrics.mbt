@@ -57,8 +57,10 @@ pub fn span_metrics(
 }
 
 ///|
-/// Record one completed span. `observer()` calls this for every closed,
-/// sampled, enabled span; call it directly for spans collected elsewhere.
+/// Record one completed span. `observer()` calls this for every span delivered
+/// to observers: closed and sampled, and not disabled by a `level=` filter.
+/// Event level filters do not otherwise apply. Call it directly for spans
+/// collected elsewhere.
 pub fn SpanMetrics::record(self : SpanMetrics, span : @moontrace.Span) -> Unit {
   let key = "\{span.kind}\u{0}\{span.name}"
   let series = match self.series.get(key) {
