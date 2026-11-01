@@ -84,11 +84,12 @@ pub fn with_directives(
   inner : (Event) -> Unit,
   filter : ParsedFilter,
 ) -> (Event) -> Unit {
-  let filters = filter.module_filters.copy()
-  let default_level = filter.default_level
+  let filters = filter.resolved_filters()
+  let default_level = filter.resolved_default()
   fn(event) {
-    if event.level >= resolve_module_level(filters, default_level, event.source) {
-      inner(event)
+    match resolve_module_level(filters, default_level, event.source) {
+      Some(min) if event.level >= min => inner(event)
+      _ => ()
     }
   }
 }

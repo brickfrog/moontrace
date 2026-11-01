@@ -16,8 +16,30 @@ let global_subscriber : Ref[((Event) -> Unit)?] = { val: None, }
 let global_min_level : Ref[Level] = { val: Trace, }
 
 ///|
+/// Set by `silence_all` (the `off` directive); cleared by `set_min_level`.
+let global_off : Ref[Bool] = { val: false, }
+
+///|
+/// The global threshold, or `None` when everything is silenced.
+fn global_default_level() -> Level? {
+  if global_off.val {
+    None
+  } else {
+    Some(global_min_level.val)
+  }
+}
+
+///|
+/// Silence everything by default, like the `off` directive. Package filters
+/// can still enable specific packages. `set_min_level` undoes this.
+pub fn silence_all() -> Unit {
+  global_off.val = true
+}
+
+///|
 pub fn set_min_level(level : Level) -> Unit {
   global_min_level.val = level
+  global_off.val = false
 }
 
 ///|
@@ -63,7 +85,7 @@ fn dispatch(event : Event) -> Unit {
 
 ///|
 fn emit(level : Level, msg : String, fields : Array[Field]) -> Unit {
-  if level < global_min_level.val {
+  if global_off.val || level < global_min_level.val {
     return
   }
   match global_subscriber.val {

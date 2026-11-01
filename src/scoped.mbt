@@ -4,8 +4,9 @@ priv struct TraceStateSnapshot {
   span_observer : SpanLifecycleObserver?
   span_sampler : SpanSampler
   min_level : Level
+  global_off : Bool
   context : Map[String, Json]
-  filters : Map[String, Level]
+  filters : Map[String, Level?]
 }
 
 ///|
@@ -15,6 +16,7 @@ fn snapshot_trace_state() -> TraceStateSnapshot {
     span_observer: global_span_observer.val,
     span_sampler: global_span_sampler.val,
     min_level: global_min_level.val,
+    global_off: global_off.val,
     context: global_context.val.copy(),
     filters: module_filters.val.copy(),
   }
@@ -26,6 +28,7 @@ fn restore_trace_state(snapshot : TraceStateSnapshot) -> Unit {
   global_span_observer.val = snapshot.span_observer
   global_span_sampler.val = snapshot.span_sampler
   global_min_level.val = snapshot.min_level
+  global_off.val = snapshot.global_off
   global_context.val = snapshot.context
   module_filters.val = snapshot.filters
 }

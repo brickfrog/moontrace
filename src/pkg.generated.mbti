@@ -165,6 +165,10 @@ pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn should_sample_trace(String, Double) -> Bool
 
+pub fn silence_all() -> Unit
+
+pub fn silence_module(String) -> Unit
+
 #callsite(autofill(loc))
 pub fn span(String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
@@ -369,6 +373,8 @@ pub fn Logger::with_min_level(Self, Level) -> Self
 pub(all) struct ParsedFilter {
   default_level : Level
   module_filters : Map[String, Level]
+  silenced_modules : Array[String]
+  default_off : Bool
 } derive(@debug.Debug)
 pub fn ParsedFilter::apply(Self) -> Unit
 
