@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn capture(() -> Unit raise?) -> Array[@moontrace.Event] raise?
+
 pub fn event_in_span(@moontrace.Span) -> EventQuery
 
 pub fn event_in_span_named(String) -> EventQuery
@@ -97,6 +99,7 @@ pub fn TestSubscriber::assert_event(Self, EventQuery) -> Unit
 pub fn TestSubscriber::assert_events_ordered(Self, Array[EventQuery]) -> Unit
 pub fn TestSubscriber::assert_events_unordered(Self, Array[EventQuery]) -> Unit
 pub fn TestSubscriber::assert_lifecycle_ordered(Self, Array[LifecycleQuery]) -> Unit
+pub fn TestSubscriber::assert_no_event(Self, EventQuery) -> Unit
 pub fn TestSubscriber::assert_span_lifecycle_ordered(Self, @moontrace.Span, Array[SpanLifecycleKind]) -> Unit
 pub fn TestSubscriber::captured_events(Self) -> Array[@moontrace.Event]
 pub fn TestSubscriber::captured_lifecycle(Self) -> Array[SpanLifecycleEvent]
@@ -105,6 +108,7 @@ pub fn TestSubscriber::check_event(Self, EventQuery) -> String?
 pub fn TestSubscriber::check_events_ordered(Self, Array[EventQuery]) -> String?
 pub fn TestSubscriber::check_events_unordered(Self, Array[EventQuery]) -> String?
 pub fn TestSubscriber::check_lifecycle_ordered(Self, Array[LifecycleQuery]) -> String?
+pub fn TestSubscriber::check_no_event(Self, EventQuery) -> String?
 pub fn TestSubscriber::events_by_field(Self, String) -> Array[@moontrace.Event]
 pub fn[V : ToJson] TestSubscriber::events_by_field_value(Self, String, V) -> Array[@moontrace.Event]
 pub fn TestSubscriber::events_by_level(Self, @moontrace.Level) -> Array[@moontrace.Event]

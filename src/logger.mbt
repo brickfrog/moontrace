@@ -195,3 +195,46 @@ pub fn Logger::error(
 ) -> Unit {
   self.event(Error_, msg, fields~, loc~)
 }
+
+///|
+/// A running timer from `Logger::start_timer`.
+pub struct LogTimer {
+  priv logger : Logger
+  priv started_ms : UInt64
+}
+
+///|
+/// Start timing an operation. Call `done` on the result to log its duration,
+/// in the style of winston's `startTimer`.
+pub fn Logger::start_timer(self : Logger) -> LogTimer {
+  { logger: self, started_ms: @env.now(), }
+}
+
+///|
+/// Milliseconds since the timer started.
+pub fn LogTimer::elapsed_ms(self : LogTimer) -> UInt64 {
+  let now = @env.now()
+  if now > self.started_ms {
+    now - self.started_ms
+  } else {
+    0UL
+  }
+}
+
+///|
+/// Log `msg` through the timer's logger with a `duration_ms` field holding
+/// the elapsed time. `duration_ms` follows `fields`, so it wins on a key
+/// collision. The timer can be finished more than once; each call measures
+/// from the start.
+#callsite(autofill(loc))
+pub fn LogTimer::done(
+  self : LogTimer,
+  msg : String,
+  level~ : Level = Info,
+  fields~ : Array[Field] = [],
+  loc~ : SourceLoc,
+) -> Unit {
+  let all = fields.copy()
+  all.push({ key: "duration_ms", value: Json(self.elapsed_ms().to_double()), })
+  self.logger.event(level, msg, fields=all, loc~)
+}

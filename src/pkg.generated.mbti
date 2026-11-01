@@ -337,6 +337,13 @@ pub fn Level::to_json(Self) -> Json
 pub fn Level::to_string(Self) -> String
 pub impl Show for Level
 
+pub struct LogTimer {
+  // private fields
+}
+#callsite(autofill(loc))
+pub fn LogTimer::done(Self, String, level? : Level, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+pub fn LogTimer::elapsed_ms(Self) -> UInt64
+
 pub struct Logger {
   // private fields
 }
@@ -352,6 +359,7 @@ pub fn Logger::event(Self, Level, String, fields? : Array[Field], loc~ : SourceL
 pub fn Logger::in_span(Self, Span) -> Self
 #callsite(autofill(loc))
 pub fn Logger::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+pub fn Logger::start_timer(Self) -> LogTimer
 #callsite(autofill(loc))
 pub fn Logger::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))

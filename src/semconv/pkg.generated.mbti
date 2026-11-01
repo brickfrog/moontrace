@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/semconv"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub fn http_request_method(String) -> @moontrace.Field
+
+pub fn http_response_status_code(Int32) -> @moontrace.Field
+
+pub fn http_route(String) -> @moontrace.Field
+
+pub fn http_server_request(String, String, route? : String) -> Array[@moontrace.Field]
+
+pub fn server_address(String) -> @moontrace.Field
+
+pub fn url_full(String) -> @moontrace.Field
+
+pub fn url_path(String) -> @moontrace.Field
+
+pub fn url_scheme(String) -> @moontrace.Field
+
+pub fn user_agent_original(String) -> @moontrace.Field
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

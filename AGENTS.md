@@ -21,6 +21,7 @@ request and async context explicit.
   provides a generic bounded async queue in front of slow sinks.
 - `src/metrics/` derives span RED metrics (request count, errors, duration
   histograms) from completed spans.
+- `src/semconv/` provides OpenTelemetry semantic-convention field helpers.
 - `src/test/` provides test subscribers and assertion helpers. `*_test.mbt`
   files are blackbox tests; `*_wbtest.mbt` files can access package internals.
 - See [README.mbt.md](README.mbt.md) for usage and the guides in [docs](docs).

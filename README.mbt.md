@@ -151,6 +151,31 @@ Pass the logger to async tasks explicitly. There is no implicit current span,
 global field installation, or automatic task-local propagation. Keep the
 parent logger when an uncorrelated logger is also needed.
 
+`start_timer()` measures an operation and logs its duration, like winston's
+profiling:
+
+```moonbit
+let timer = @moontrace.logger(fields=[@moontrace.field("job", "sync")]).start_timer()
+// ... work ...
+timer.done("sync finished", fields=[@moontrace.field("items", 3)])
+// -> INFO "sync finished" job="sync" items=3 duration_ms=12
+```
+
+`done` takes `level=` and can be called more than once; `elapsed_ms()` reads
+the timer without logging.
+
+HTTP semantic-convention fields live in `brickfrog/moontrace/semconv`, so
+backends recognize them without custom mapping:
+
+```moonbit
+let request = @semconv.http_server_request("GET", "/users/42", route="/users/{id}")
+request.push(@semconv.http_response_status_code(200))
+@moontrace.info("request handled", fields=request)
+```
+
+It also provides `http_request_method`, `http_route`, `url_path`, `url_scheme`,
+`url_full`, `server_address`, and `user_agent_original`.
+
 ## Per-Module Filtering
 
 Filter log levels by package:
@@ -842,6 +867,22 @@ by `enrich` or `map_events`.
   main_subscriber,
   fn(e) { metrics.increment(e.level.to_string()) },
 ))
+```
+
+### Testing
+
+`brickfrog/moontrace/test` captures events and span lifecycle for assertions.
+`@test.capture(fn)` runs a closure with a fresh capturing subscriber and
+returns its events; `TestSubscriber` adds query-based assertions such as
+`assert_event`, `assert_no_event`, and `assert_events_ordered`:
+
+```moonbit
+let events = @test.capture(() => @moontrace.warn("disk low"))
+assert_eq(events.length(), 1)
+
+let capture = @test.test_subscriber()
+capture.with_install(() => @moontrace.info("ok"))
+capture.assert_no_event(@test.event_with_level(@moontrace.Error_))
 ```
 
 ### Buffered Subscriber
