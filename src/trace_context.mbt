@@ -732,11 +732,16 @@ pub fn traceparent_from_span(span : Span) -> Result[String, TraceContextError] {
 }
 
 ///|
+/// Create a local span parented by a remote `SpanContext`. `level` behaves as
+/// for `span`; a disabled span still propagates the remote trace.
+#callsite(autofill(loc))
 pub fn span_from_remote_context(
   ctx : SpanContext,
   name : String,
   fields~ : Array[Field] = [],
   kind~ : SpanKind = Server,
+  level? : Level,
+  loc~ : SourceLoc,
 ) -> Span {
   let s = span_with_ids_unnotified(
     name,
@@ -753,6 +758,8 @@ pub fn span_from_remote_context(
       parent_is_remote=true,
     ),
     trace_state=ctx.trace_state,
+    level~,
+    enabled=span_level_enabled(level, loc),
   )
   notify_span_created(s)
   notify_span_linked(s, {

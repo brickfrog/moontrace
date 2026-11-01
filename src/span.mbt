@@ -1,4 +1,10 @@
 ///|
+/// A unit of work with timing, fields, status, and trace context.
+///
+/// `level` is the optional verbosity given at creation. `enabled` is false
+/// when that level was filtered out for the creating package; a disabled span
+/// keeps its IDs and propagation but emits no enter/exit events and is not
+/// delivered to span observers.
 pub(all) struct Span {
   name : String
   fields : Array[Field]
@@ -15,13 +21,31 @@ pub(all) struct Span {
   mut active : Bool
   mut status : SpanStatus
   mut status_message : String
+  level : Level?
+  enabled : Bool
 } derive(Debug)
 
 ///|
+/// Whether a span at `level`, created from `loc`'s package, passes the global
+/// and module filters. Spans without a level are always enabled.
+fn span_level_enabled(level : Level?, loc : SourceLoc) -> Bool {
+  match level {
+    None => true
+    Some(level) => should_log_module(extract_package(loc), level)
+  }
+}
+
+///|
+/// Create a root span. With `level`, the span is disabled when that level is
+/// filtered out for the caller's package; see `Span`. Wrappers should forward
+/// their own `loc`.
+#callsite(autofill(loc))
 pub fn span(
   name : String,
   fields~ : Array[Field] = [],
   kind~ : SpanKind = Internal,
+  level? : Level,
+  loc~ : SourceLoc,
 ) -> Span {
   let trace_id = next_trace_id()
   let s = {
@@ -40,17 +64,23 @@ pub fn span(
     active: false,
     status: Unset,
     status_message: "",
+    level,
+    enabled: span_level_enabled(level, loc),
   }
   notify_span_created(s)
   s
 }
 
 ///|
+/// Create a root span in an existing trace. `level` behaves as for `span`.
+#callsite(autofill(loc))
 pub fn span_with_trace(
   name : String,
   trace_id : String,
   fields~ : Array[Field] = [],
   kind~ : SpanKind = Internal,
+  level? : Level,
+  loc~ : SourceLoc,
 ) -> Span {
   let s = {
     name,
@@ -68,23 +98,45 @@ pub fn span_with_trace(
     active: false,
     status: Unset,
     status_message: "",
+    level,
+    enabled: span_level_enabled(level, loc),
   }
   notify_span_created(s)
   s
 }
 
 ///|
+/// The span ID a child of `parent` records as its parent: `parent` itself when
+/// enabled, otherwise its nearest enabled ancestor, or `""` when there is none.
+fn effective_parent_id(parent : Span) -> String {
+  if parent.enabled {
+    parent.span_id
+  } else {
+    parent.parent_span_id
+  }
+}
+
+///|
+/// Create a child span in `parent`'s trace. The child follows `parent`'s
+/// sampling decision under the default sampler. When `parent` is disabled by
+/// its level, the child is parented to `parent`'s nearest enabled ancestor so
+/// exported traces never reference a span that was not exported. `level`
+/// behaves as for `span`.
+#callsite(autofill(loc))
 pub fn child_span(
   parent : Span,
   name : String,
   fields~ : Array[Field] = [],
   kind~ : SpanKind = Internal,
+  level? : Level,
+  loc~ : SourceLoc,
 ) -> Span {
+  let parent_id = effective_parent_id(parent)
   let s = span_with_ids(
     name,
     fields,
     parent.trace_id,
-    parent.span_id,
+    parent_id,
     kind,
     trace_flags=sampled_trace_flags(
       parent.trace_id,
@@ -94,8 +146,18 @@ pub fn child_span(
       parent=Some(span_trace_flags(parent)),
     ),
     trace_state=parent.trace_state,
+    level~,
+    enabled=span_level_enabled(level, loc),
   )
-  notify_span_linked(s, span_link(parent, kind=SpanChildOf))
+  if !parent_id.is_empty() {
+    notify_span_linked(s, {
+      trace_id: parent.trace_id,
+      span_id: parent_id,
+      kind: SpanChildOf,
+      fields: [],
+      trace_state: "",
+    })
+  }
   s
 }
 
@@ -108,6 +170,8 @@ fn span_with_ids(
   kind : SpanKind,
   trace_flags~ : Int32 = 0,
   trace_state~ : TraceState = TraceState::empty(),
+  level~ : Level? = None,
+  enabled~ : Bool = true,
 ) -> Span {
   let s = span_with_ids_unnotified(
     name,
@@ -117,6 +181,8 @@ fn span_with_ids(
     kind,
     trace_flags~,
     trace_state~,
+    level~,
+    enabled~,
   )
   notify_span_created(s)
   s
@@ -131,6 +197,8 @@ fn span_with_ids_unnotified(
   kind : SpanKind,
   trace_flags~ : Int32 = 0,
   trace_state~ : TraceState = TraceState::empty(),
+  level~ : Level? = None,
+  enabled~ : Bool = true,
 ) -> Span {
   {
     name,
@@ -148,6 +216,8 @@ fn span_with_ids_unnotified(
     active: false,
     status: Unset,
     status_message: "",
+    level,
+    enabled,
   }
 }
 
@@ -165,6 +235,9 @@ pub fn Span::enter(self : Span) -> Unit {
   self.end_time = (0 : UInt64)
   self.active = true
   notify_span_entered(self)
+  if !self.enabled {
+    return
+  }
   let enter_fields = self.fields.copy()
   emit(Trace, "span.enter \{self.name}", enter_fields)
 }
@@ -177,6 +250,10 @@ pub fn Span::exit(self : Span) -> Unit {
   self.end_time = @env.now()
   self.active = false
   notify_span_exited(self)
+  if !self.enabled {
+    notify_span_closed(self)
+    return
+  }
   let duration = self.end_time - self.start_time
   let exit_fields = self.fields.copy()
   exit_fields.push({ key: "duration_ns", value: Json(duration), })
@@ -227,4 +304,10 @@ pub fn Span::duration(self : Span) -> UInt64 {
   } else {
     (0 : UInt64)
   }
+}
+
+///|
+/// Whether the span passed its level filter when created; see `Span`.
+pub fn Span::is_enabled(self : Span) -> Bool {
+  self.enabled
 }

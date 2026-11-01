@@ -24,33 +24,45 @@ fn[T] run_in_span(s : Span, f : (Span) -> T raise?) -> T raise? {
 ///|
 /// Run the callback in a span, closing it on return or raised error.
 /// Raised errors are recorded before closing and propagated unchanged.
+/// `level` behaves as for `span`.
+#callsite(autofill(loc))
 pub fn[T] with_span(
   name : String,
   fields~ : Array[Field] = [],
+  level? : Level,
+  loc~ : SourceLoc,
   f : () -> T raise?,
 ) -> T raise? {
-  run_in_span(span(name, fields~), _s => f())
+  run_in_span(span(name, fields~, level?, loc~), _s => f())
 }
 
 ///|
 /// Pass a new span to the callback and close it on return or raised error.
 /// Raised errors are recorded before closing and propagated unchanged.
+/// `level` behaves as for `span`.
+#callsite(autofill(loc))
 pub fn[T] with_span_ctx(
   name : String,
   fields~ : Array[Field] = [],
+  level? : Level,
+  loc~ : SourceLoc,
   f : (Span) -> T raise?,
 ) -> T raise? {
-  run_in_span(span(name, fields~), f)
+  run_in_span(span(name, fields~, level?, loc~), f)
 }
 
 ///|
 /// Pass a child span to the callback and close it on return or raised error.
 /// Raised errors are recorded before closing and propagated unchanged.
+/// `level` behaves as for `child_span`.
+#callsite(autofill(loc))
 pub fn[T] with_child_span(
   parent : Span,
   name : String,
   fields~ : Array[Field] = [],
+  level? : Level,
+  loc~ : SourceLoc,
   f : (Span) -> T raise?,
 ) -> T raise? {
-  run_in_span(child_span(parent, name, fields~), f)
+  run_in_span(child_span(parent, name, fields~, level?, loc~), f)
 }

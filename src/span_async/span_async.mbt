@@ -19,12 +19,16 @@ fn error_message(err : Error) -> String {
 /// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
 /// scope. If a future compiler stops routing cancellation through `catch`, the
 /// span is still exited but the cancellation message is no longer recorded.
+/// `level` behaves as for `@moontrace.span`.
+#callsite(autofill(loc))
 pub async fn[T] with_span_async(
   name : String,
   fields~ : Array[@moontrace.Field] = [],
+  level? : @moontrace.Level,
+  loc~ : SourceLoc,
   f : async (@moontrace.Span) -> T,
 ) -> T {
-  run_in_span_async(@moontrace.span(name, fields~), f)
+  run_in_span_async(@moontrace.span(name, fields~, level?, loc~), f)
 }
 
 ///|
@@ -38,13 +42,20 @@ pub async fn[T] with_span_async(
 /// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
 /// scope. If a future compiler stops routing cancellation through `catch`, the
 /// span is still exited but the cancellation message is no longer recorded.
+/// `level` behaves as for `@moontrace.span`.
+#callsite(autofill(loc))
 pub async fn[T] with_child_span_async(
   parent : @moontrace.Span,
   name : String,
   fields~ : Array[@moontrace.Field] = [],
+  level? : @moontrace.Level,
+  loc~ : SourceLoc,
   f : async (@moontrace.Span) -> T,
 ) -> T {
-  run_in_span_async(@moontrace.child_span(parent, name, fields~), f)
+  run_in_span_async(
+    @moontrace.child_span(parent, name, fields~, level?, loc~),
+    f,
+  )
 }
 
 ///|
@@ -74,15 +85,25 @@ async fn[T] run_in_span_async(
 /// span_from_remote_context. Headers must already be parsed by the caller.
 /// Enters before f, records raised errors/cancellation, and always exits on return
 /// or raise. Propagates the original result/error; installs no task-local context.
+#callsite(autofill(loc))
 pub async fn[T] with_remote_span_async(
   context : @moontrace.SpanContext,
   name : String,
   fields~ : Array[@moontrace.Field] = [],
   kind~ : @moontrace.SpanKind = @moontrace.Server,
+  level? : @moontrace.Level,
+  loc~ : SourceLoc,
   f : async (@moontrace.Span) -> T,
 ) -> T {
   run_in_span_async(
-    @moontrace.span_from_remote_context(context, name, fields~, kind~),
+    @moontrace.span_from_remote_context(
+      context,
+      name,
+      fields~,
+      kind~,
+      level?,
+      loc~,
+    ),
     f,
   )
 }
