@@ -4,6 +4,7 @@ import {
   "moonbitlang/async/aqueue",
   "moonbitlang/core/json",
   "brickfrog/moontrace/otlp",
+  "brickfrog/moontrace/metrics",
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/io",
@@ -19,6 +20,7 @@ import {
   "moonbitlang/async/io",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/async/http",
+  "brickfrog/moontrace/metrics",
 } for "test"
 
 warnings = "-unused_package"

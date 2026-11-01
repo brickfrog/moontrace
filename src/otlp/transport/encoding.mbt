@@ -8,6 +8,7 @@ pub(all) struct OtlpPayload {
 pub(all) enum OtlpSignal {
   Traces
   Logs
+  Metrics
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -15,6 +16,7 @@ pub fn OtlpSignal::to_string(self : OtlpSignal) -> String {
   match self {
     Traces => "traces"
     Logs => "logs"
+    Metrics => "metrics"
   }
 }
 
@@ -571,6 +573,153 @@ pub fn OtlpEncoder::encode_logs(
     ProtobufEncoder =>
       encode_protobuf_payload(Logs, writer => {
         write_export_logs_service_request(writer, records, resource, scope)
+      })
+  }
+}
+
+///|
+fn write_number_data_point(
+  writer : &@protobuf.Writer,
+  metric : @metrics.MetricData,
+  point : @metrics.MetricPoint,
+) -> Unit raise {
+  protobuf_fixed64_field(writer, 2, milliseconds_to_nanos(metric.start_time_ms))
+  protobuf_fixed64_field(writer, 3, milliseconds_to_nanos(metric.time_ms))
+  protobuf_double_field(writer, 4, point.value)
+  write_key_values(
+    writer,
+    7,
+    point.attributes.map(field => @otlp.field_to_attribute(field)),
+  )
+}
+
+///|
+/// Write a packed repeated fixed64 or double field from raw 8-byte values.
+fn write_packed_fixed64s(
+  writer : &@protobuf.Writer,
+  field_number : UInt32,
+  write_values : (&@protobuf.Writer) -> Unit raise,
+) -> Unit raise {
+  protobuf_message_field(writer, field_number, write_values)
+}
+
+///|
+fn write_histogram_data_point(
+  writer : &@protobuf.Writer,
+  metric : @metrics.MetricData,
+  point : @metrics.MetricPoint,
+) -> Unit raise {
+  protobuf_fixed64_field(writer, 2, milliseconds_to_nanos(metric.start_time_ms))
+  protobuf_fixed64_field(writer, 3, milliseconds_to_nanos(metric.time_ms))
+  protobuf_fixed64_field(writer, 4, point.count.reinterpret_as_uint64())
+  protobuf_double_field(writer, 5, point.value)
+  write_packed_fixed64s(writer, 6, writer => {
+    for count in point.bucket_counts {
+      writer |> @protobuf.write_fixed64(count.reinterpret_as_uint64())
+    }
+  })
+  if !metric.bucket_bounds.is_empty() {
+    write_packed_fixed64s(writer, 7, writer => {
+      for bound in metric.bucket_bounds {
+        writer |> @protobuf.write_double(bound)
+      }
+    })
+  }
+  write_key_values(
+    writer,
+    9,
+    point.attributes.map(field => @otlp.field_to_attribute(field)),
+  )
+  if point.count > 0L {
+    protobuf_double_field(writer, 11, point.min)
+    protobuf_double_field(writer, 12, point.max)
+  }
+}
+
+///|
+/// AGGREGATION_TEMPORALITY_CUMULATIVE
+const CUMULATIVE_TEMPORALITY : UInt32 = 2
+
+///|
+fn write_metric(
+  writer : &@protobuf.Writer,
+  metric : @metrics.MetricData,
+) -> Unit raise {
+  protobuf_string_field(writer, 1, metric.name)
+  protobuf_string_field(writer, 2, metric.description)
+  protobuf_string_field(writer, 3, metric.unit)
+  match metric.kind {
+    MonotonicSum | NonMonotonicSum =>
+      protobuf_message_field(writer, 7, writer => {
+        for point in metric.points {
+          protobuf_message_field(writer, 1, writer => {
+            write_number_data_point(writer, metric, point)
+          })
+        }
+        protobuf_uint32_field(writer, 2, CUMULATIVE_TEMPORALITY)
+        if metric.kind is MonotonicSum {
+          protobuf_bool_field(writer, 3, true)
+        }
+      })
+    ExplicitHistogram =>
+      protobuf_message_field(writer, 9, writer => {
+        for point in metric.points {
+          protobuf_message_field(writer, 1, writer => {
+            write_histogram_data_point(writer, metric, point)
+          })
+        }
+        protobuf_uint32_field(writer, 2, CUMULATIVE_TEMPORALITY)
+      })
+  }
+}
+
+///|
+fn write_export_metrics_service_request(
+  writer : &@protobuf.Writer,
+  metrics : Array[@metrics.MetricData],
+  resource : @otlp.Resource,
+  scope : @otlp.InstrumentationScope,
+) -> Unit raise {
+  protobuf_message_field(writer, 1, writer => {
+    protobuf_message_field(writer, 1, writer => write_resource(writer, resource))
+    protobuf_message_field(writer, 2, writer => {
+      protobuf_message_field(writer, 1, writer => {
+        write_instrumentation_scope(writer, scope)
+      })
+      for metric in metrics {
+        protobuf_message_field(writer, 2, writer => write_metric(writer, metric))
+      }
+    })
+  })
+}
+
+///|
+/// Milliseconds to nanoseconds, saturating at `UInt64` maximum.
+fn milliseconds_to_nanos(ms : UInt64) -> UInt64 {
+  if ms > 18446744073709UL {
+    18446744073709551615UL
+  } else {
+    ms * 1_000_000UL
+  }
+}
+
+///|
+/// Encode collected metrics as an `ExportMetricsServiceRequest` in this
+/// encoder's format.
+pub fn OtlpEncoder::encode_metrics(
+  self : OtlpEncoder,
+  metrics : Array[@metrics.MetricData],
+  resource~ : @otlp.Resource = @otlp.default_resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+) -> Result[OtlpPayload, EncodingError] {
+  match self {
+    JsonEncoder =>
+      Ok(
+        json_payload(@metrics.metrics_to_otlp_json(metrics, resource~, scope~)),
+      )
+    ProtobufEncoder =>
+      encode_protobuf_payload(Metrics, writer => {
+        write_export_metrics_service_request(writer, metrics, resource, scope)
       })
   }
 }

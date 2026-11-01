@@ -3,6 +3,7 @@
 pub(all) struct ExportPartialSuccess {
   rejected_spans : Int64
   rejected_log_records : Int64
+  rejected_data_points : Int64
   error_message : String
 } derive(Eq, Compare, Debug)
 
@@ -163,12 +164,24 @@ pub fn parse_export_response(
     Some(n) => n
     None => return Err(invalid_response())
   }
+  let rejected_data_points = match
+    response_count(fields.get("rejectedDataPoints")) {
+    Some(n) => n
+    None => return Err(invalid_response())
+  }
   let error_message = match fields.get("errorMessage") {
     None | Some(Null) => ""
     Some(String(s)) => s
     _ => return Err(invalid_response())
   }
-  Ok(Some({ rejected_spans, rejected_log_records, error_message, }))
+  Ok(
+    Some({
+      rejected_spans,
+      rejected_log_records,
+      rejected_data_points,
+      error_message,
+    }),
+  )
 }
 
 ///|
@@ -237,7 +250,8 @@ fn read_proto_length(
 /// Parse an `Export{Trace,Logs}ServiceResponse` protobuf body. Both carry
 /// `partial_success` as field 1, a message with the rejected count (field 1,
 /// int64) and `error_message` (field 2). The count is reported as
-/// `rejected_spans` or `rejected_log_records` according to `signal`. Empty
+/// `rejected_spans`, `rejected_log_records`, or `rejected_data_points`
+/// according to `signal`. Empty
 /// bodies give `None`; unknown fields are skipped.
 pub fn parse_protobuf_export_response(
   body : Bytes,
@@ -322,20 +336,17 @@ fn parse_protobuf_partial(
   if pos != end {
     return None
   }
+  let none = {
+    rejected_spans: 0L,
+    rejected_log_records: 0L,
+    rejected_data_points: 0L,
+    error_message: message,
+  }
   Some(
     match signal {
-      Traces =>
-        {
-          rejected_spans: rejected,
-          rejected_log_records: 0L,
-          error_message: message,
-        }
-      Logs =>
-        {
-          rejected_spans: 0L,
-          rejected_log_records: rejected,
-          error_message: message,
-        }
+      Traces => { ..none, rejected_spans: rejected, }
+      Logs => { ..none, rejected_log_records: rejected, }
+      Metrics => { ..none, rejected_data_points: rejected, }
     },
   )
 }

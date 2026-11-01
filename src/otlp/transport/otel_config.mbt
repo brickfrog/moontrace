@@ -22,6 +22,7 @@ pub fn transport_from_otel_config(
     "",
     traces_path=config.traces_endpoint,
     logs_path=config.logs_endpoint,
+    metrics_path=config.metrics_endpoint,
     headers~,
     max_retries~,
     base_backoff_ms~,

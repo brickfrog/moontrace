@@ -51,6 +51,7 @@ pub(all) struct OtelConfig {
   resource_attributes : Array[OtlpAttribute]
   traces_endpoint : String
   logs_endpoint : String
+  metrics_endpoint : String
   headers : Map[String, String]
   timeout_ms : Int32
   protocol : String

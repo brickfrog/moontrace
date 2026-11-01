@@ -126,6 +126,7 @@ async test "protobuf partial success is parsed per signal" {
       rejected_spans: 2L,
       rejected_log_records: 0L,
       error_message: "spans rejected",
+      rejected_data_points: 0,
     }),
   )
   let logs = match
@@ -141,6 +142,7 @@ async test "protobuf partial success is parsed per signal" {
       rejected_spans: 0L,
       rejected_log_records: 3L,
       error_message: "logs rejected",
+      rejected_data_points: 0,
     }),
   )
 }
@@ -216,7 +218,12 @@ test "parse_protobuf_export_response handles empty, unknown, and malformed bodie
   assert_eq(
     @transport.parse_protobuf_export_response(body, Logs),
     Ok(
-      Some({ rejected_spans: 0L, rejected_log_records: 1L, error_message: "", }),
+      Some({
+        rejected_spans: 0L,
+        rejected_log_records: 1L,
+        error_message: "",
+        rejected_data_points: 0,
+      }),
     ),
   )
   for
@@ -282,6 +289,7 @@ async test "HTTP client sends gzip protobuf and parses a protobuf reply over loc
           rejected_spans: 1L,
           rejected_log_records: 0L,
           error_message: "synthetic rejection",
+          rejected_data_points: 0,
         }),
       )
       assert_eq(content_types, ["application/x-protobuf"])
