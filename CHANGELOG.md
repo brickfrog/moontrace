@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The managed exporter encodes batches with its transport's encoder, so a protobuf transport (or `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` through `managed_exporter_from_otel_config`) delivers protobuf batches; protobuf partial-success replies are read per signal (#117).
+- Tail sampling: `tail_sampler(inner, policy?, max_traces?, max_spans_per_trace?, trace_timeout_ms?, clock?)` buffers completed spans and span-correlated events per trace and forwards kept traces when the trace finishes; `tail_policy` keeps errors, slow traces, and a ratio, with bounded memory and forced decisions on timeout, eviction, span limit, or `flush()` (#102).
 
 ## [0.17.0] - 2026-11-01
 

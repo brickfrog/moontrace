@@ -205,6 +205,10 @@ pub fn span_trace_state(Span) -> TraceState
 #callsite(autofill(loc))
 pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
+pub fn tail_policy(keep_errors? : Bool, min_duration_ms? : UInt64, ratio? : Double) -> (TraceSummary) -> Bool
+
+pub fn tail_sampler(SpanLifecycleObserver, policy? : (TraceSummary) -> Bool, max_traces? : Int32, max_spans_per_trace? : Int32, trace_timeout_ms? : UInt64, clock? : () -> UInt64) -> TailSampler
+
 #callsite(autofill(loc))
 pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
@@ -578,6 +582,17 @@ pub fn SpanStatus::to_json(Self) -> Json
 pub fn SpanStatus::to_string(Self) -> String
 pub impl Show for SpanStatus
 
+pub struct TailSampler {
+  // private fields
+}
+pub fn TailSampler::dropped(Self) -> Int64
+pub fn TailSampler::flush(Self) -> Unit
+pub fn TailSampler::forced(Self) -> Int64
+pub fn TailSampler::kept(Self) -> Int64
+pub fn TailSampler::observer(Self) -> SpanLifecycleObserver
+pub fn TailSampler::pending(Self) -> Int32
+pub fn TailSampler::subscriber(Self, (Event) -> Unit) -> (Event) -> Unit
+
 pub(all) enum TraceContextError {
   InvalidTraceId(String)
   InvalidSpanId(String)
@@ -635,6 +650,14 @@ pub struct TraceStateEntry {
   key : String
   value : String
 } derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct TraceSummary {
+  trace_id : String
+  spans : Array[Span]
+  has_error : Bool
+  max_duration_ms : UInt64
+  forced : Bool
+}
 
 // Type aliases
 
