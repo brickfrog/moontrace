@@ -486,3 +486,48 @@ async test "OTEL_SDK_DISABLED makes the configured exporter export nothing" {
   assert_eq(stats.buffered_logs, 0)
   assert_eq(stats.buffered_spans, 0)
 }
+
+///|
+async test "managed exporter sends protobuf batches with a protobuf transport" {
+  let client = bytes_client([
+    (200, b""),
+    (200, partial_response(1, "one span rejected")),
+  ])
+  let managed = @transport.managed_json_exporter(
+    protobuf_transport(client),
+    batch_size=8,
+  )
+  let event = managed_event("hello")
+  managed.subscriber()(event)
+  let span = @moontrace.span("work")
+  span.enter()
+  span.exit()
+  (managed.span_observer().on_closed)(span)
+  let stats = managed.shutdown()
+  assert_eq(client.calls.length(), 2)
+  assert_eq(client.calls[0].url, "http://collector:4318/v1/logs")
+  assert_eq(
+    client.calls[0].headers.get("Content-Type"),
+    Some("application/x-protobuf"),
+  )
+  let expected_logs = match
+    @transport.protobuf_encoder().encode_logs([@otlp.event_to_log_record(event)]) {
+    Ok(payload) => payload.body
+    Err(err) => abort(err.to_string())
+  }
+  assert_eq(client.calls[0].body, expected_logs)
+  let expected_spans = match
+    @transport.protobuf_encoder().encode_spans([@otlp.span_to_otlp(span)]) {
+    Ok(payload) => payload.body
+    Err(err) => abort(err.to_string())
+  }
+  assert_eq(client.calls[1].url, "http://collector:4318/v1/traces")
+  assert_eq(client.calls[1].body, expected_spans)
+  assert_eq(stats.delivered_batches, 1L)
+  assert_eq(stats.failed_batches, 1L)
+  match managed.last_report() {
+    Some(report) =>
+      assert_eq(report.partial_success.map(p => p.rejected_spans), Some(1L))
+    None => fail("expected a report")
+  }
+}

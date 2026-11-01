@@ -7,8 +7,7 @@
 ///
 /// `config.protocol` selects the encoder for `export_spans` and `export_logs`
 /// (`http/protobuf` by default, as the specification requires) and
-/// `config.compression` selects gzip. The managed exporter always sends JSON
-/// but uses the configured compression.
+/// `config.compression` selects gzip. The managed exporter uses both.
 pub fn transport_from_otel_config(
   client : &OtlpHttpClient,
   config : @otlp.OtelConfig,

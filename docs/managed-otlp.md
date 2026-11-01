@@ -1,7 +1,12 @@
-# Managed OTLP JSON export
+# Managed OTLP export
 
 `brickfrog/moontrace/otlp/transport` offers `managed_json_exporter(tx)` for
-applications that want timed batches and a bounded delivery queue. It reuses the
+applications that want timed batches and a bounded delivery queue. Despite the
+name, batches use the transport's encoder and compression, so
+`transport(..., encoder=ProtobufEncoder, compression=GzipCompression)` gives
+gzip-compressed protobuf delivery. Batch sizing estimates each record by its
+JSON size, which overstates protobuf records, so protobuf batches stay within
+`max_payload_bytes`; the queued byte budget counts the actual encoded size. It reuses the
 OTLP batcher and HTTP transport's retry and partial-success handling. Existing
 exporter and transport APIs remain available. The worker/example run on native and
 JavaScript with the async runtime; wasm-gc builds retain the existing HTTP-client
