@@ -74,6 +74,25 @@ Attach structured fields to any event:
 
 The `field()` function uses MoonBit's `ToJson` trait dispatch — any type implementing `ToJson` works. For raw `Json` values, use `fields()` instead.
 
+Message templates keep a stable form for grouping while rendering a readable
+message, like Serilog:
+
+```moonbit
+@moontrace.log_template(
+  @moontrace.Info,
+  "user {user_id} logged in from {ip}",
+  fields=[@moontrace.field("user_id", 7), @moontrace.field("ip", "10.0.0.1")],
+)
+// message: "user 7 logged in from 10.0.0.1"
+// fields:  user_id=7 ip="10.0.0.1" message_template="user {user_id} logged in from {ip}"
+```
+
+`{key}` takes the last field with that key: strings as text, other values as
+JSON. Unknown placeholders stay as written and `{{`/`}}` escape braces.
+`log_template` accepts `span=` for correlation, `Logger::log_template` can
+reference bound fields, and filters are checked before rendering.
+`render_template(template, fields)` is the formatter on its own.
+
 Public event and logger calls capture the caller package via `SourceLoc`,
 available as `event.source`, plus the caller's `event.file` (relative to the
 module root) and `event.line`. Internal span lifecycle events have an empty
@@ -814,6 +833,16 @@ the resource specification requires, and `Resource::merge` layers resources with
 later attributes winning.
 
 ### Subscriber Composition
+
+To swap one subscriber at runtime without reinstalling the rest, wrap it in a
+reload handle:
+
+```moonbit
+let output = @moontrace.reloadable(@console.subscriber())
+@moontrace.set_subscriber(@moontrace.compose([output.subscriber(), @json.subscriber()]))
+// Later, e.g. on SIGHUP or a config change:
+output.reload(@console.subscriber(min_level=@moontrace.Warn))
+```
 
 Route events to multiple subscribers:
 

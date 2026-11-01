@@ -17,6 +17,8 @@ Upgrade notes:
 ### Added
 
 - `off` filter directive: `my/app=off` silences a package and its subpackages and a bare `off` silences everything without a more specific filter, without adding a `Level` variant. `silence_module` and `silence_all` do the same in code, and `ParsedFilter` gains `silenced_modules` and `default_off` (#103).
+- Message templates: `log_template(level, template, fields?, span?)` and `Logger::log_template` render `{key}` placeholders from fields into the message and keep the template in a `message_template` field; `render_template` exposes the formatter (#103).
+- `reloadable(initial)` returns a `ReloadHandle` whose `subscriber()` forwards to a target that `reload(next)` swaps at runtime (#103).
 - `brickfrog/moontrace/metrics` (phase 1 of #101): `span_metrics(buckets_ms?)` records count, errors, duration sum/min/max, and a duration histogram per span name and kind from a span observer, with `snapshot()`, `reset()`, and `SpanSeriesSnapshot::to_json()`.
 - `Logger::start_timer()` returns a `LogTimer` whose `done(msg, level?, fields?)` logs with a `duration_ms` field; `elapsed_ms()` reads it without logging (#103).
 - `brickfrog/moontrace/semconv` HTTP semantic-convention field helpers: `http_request_method`, `http_response_status_code`, `http_route`, `url_path`, `url_scheme`, `url_full`, `server_address`, `user_agent_original`, and `http_server_request` (#103).
