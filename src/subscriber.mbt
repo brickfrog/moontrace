@@ -93,3 +93,33 @@ pub fn with_directives(
     }
   }
 }
+
+///|
+/// A subscriber slot whose target can be replaced at runtime. Built by
+/// `reloadable`.
+pub struct ReloadHandle {
+  priv mut current : (Event) -> Unit
+}
+
+///|
+/// Wrap `initial` so it can be swapped later without reinstalling the
+/// subscriber, for example one child of a `compose`. Install
+/// `handle.subscriber()` and call `handle.reload(next)` to switch.
+pub fn reloadable(initial : (Event) -> Unit) -> ReloadHandle {
+  { current: initial, }
+}
+
+///|
+/// A subscriber that forwards each event to the handle's current target.
+pub fn ReloadHandle::subscriber(self : ReloadHandle) -> (Event) -> Unit {
+  event => (self.current)(event)
+}
+
+///|
+/// Replace the target; later events go to `next`.
+pub fn ReloadHandle::reload(
+  self : ReloadHandle,
+  next : (Event) -> Unit,
+) -> Unit {
+  self.current = next
+}

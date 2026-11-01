@@ -113,6 +113,9 @@ pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
 
+#callsite(autofill(loc))
+pub fn log_template(Level, String, fields? : Array[Field], span? : Span, loc~ : SourceLoc) -> Unit
+
 pub fn logger(fields? : Array[Field], span? : Span, min_level? : Level) -> Logger
 
 pub fn map_events((Event) -> Unit, (Event) -> Event?) -> (Event) -> Unit
@@ -143,7 +146,11 @@ pub fn redact((Event) -> Unit, policy? : RedactionPolicy) -> (Event) -> Unit
 
 pub fn redaction_policy(deny? : Array[String], allow? : Array[String]?, mode? : RedactionMode, placeholder? : String) -> RedactionPolicy
 
+pub fn reloadable((Event) -> Unit) -> ReloadHandle
+
 pub fn remove_global_field(String) -> Unit
+
+pub fn render_template(String, Array[Field]) -> String
 
 pub fn reset_span_sampler() -> Unit
 
@@ -363,6 +370,8 @@ pub fn Logger::event(Self, Level, String, fields? : Array[Field], loc~ : SourceL
 pub fn Logger::in_span(Self, Span) -> Self
 #callsite(autofill(loc))
 pub fn Logger::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
+#callsite(autofill(loc))
+pub fn Logger::log_template(Self, Level, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Logger::start_timer(Self) -> LogTimer
 #callsite(autofill(loc))
 pub fn Logger::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -422,6 +431,12 @@ pub(all) struct RedactionPolicy {
   mode : RedactionMode
   placeholder : String
 } derive(@debug.Debug)
+
+pub struct ReloadHandle {
+  // private fields
+}
+pub fn ReloadHandle::reload(Self, (Event) -> Unit) -> Unit
+pub fn ReloadHandle::subscriber(Self) -> (Event) -> Unit
 
 pub(all) struct SamplingInput {
   trace_id : String
