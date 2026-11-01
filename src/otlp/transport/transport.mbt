@@ -7,6 +7,8 @@ pub(all) struct OtlpHttpTransport {
   headers : Map[String, String]
   max_retries : Int32
   base_backoff_ms : Int32
+  encoder : OtlpEncoder
+  compression : OtlpCompression
   mut is_shut_down : Bool
 }
 
@@ -19,6 +21,8 @@ pub fn transport(
   headers~ : Map[String, String] = default_headers(),
   max_retries~ : Int32 = 3,
   base_backoff_ms~ : Int32 = 1000,
+  encoder~ : OtlpEncoder = JsonEncoder,
+  compression~ : OtlpCompression = NoCompression,
 ) -> OtlpHttpTransport {
   {
     client,
@@ -36,6 +40,8 @@ pub fn transport(
     } else {
       base_backoff_ms
     },
+    encoder,
+    compression,
     is_shut_down: false,
   }
 }
@@ -88,25 +94,69 @@ async fn OtlpHttpTransport::wait_before_retry(
 }
 
 ///|
-async fn OtlpHttpTransport::export_json_impl(
+/// How to read a successful response body for partial-success details.
+priv enum ResponseFormat {
+  JsonResponse
+  ProtobufResponse(OtlpSignal)
+}
+
+///|
+/// Set `name` to `value`, replacing any header with the same name in any case.
+fn set_header_ci(
+  headers : Map[String, String],
+  name : String,
+  value : String,
+) -> Unit {
+  let lower = name.to_lower()
+  let existing = headers.keys().filter(key => key.to_lower() == lower).collect()
+  existing.each(key => headers.remove(key))
+  headers.set(name, value)
+}
+
+///|
+/// Send `body` with retries. `content_type` replaces the configured
+/// Content-Type when given, and the transport's compression is applied once
+/// before the first attempt.
+async fn OtlpHttpTransport::export_body_impl(
   self : OtlpHttpTransport,
   url : String,
-  payload : String,
+  body : Bytes,
+  content_type : String?,
+  format : ResponseFormat,
   on_partial : (ExportPartialSuccess) -> Unit,
 ) -> Result[ExportOutcome, TransportError] {
+  let headers = copy_headers(self.headers)
+  if content_type is Some(value) {
+    set_header_ci(headers, "Content-Type", value)
+  }
+  let body = match self.compression {
+    NoCompression => body
+    GzipCompression => {
+      set_header_ci(headers, "Content-Encoding", "gzip")
+      gzip_bytes(body) catch {
+        err => return Err(Request("gzip compression failed: \{err}"))
+      }
+    }
+  }
   let max_attempts = self.max_retries + 1
   for attempts = 1; attempts <= max_attempts; {
     match self.ensure_open() {
       Err(err) => return Err(err)
       Ok(_) => ()
     }
-    let result = self.client.post(url, payload, copy_headers(self.headers))
+    let result = self.client.post_bytes(url, body, copy_headers(headers))
     match result {
       Ok(response) => {
         let retry_class = classify_status(response.status_code)
         match retry_class {
           Success => {
-            let partial = match parse_export_response(response.body) {
+            let parsed = match format {
+              JsonResponse =>
+                parse_export_response(@utf8.decode_lossy(response.body))
+              ProtobufResponse(signal) =>
+                parse_protobuf_export_response(response.body, signal)
+            }
+            let partial = match parsed {
               Ok(value) => value
               Err(error) => return Err(error)
             }
@@ -157,7 +207,7 @@ async fn OtlpHttpTransport::export_json_impl(
               })
             } else {
               let delay = retry_delay_ms(
-                Some(response),
+                response.retry_after_ms,
                 self.base_backoff_ms,
                 attempts,
               )
@@ -205,35 +255,73 @@ async fn OtlpHttpTransport::export_json_impl(
 }
 
 ///|
+/// Encode with the transport's encoder and export with partial details.
+async fn OtlpHttpTransport::export_encoded(
+  self : OtlpHttpTransport,
+  url : String,
+  signal : OtlpSignal,
+  encoded : Result[OtlpPayload, EncodingError],
+  on_partial : (ExportPartialSuccess) -> Unit,
+) -> Result[ExportOutcome, TransportError] {
+  let payload = match encoded {
+    Ok(payload) => payload
+    Err(err) => return Err(Request(err.to_string()))
+  }
+  let format = match self.encoder {
+    JsonEncoder => JsonResponse
+    ProtobufEncoder => ProtobufResponse(signal)
+  }
+  self.export_body_impl(
+    url,
+    payload.body,
+    Some(payload.content_type),
+    format,
+    on_partial,
+  )
+}
+
+///|
+/// Export spans using the transport's encoder and compression.
 pub async fn OtlpHttpTransport::export_spans(
   self : OtlpHttpTransport,
   spans : Array[@otlp.OtlpSpan],
   resource~ : @otlp.Resource = @otlp.resource(),
   scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportOutcome, TransportError] {
-  let payload = @otlp.wrap_spans(spans, resource~, scope~).stringify()
-  self.export_json(join_url(self.endpoint, self.traces_path), payload)
+  self.export_encoded(
+    join_url(self.endpoint, self.traces_path),
+    Traces,
+    self.encoder.encode_spans(spans, resource~, scope~),
+    _ => (),
+  )
 }
 
 ///|
+/// Export log records using the transport's encoder and compression.
 pub async fn OtlpHttpTransport::export_logs(
   self : OtlpHttpTransport,
   records : Array[@otlp.OtlpLogRecord],
   resource~ : @otlp.Resource = @otlp.resource(),
   scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportOutcome, TransportError] {
-  let payload = @otlp.wrap_log_records(records, resource~, scope~).stringify()
-  self.export_json(join_url(self.endpoint, self.logs_path), payload)
+  self.export_encoded(
+    join_url(self.endpoint, self.logs_path),
+    Logs,
+    self.encoder.encode_logs(records, resource~, scope~),
+    _ => (),
+  )
 }
 
 ///|
-/// Export JSON, treating partial rejection as a non-retryable unsuccessful outcome.
+/// Export a pre-serialized OTLP JSON payload, treating partial rejection as a
+/// non-retryable unsuccessful outcome. The transport's compression applies;
+/// its encoder does not.
 pub async fn OtlpHttpTransport::export_json(
   self : OtlpHttpTransport,
   url : String,
   payload : String,
 ) -> Result[ExportOutcome, TransportError] {
-  self.export_json_impl(url, payload, _ => ())
+  self.export_body_impl(url, @utf8.encode(payload), None, JsonResponse, _ => ())
 }
 
 ///|
@@ -245,7 +333,9 @@ pub async fn OtlpHttpTransport::export_json_report(
 ) -> Result[ExportReport, TransportError] {
   let partial = Ref(None)
   match
-    self.export_json_impl(url, payload, value => partial.val = Some(value)) {
+    self.export_body_impl(url, @utf8.encode(payload), None, JsonResponse, value => {
+      partial.val = Some(value)
+    }) {
     Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
     Err(error) => Err(error)
   }
@@ -258,10 +348,17 @@ pub async fn OtlpHttpTransport::export_spans_report(
   resource~ : @otlp.Resource = @otlp.resource(),
   scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportReport, TransportError] {
-  self.export_json_report(
-    join_url(self.endpoint, self.traces_path),
-    @otlp.wrap_spans(spans, resource~, scope~).stringify(),
-  )
+  let partial = Ref(None)
+  match
+    self.export_encoded(
+      join_url(self.endpoint, self.traces_path),
+      Traces,
+      self.encoder.encode_spans(spans, resource~, scope~),
+      value => partial.val = Some(value),
+    ) {
+    Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
+    Err(error) => Err(error)
+  }
 }
 
 ///|
@@ -271,8 +368,15 @@ pub async fn OtlpHttpTransport::export_logs_report(
   resource~ : @otlp.Resource = @otlp.resource(),
   scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Result[ExportReport, TransportError] {
-  self.export_json_report(
-    join_url(self.endpoint, self.logs_path),
-    @otlp.wrap_log_records(records, resource~, scope~).stringify(),
-  )
+  let partial = Ref(None)
+  match
+    self.export_encoded(
+      join_url(self.endpoint, self.logs_path),
+      Logs,
+      self.encoder.encode_logs(records, resource~, scope~),
+      value => partial.val = Some(value),
+    ) {
+    Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
+    Err(error) => Err(error)
+  }
 }

@@ -66,11 +66,56 @@ pub(all) struct ExportOutcome {
 } derive(Eq, Compare, Debug)
 
 ///|
+/// An HTTP response with the raw body, returned by `OtlpHttpClient::post_bytes`.
+pub(all) struct HttpBytesResponse {
+  status_code : Int32
+  body : Bytes
+  retry_after_ms : Int32?
+}
+
+///|
+/// Request body compression applied by the transport.
+pub(all) enum OtlpCompression {
+  NoCompression
+  /// gzip with `Content-Encoding: gzip`.
+  GzipCompression
+}
+
+///|
+/// HTTP client used by the transport. Implement `post` for text (JSON)
+/// bodies. Implement `post_bytes` as well to support protobuf or gzip bodies;
+/// the default `post_bytes` forwards UTF-8 bodies to `post` and rejects other
+/// bodies with a non-retryable `Request` error.
 pub(open) trait OtlpHttpClient {
   async fn post(Self, String, String, Map[String, String]) -> Result[
     HttpResponse,
     TransportError,
   ]
+  async fn post_bytes(Self, String, Bytes, Map[String, String]) -> Result[
+    HttpBytesResponse,
+    TransportError,
+  ] = _
+}
+
+///|
+impl OtlpHttpClient with fn post_bytes(self, url, body, headers) {
+  let text = @utf8.decode(body) catch {
+    _ =>
+      return Err(
+        Request(
+          "this OTLP HTTP client only sends text bodies; implement post_bytes for protobuf or gzip",
+        ),
+      )
+  }
+  match self.post(url, text, headers) {
+    Ok(response) =>
+      Ok({
+        status_code: response.status_code,
+        body: @utf8.encode(response.body),
+        retry_after_ms: response.retry_after_ms,
+      })
+    Err(err) => Err(err)
+  }
 }
 
 ///|
@@ -130,16 +175,12 @@ fn join_url(endpoint : String, path : String) -> String {
 
 ///|
 fn retry_delay_ms(
-  response : HttpResponse?,
+  retry_after_ms : Int32?,
   base_backoff_ms : Int32,
   attempts : Int32,
 ) -> Int32 {
-  match response {
-    Some(resp) =>
-      match resp.retry_after_ms {
-        Some(delay) => clamp_retry_delay_ms(delay)
-        None => exponential_backoff_ms(base_backoff_ms, attempts)
-      }
+  match retry_after_ms {
+    Some(delay) => clamp_retry_delay_ms(delay)
     None => exponential_backoff_ms(base_backoff_ms, attempts)
   }
 }

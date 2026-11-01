@@ -28,11 +28,13 @@ pub fn otlp_protobuf_content_type() -> String
 
 pub fn parse_export_response(String) -> Result[ExportPartialSuccess?, TransportError]
 
+pub fn parse_protobuf_export_response(Bytes, OtlpSignal) -> Result[ExportPartialSuccess?, TransportError]
+
 pub fn parse_retry_after_ms(Map[String, String]) -> Int32?
 
 pub fn protobuf_encoder() -> OtlpEncoder
 
-pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
+pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32, encoder? : OtlpEncoder, compression? : OtlpCompression) -> OtlpHttpTransport
 
 pub fn transport_from_otel_config(&OtlpHttpClient, @otlp.OtelConfig, max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
 
@@ -44,6 +46,7 @@ pub(all) struct AsyncHttpClient {
   mut is_shut_down : Bool
 }
 pub async fn AsyncHttpClient::post(Self, String, String, Map[String, String]) -> Result[HttpResponse, TransportError]
+pub async fn AsyncHttpClient::post_bytes(Self, String, Bytes, Map[String, String]) -> Result[HttpBytesResponse, TransportError]
 pub fn AsyncHttpClient::shutdown(Self) -> Unit
 pub impl OtlpHttpClient for AsyncHttpClient
 
@@ -72,6 +75,12 @@ pub(all) struct ExportReport {
   outcome : ExportOutcome
   partial_success : ExportPartialSuccess?
 } derive(Compare, Eq, @debug.Debug)
+
+pub(all) struct HttpBytesResponse {
+  status_code : Int32
+  body : Bytes
+  retry_after_ms : Int32?
+}
 
 pub(all) struct HttpResponse {
   status_code : Int32
@@ -106,6 +115,11 @@ pub fn ManagedJsonExporter::span_observer(Self) -> @moontrace.SpanLifecycleObser
 pub fn ManagedJsonExporter::stats(Self) -> ManagedExportStats
 pub fn ManagedJsonExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
+pub(all) enum OtlpCompression {
+  NoCompression
+  GzipCompression
+}
+
 pub(all) enum OtlpEncoder {
   JsonEncoder
   ProtobufEncoder
@@ -122,6 +136,8 @@ pub(all) struct OtlpHttpTransport {
   headers : Map[String, String]
   max_retries : Int32
   base_backoff_ms : Int32
+  encoder : OtlpEncoder
+  compression : OtlpCompression
   mut is_shut_down : Bool
 }
 pub async fn OtlpHttpTransport::export_json(Self, String, String) -> Result[ExportOutcome, TransportError]
@@ -162,4 +178,5 @@ pub impl Show for TransportError
 // Traits
 pub(open) trait OtlpHttpClient {
   async fn post(Self, String, String, Map[String, String]) -> Result[HttpResponse, TransportError]
+  async fn post_bytes(Self, String, Bytes, Map[String, String]) -> Result[HttpBytesResponse, TransportError] = _
 }

@@ -482,6 +482,7 @@ async test "transport_from_otel_config uses resolved signal URLs and headers" {
       "OTEL_EXPORTER_OTLP_ENDPOINT": "http://collector:4318",
       "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "http://logs.example/ingest",
       "OTEL_EXPORTER_OTLP_HEADERS": "api-key=secret",
+      "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json",
     }
     vars.get(name)
   })
