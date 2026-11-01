@@ -892,3 +892,44 @@ pub fn TestSubscriber::assert_created_entered_recorded_exited(
     SpanExited,
   ])
 }
+
+///|
+/// A failure message if any captured event matches `query`, listing the
+/// matches; `None` when nothing matches.
+pub fn TestSubscriber::check_no_event(
+  self : TestSubscriber,
+  query : EventQuery,
+) -> String? {
+  let matched = self.events_matching(query)
+  if matched.is_empty() {
+    None
+  } else {
+    Some(
+      "unexpected " +
+      describe_event_query(query) +
+      "\nmatching events:" +
+      describe_events(matched),
+    )
+  }
+}
+
+///|
+/// Abort if any captured event matches `query`.
+pub fn TestSubscriber::assert_no_event(
+  self : TestSubscriber,
+  query : EventQuery,
+) -> Unit {
+  match self.check_no_event(query) {
+    Some(message) => abort(message)
+    None => ()
+  }
+}
+
+///|
+/// Run `f` with a fresh test subscriber installed and return the events it
+/// captured. Tracing state is restored afterwards, as with `with_install`.
+pub fn capture(f : () -> Unit raise?) -> Array[@moontrace.Event] raise? {
+  let subscriber = test_subscriber()
+  subscriber.with_install(f)
+  subscriber.captured_events()
+}
