@@ -17,6 +17,7 @@ Upgrade notes:
 
 ### Added
 
+- `brickfrog/moontrace/telemetry` (phase 2 of #101): `execute(name, measurements, metadata?)` emits named instrumentation events to handlers registered with `attach`, `attach_many`, or the scoped `with_handler`; `span(name, f)` emits `.start`, `.stop`, and `.exception` events with durations.
 - `off` filter directive: `my/app=off` silences a package and its subpackages and a bare `off` silences everything without a more specific filter, without adding a `Level` variant. `silence_module` and `silence_all` do the same in code, and `ParsedFilter` gains `silenced_modules` and `default_off` (#103).
 - Message templates: `log_template(level, template, fields?, span?)` and `Logger::log_template` render `{key}` placeholders from fields into the message and keep the template in a `message_template` field; `render_template` exposes the formatter (#103).
 - `reloadable(initial)` returns a `ReloadHandle` whose `subscriber()` forwards to a target that `reload(next)` swaps at runtime (#103).
