@@ -786,3 +786,17 @@ test "otlp field conversion preserves types" {
   let bj = ba.to_json().stringify()
   assert_true(bj.contains("\"boolValue\":true"))
 }
+
+///|
+test "otlp whole numbers outside Int64 stay doubles" {
+  let attr = name => {
+    @otlp.field_to_attribute(@moontrace.Field::{ key: "n", value: Json(name), })
+  }
+  assert_true(attr(1.0e20).value is DoubleVal(1.0e20))
+  assert_true(attr(-1.0e20).value is DoubleVal(-1.0e20))
+  assert_true(attr(9223372036854775808.0).value is DoubleVal(_))
+  assert_true(
+    attr(-9223372036854775808.0).value is IntVal(-9223372036854775808L),
+  )
+  assert_true(attr(4096.0).value is IntVal(4096L))
+}

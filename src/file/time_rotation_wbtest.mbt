@@ -22,3 +22,19 @@ test "period stamps round-trip through the archive parser" {
     assert_true(parse_dated_archive("app.log", Daily, other) is None)
   }
 }
+
+///|
+#cfg(target="native")
+test "archive sequences that overflow Int64 are not archives" {
+  let max = "app.log.2026-03-28.999999999999999999"
+  guard parse_dated_archive("app.log", Daily, max) is Some(archive) else {
+    fail("expected archive")
+  }
+  assert_eq(archive.sequence, 999999999999999999L)
+  for
+    name in [
+      "app.log.2026-03-28.99999999999999999999", "app.log.2026-03-28.9223372036854775808.gz",
+    ] {
+    assert_true(parse_dated_archive("app.log", Daily, name) is None)
+  }
+}
