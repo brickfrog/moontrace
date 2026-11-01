@@ -17,9 +17,13 @@ pub fn level_to_severity(level : @moontrace.Level) -> Int32 {
 fn json_to_otlp_value(value : Json) -> OtlpValue {
   match value {
     String(s) => StringVal(s)
+    // Whole numbers outside the Int64 range stay doubles rather than
+    // saturating to a wrong integer.
     Number(n, ..) =>
-      if n == n.floor() {
-        IntVal(n.floor().to_int64())
+      if n == n.floor() &&
+        n >= -9223372036854775808.0 &&
+        n < 9223372036854775808.0 {
+        IntVal(n.to_int64())
       } else {
         DoubleVal(n)
       }

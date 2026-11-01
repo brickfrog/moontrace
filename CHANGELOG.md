@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The managed exporter encodes batches with its transport's encoder, so a protobuf transport (or `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` through `managed_exporter_from_otel_config`) delivers protobuf batches; protobuf partial-success replies are read per signal (#117).
 - Tail sampling: `tail_sampler(inner, policy?, max_traces?, max_spans_per_trace?, max_events_per_trace?, trace_timeout_ms?, clock?)` buffers completed spans and span-correlated events per trace and forwards kept traces when the trace finishes; `tail_policy` keeps errors, slow traces, and a ratio, with bounded memory and forced decisions on timeout, eviction, span limit, or `flush()` (#102).
 
+### Fixed
+
+- OTLP attribute conversion keeps whole numbers outside the `Int64` range as doubles instead of saturating them to a wrong integer.
+- The file subscriber ignores dated archives whose sequence number overflows `Int64` instead of wrapping it, so rotation numbering and retention order are not skewed.
+
 ## [0.17.0] - 2026-11-01
 
 Requires the MoonBit 0.10.18 toolchain. Upgrade notes for code that constructs

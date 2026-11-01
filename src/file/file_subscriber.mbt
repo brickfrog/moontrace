@@ -591,9 +591,10 @@ fn period_stamp(period : RotationPeriod, start_ms : UInt64) -> String {
 }
 
 ///|
+/// Parse ASCII digits, rejecting values that would overflow `Int64`.
 #cfg(target="native")
 fn parse_digits(text : StringView) -> Int64? {
-  if text.is_empty() {
+  if text.is_empty() || text.length() > 18 {
     return None
   }
   let mut value = 0L
