@@ -19,6 +19,8 @@ request and async context explicit.
 - `src/span_async/` provides async span wrappers; `src/flame/` observes completed
   spans; `src/file/` provides the native buffered file subscriber; `src/queue/`
   provides a generic bounded async queue in front of slow sinks.
+- `src/metrics/` derives span RED metrics (request count, errors, duration
+  histograms) from completed spans.
 - `src/test/` provides test subscribers and assertion helpers. `*_test.mbt`
   files are blackbox tests; `*_wbtest.mbt` files can access package internals.
 - See [README.mbt.md](README.mbt.md) for usage and the guides in [docs](docs).

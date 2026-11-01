@@ -894,6 +894,27 @@ Deny-list policies also apply to keys inside JSON object and array field values 
 
 See [docs/sampling.md](docs/sampling.md) for the sampling model.
 
+### Span Metrics
+
+`brickfrog/moontrace/metrics` derives request rate, error, and duration (RED)
+metrics from completed spans without new instrumentation:
+
+```moonbit
+let metrics = @metrics.span_metrics()
+@moontrace.set_span_observer(metrics.observer())
+// ... later, e.g. from a /metrics handler:
+for series in metrics.snapshot() {
+  println(series.to_json().stringify())
+}
+```
+
+Each series is keyed by span name and kind and holds `count`, `errors`
+(spans closed with `SpanError`), duration sum, min, and max, and a histogram
+over OpenTelemetry's default bounds (pass `buckets_ms=` to change them). Bounds
+are inclusive upper limits in milliseconds, with a final overflow bucket. Only
+spans delivered to observers count, so unsampled and level-disabled spans are
+excluded. Combine with exporters through `compose_span_observers`.
+
 ### Flame Export
 
 `brickfrog/moontrace/flame` observes completed spans and writes folded-stack output for flamegraph tools. It reconstructs stacks from span IDs and sums identical collapsed stacks.
