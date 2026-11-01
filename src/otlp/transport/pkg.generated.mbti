@@ -18,6 +18,8 @@ pub fn default_headers() -> Map[String, String]
 
 pub fn json_encoder() -> OtlpEncoder
 
+pub fn managed_exporter_from_otel_config(OtlpHttpTransport, @otlp.OtelConfig, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope, max_payload_bytes? : Int32, max_pending_bytes? : Int32) -> ManagedJsonExporter
+
 pub fn managed_json_exporter(OtlpHttpTransport, batch_size? : Int32, queue_capacity? : Int32, max_payload_bytes? : Int32, max_pending_bytes? : Int32, flush_interval_ms? : Int32, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> ManagedJsonExporter
 
 pub fn otlp_json_content_type() -> String
@@ -31,6 +33,8 @@ pub fn parse_retry_after_ms(Map[String, String]) -> Int32?
 pub fn protobuf_encoder() -> OtlpEncoder
 
 pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
+
+pub fn transport_from_otel_config(&OtlpHttpClient, @otlp.OtelConfig, max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
 
 // Errors
 

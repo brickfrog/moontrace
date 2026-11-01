@@ -680,6 +680,39 @@ intake and drains accepted work plus final partial batches. Inspect `stats()`,
 See [managed OTLP usage and cancellation semantics](docs/managed-otlp.md), or run
 `moon run src/cmd/managed_json --target native` for a self-contained synthetic example.
 
+#### Configuration from `OTEL_*` variables
+
+`@otlp.otel_config_from_env()` reads the standard OpenTelemetry SDK variables,
+and `@otlp.parse_otel_config(lookup)` does the same from any lookup function.
+Invalid values are ignored with a message in `config.warnings`, as the
+specification requires, so startup never fails on a bad variable:
+
+```moonbit
+let config = @otlp.otel_config_from_env()
+config.warnings.each(warning => eprintln("otel: \{warning}"))
+@moontrace.set_span_sampler(config.span_sampler())
+let client = @transport.async_http_client(timeout_ms=config.timeout_ms)
+let tx = @transport.transport_from_otel_config(client, config)
+let exporter = @transport.managed_exporter_from_otel_config(tx, config)
+```
+
+| Variable | Used for |
+| --- | --- |
+| `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` | `config.resource()`, layered over `@otlp.default_resource()` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Base URL; `/v1/traces` and `/v1/logs` are appended |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | Full per-signal URLs, used as given |
+| `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT` | Request headers and client timeout |
+| `OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG` | `config.span_sampler()` |
+| `OTEL_BSP_SCHEDULE_DELAY`, `OTEL_BSP_MAX_QUEUE_SIZE`, `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | Managed exporter flush interval, queue, and batch size |
+| `OTEL_SDK_DISABLED` | `config.disabled`; `span_sampler()` then samples nothing |
+
+`OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION` are parsed
+into `config.protocol` and `config.compression`, but the transport currently
+always sends uncompressed OTLP/HTTP JSON. `@otlp.default_resource()` provides
+`service.name` (default `unknown_service`) and the `telemetry.sdk.*` attributes
+the resource specification requires, and `Resource::merge` layers resources with
+later attributes winning.
+
 ### Subscriber Composition
 
 Route events to multiple subscribers:

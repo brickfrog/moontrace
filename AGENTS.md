@@ -35,6 +35,9 @@ request and async context explicit.
   Native transport tests use synthetic localhost fixtures.
 - Specify `--target native` for native builds; `--release` independently selects
   release mode, for example `moon build --target native --release`.
+- When releasing, bump `version` in `moon.mod` and `sdk_version` in
+  `src/otlp/resource.mbt` together; the latter is reported as
+  `telemetry.sdk.version`.
 - Format before committing. The optional [.githooks/pre-commit](.githooks/pre-commit)
   hook checks formatting and runs `moon check --target native`.
 - Prefer assertions for stable behavior; use snapshots for output representations.

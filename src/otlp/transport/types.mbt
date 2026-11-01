@@ -115,8 +115,11 @@ fn copy_headers(headers : Map[String, String]) -> Map[String, String] {
 }
 
 ///|
+/// An empty endpoint means `path` is already a full URL.
 fn join_url(endpoint : String, path : String) -> String {
-  if endpoint.has_suffix("/") && path.has_prefix("/") {
+  if endpoint.is_empty() {
+    path
+  } else if endpoint.has_suffix("/") && path.has_prefix("/") {
     endpoint + path[1:].to_owned()
   } else if endpoint.has_suffix("/") || path.has_prefix("/") {
     endpoint + path
