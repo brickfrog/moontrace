@@ -14,6 +14,9 @@ fn encoding_test_span(name : String) -> @otlp.OtlpSpan {
     links: [],
     status_code: 1,
     status_message: "",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
 }
 
@@ -27,6 +30,7 @@ fn encoding_test_log_record(body : String) -> @otlp.OtlpLogRecord {
     span_id: "",
     body,
     attributes: [],
+    dropped_attributes_count: 0,
   }
 }
 
@@ -99,6 +103,9 @@ priv struct DecodedSpan {
   attributes : Array[DecodedKeyValue]
   events : Array[DecodedSpanEvent]
   status : DecodedStatus
+  dropped_attributes_count : UInt32
+  dropped_events_count : UInt32
+  dropped_links_count : UInt32
 }
 
 ///|
@@ -597,6 +604,9 @@ fn decode_span(body : Bytes) -> DecodedSpan {
   let attributes : Array[DecodedKeyValue] = []
   let events : Array[DecodedSpanEvent] = []
   let mut status = decoded_status_default()
+  let mut dropped_attributes_count = 0U
+  let mut dropped_events_count = 0U
+  let mut dropped_links_count = 0U
   try {
     for ;; {
       let (field, wire_type) = reader |> @protobuf.read_tag()
@@ -639,6 +649,24 @@ fn decode_span(body : Bytes) -> DecodedSpan {
             decode_key_value(read_bytes_field(reader, "Span.attributes")),
           )
         }
+        10 => {
+          assert_wire_type(wire_type, 0, "Span.dropped_attributes_count")
+          dropped_attributes_count = read_uint32_field(
+            reader, "Span.dropped_attributes_count",
+          )
+        }
+        12 => {
+          assert_wire_type(wire_type, 0, "Span.dropped_events_count")
+          dropped_events_count = read_uint32_field(
+            reader, "Span.dropped_events_count",
+          )
+        }
+        14 => {
+          assert_wire_type(wire_type, 0, "Span.dropped_links_count")
+          dropped_links_count = read_uint32_field(
+            reader, "Span.dropped_links_count",
+          )
+        }
         11 => {
           assert_wire_type(wire_type, 2, "Span.events")
           events.push(
@@ -672,6 +700,9 @@ fn decode_span(body : Bytes) -> DecodedSpan {
     attributes,
     events,
     status,
+    dropped_attributes_count,
+    dropped_events_count,
+    dropped_links_count,
   }
 }
 
@@ -1049,11 +1080,15 @@ fn protobuf_test_span() -> @otlp.OtlpSpan {
             value: @otlp.StringVal("Failure"),
           },
         ],
+        dropped_attributes_count: 0,
       },
     ],
     links: [],
     status_code: 2,
     status_message: "boom",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
 }
 
@@ -1070,6 +1105,7 @@ fn protobuf_test_log_record() -> @otlp.OtlpLogRecord {
       @otlp.OtlpAttribute::{ key: "log.attr", value: @otlp.StringVal("value"), },
       @otlp.OtlpAttribute::{ key: "log.ok", value: @otlp.BoolVal(true), },
     ],
+    dropped_attributes_count: 0,
   }
 }
 
@@ -1277,6 +1313,9 @@ test "protobuf encoder reports invalid id errors" {
     links: [],
     status_code: 2,
     status_message: "boom",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
   match @transport.protobuf_encoder().encode_spans([span]) {
     Ok(_) => abort("invalid protobuf span id should fail")
@@ -1298,4 +1337,27 @@ test "protobuf encoding errors have manual show text" {
     "\{@transport.ProtobufEncodeFailed(@transport.Logs, "bad wire")}",
     "protobuf OTLP logs encoding failed: bad wire",
   )
+}
+
+///|
+test "protobuf encodes span dropped counts" {
+  let span = {
+    ..protobuf_test_span(),
+    dropped_attributes_count: 2,
+    dropped_events_count: 3,
+    dropped_links_count: 4,
+  }
+  let payload = unwrap_payload(
+    @transport.protobuf_encoder().encode_spans([span]),
+  )
+  let decoded = decode_trace_request(payload.body).resource_spans[0].scope_spans[0].spans[0]
+  assert_eq(decoded.dropped_attributes_count, 2U)
+  assert_eq(decoded.dropped_events_count, 3U)
+  assert_eq(decoded.dropped_links_count, 4U)
+  let plain = decode_trace_request(
+      unwrap_payload(
+        @transport.protobuf_encoder().encode_spans([protobuf_test_span()]),
+      ).body,
+    ).resource_spans[0].scope_spans[0].spans[0]
+  assert_eq(plain.dropped_attributes_count, 0U)
 }

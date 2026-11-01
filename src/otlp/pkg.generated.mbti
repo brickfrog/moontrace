@@ -9,7 +9,7 @@ import {
 // Values
 pub fn default_resource(service_name? : String, service_version? : String, attributes? : Array[OtlpAttribute]) -> Resource
 
-pub fn event_to_log_record(@moontrace.Event) -> OtlpLogRecord
+pub fn event_to_log_record(@moontrace.Event, limits? : OtlpLimits) -> OtlpLogRecord
 
 pub fn exporter(log_output? : (String) -> Unit, span_output? : (String) -> Unit, capacity? : Int32, resource? : Resource, scope? : InstrumentationScope) -> OtlpExporter
 
@@ -21,13 +21,15 @@ pub fn level_to_severity(@moontrace.Level) -> Int32
 
 pub fn otel_config_from_env() -> OtelConfig
 
+pub fn otlp_limits(attribute_count? : Int32, attribute_value_length? : Int32, event_count? : Int32, link_count? : Int32) -> OtlpLimits
+
 pub fn parse_otel_config((String) -> String?) -> OtelConfig
 
 pub fn resource(service_name? : String, service_version? : String, attributes? : Array[OtlpAttribute]) -> Resource
 
 pub let sdk_version : String
 
-pub fn span_to_otlp(@moontrace.Span) -> OtlpSpan
+pub fn span_to_otlp(@moontrace.Span, limits? : OtlpLimits) -> OtlpSpan
 
 pub fn wrap_log_records(Array[OtlpLogRecord], resource? : Resource, scope? : InstrumentationScope) -> Json
 
@@ -87,11 +89,19 @@ pub fn OtlpExporter::shutdown(Self) -> Unit
 pub fn OtlpExporter::span_observer(Self) -> @moontrace.SpanLifecycleObserver
 pub fn OtlpExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
+pub(all) struct OtlpLimits {
+  attribute_count : Int32
+  attribute_value_length : Int32?
+  event_count : Int32
+  link_count : Int32
+}
+
 pub(all) struct OtlpLink {
   trace_id : String
   span_id : String
   trace_state : String
   attributes : Array[OtlpAttribute]
+  dropped_attributes_count : Int32
 } derive(@debug.Debug)
 pub fn OtlpLink::to_json(Self) -> Json
 
@@ -103,6 +113,7 @@ pub(all) struct OtlpLogRecord {
   attributes : Array[OtlpAttribute]
   trace_id : String
   span_id : String
+  dropped_attributes_count : Int32
 } derive(@debug.Debug)
 pub fn OtlpLogRecord::to_json(Self) -> Json
 
@@ -120,6 +131,9 @@ pub(all) struct OtlpSpan {
   links : Array[OtlpLink]
   status_code : Int32
   status_message : String
+  dropped_attributes_count : Int32
+  dropped_events_count : Int32
+  dropped_links_count : Int32
 } derive(@debug.Debug)
 pub fn OtlpSpan::to_json(Self) -> Json
 
@@ -127,6 +141,7 @@ pub(all) struct OtlpSpanEvent {
   time_unix_nano : UInt64
   name : String
   attributes : Array[OtlpAttribute]
+  dropped_attributes_count : Int32
 } derive(@debug.Debug)
 pub fn OtlpSpanEvent::to_json(Self) -> Json
 
