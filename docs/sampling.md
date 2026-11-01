@@ -161,6 +161,42 @@ let limited = @moontrace.rate_limiter(sampled.subscriber(), 500, 1_000_000_000UL
 ]))
 ```
 
-Tail sampling is intentionally deferred. It needs a buffered trace store so the
-decision can be made after a trace completes; these layers only make immediate
-event or head-trace decisions.
+## Tail Sampling
+
+Head sampling decides when a trace starts. Tail sampling waits until the trace
+has finished, so it can keep exactly the traces that turned out to matter, as
+Honeycomb Refinery and the OpenTelemetry collector's tail sampler do:
+
+```moonbit
+let exporter = @otlp.exporter(span_output=fn(_json) { () })
+let tail = @moontrace.tail_sampler(
+  exporter.span_observer(),
+  policy=@moontrace.tail_policy(min_duration_ms=500UL, ratio=0.01),
+)
+@moontrace.set_span_observer(tail.observer())
+@moontrace.set_subscriber(tail.subscriber(@json.subscriber()))
+// At shutdown:
+tail.flush()
+```
+
+The sampler buffers each trace's completed spans until every span of the trace
+created in this process has closed, then calls the policy with a
+`TraceSummary` (the spans, whether any errored, the longest duration, and
+whether the decision was forced). Kept traces reach the inner observer as
+completed spans, through `on_closed` only, which suits exporters built on
+`completed_span_observer`. Events carrying a pending trace's `trace_id` are
+held and forwarded only if it is kept. Events for recently dropped traces are
+discarded, and events without a trace pass straight through.
+
+`tail_policy(keep_errors?, min_duration_ms?, ratio?)` keeps errors by default,
+optionally slow traces, and a deterministic ratio of the rest; any
+`(TraceSummary) -> Bool` works as a policy.
+
+Memory is bounded. Past `max_traces` pending traces, the oldest is decided
+early. A trace is decided early when it reaches `max_spans_per_trace` completed
+spans or `max_events_per_trace` held events (both default 1000), and
+traces pending longer than `trace_timeout_ms` (default 30s), such as ones with
+spans that never close, are decided on the next callback. These early
+decisions set `TraceSummary.forced`; `kept()`, `dropped()`, `forced()`, and
+`pending()` report totals. Combine tail sampling with head sampling to bound
+the volume reaching the buffer in the first place.

@@ -970,6 +970,8 @@ Unsampled spans keep their IDs and propagate the cleared sampled flag through `t
 
 Deny-list policies also apply to keys inside JSON object and array field values at any depth, so `{"request": {"headers": {"authorization_token": ...}}}` is redacted too. An `allow` list applies only to top-level field names: an allowed field is passed through whole, and every other field is transformed. Redaction applies to events passing through the wrapped subscriber; span fields reach span observers and OTLP span export without it.
 
+`tail_sampler(observer, policy=tail_policy(...))` buffers whole traces and keeps them only if they errored, ran slowly, or match a custom policy.
+
 See [docs/sampling.md](docs/sampling.md) for the sampling model.
 
 ### Span Metrics
