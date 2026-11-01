@@ -725,8 +725,10 @@ async fn FileSubscriber::rotate_if_period_ended(self : FileSubscriber) -> Unit {
 }
 
 ///|
-/// Move the active file to the first free `path.<stamp>[.n]` name for the
-/// period starting at `start_ms`, gzip it if configured, and prune archives.
+/// Move the active file to `path.<stamp>` for the period starting at
+/// `start_ms`, or to `path.<stamp>.<n>` with `n` above every existing sequence
+/// for that period, so names freed by retention are never reused. Then gzip it
+/// if configured and prune archives.
 #cfg(target="native")
 async fn FileSubscriber::archive_dated(
   self : FileSubscriber,
@@ -739,11 +741,20 @@ async fn FileSubscriber::archive_dated(
     return
   }
   let base = self.config.path + "." + period_stamp(period, start_ms)
-  let mut sequence = 0
-  let mut raw = base
-  while @fs.exists(raw) || @fs.exists(raw + ".gz") {
-    sequence += 1
-    raw = base + "." + sequence.to_string()
+  let (dir, name) = split_dir(self.config.path)
+  let mut highest : Int64? = None
+  for entry in @fs.readdir(dir) {
+    if parse_dated_archive(name, period, entry) is Some(archive) &&
+      archive.start_ms == start_ms {
+      highest = match highest {
+        Some(seen) if seen >= archive.sequence => Some(seen)
+        _ => Some(archive.sequence)
+      }
+    }
+  }
+  let raw = match highest {
+    None => base
+    Some(seen) => base + "." + (seen + 1L).to_string()
   }
   @fs.rename(self.config.path, raw, replace=false)
   if self.config.gzip {

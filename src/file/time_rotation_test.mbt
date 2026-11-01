@@ -166,3 +166,28 @@ async test "a quiet period does not rotate until the next write" {
     })
   })
 }
+
+///|
+#cfg(target="native")
+async test "retention within one period keeps the newest archives" {
+  @async.with_timeout(1000, () => {
+    with_temp_log(path => {
+      let subscriber = @file.file_subscriber(
+        path,
+        rotate_every=Daily,
+        max_size_bytes=1,
+        max_files=1,
+        max_batch=1,
+        clock=() => DAY0,
+      )
+      let sink = subscriber.subscriber()
+      for i in 0..<5 {
+        sink(test_event("e\{i}"))
+      }
+      subscriber.flush()
+      // Each write rotates; with one archive kept, it must be the newest.
+      assert_eq(log_dir_entries(path), ["events.log", "events.log.2026-03-28.4"])
+      assert_eq(@fs.read_file(path + ".2026-03-28.4").text(), event_line("e4"))
+    })
+  })
+}
