@@ -219,7 +219,11 @@ test "parse_protobuf_export_response handles empty, unknown, and malformed bodie
       Some({ rejected_spans: 0L, rejected_log_records: 1L, error_message: "", }),
     ),
   )
-  for bad in [b"\x0a\x05\x08", b"\x0a", b"\x08\x80", b"\x0f"] {
+  for
+    bad in [
+      b"\x0a\x05\x08", b"\x0a", b"\x08\x80", b"\x0f", b"\x0a\x01\x12\x01", b"\x0a\x02\x12\x05",
+      b"\x0a\x01\x08\x01", b"\x0a\x03\x1a\x05\x00",
+    ] {
     assert_true(
       @transport.parse_protobuf_export_response(bad, Traces) is Err(_),
     )
