@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `OTEL_*` environment configuration: `@otlp.parse_otel_config(lookup)` and `otel_config_from_env()` read service name, resource attributes, endpoints (with per-signal semantics), headers, timeout, protocol, compression, sampler, batch settings, and `OTEL_SDK_DISABLED` into an `OtelConfig`, ignoring invalid values with warnings. `OtelConfig::resource()` and `OtelConfig::span_sampler()` apply them, and `@transport.transport_from_otel_config` and `managed_exporter_from_otel_config` build the exporter; a disabled SDK makes that exporter accept nothing (#94).
+- `managed_json_exporter(max_queue_records?)` caps the records held in queued and in-flight batches (#94).
+- `@otlp.default_resource()` adds `service.name` (default `unknown_service`) and `telemetry.sdk.{name,language,version}`; `Resource::merge` layers resources (#94).
+
 - Console output options: `pretty=true` writes fields on indented lines for local development, and `format=fn(event) { ... }` replaces the layout entirely. Both are accepted by `@console.subscriber`, `@console.initialize`, and (for `pretty`) `@console.initialize_from_env`. `@moontrace.format_event_pretty` exposes the pretty layout (#98).
 - `@console.span_observer(min_duration_ms?)` prints one line per completed span with its duration, status, and fields; `@moontrace.format_span_close` exposes the layout (#98).
 

@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn default_resource(service_name? : String, service_version? : String, attributes? : Array[OtlpAttribute]) -> Resource
+
 pub fn event_to_log_record(@moontrace.Event) -> OtlpLogRecord
 
 pub fn exporter(log_output? : (String) -> Unit, span_output? : (String) -> Unit, capacity? : Int32, resource? : Resource, scope? : InstrumentationScope) -> OtlpExporter
@@ -17,7 +19,13 @@ pub fn instrumentation_scope(name? : String, version? : String, attributes? : Ar
 
 pub fn level_to_severity(@moontrace.Level) -> Int32
 
+pub fn otel_config_from_env() -> OtelConfig
+
+pub fn parse_otel_config((String) -> String?) -> OtelConfig
+
 pub fn resource(service_name? : String, service_version? : String, attributes? : Array[OtlpAttribute]) -> Resource
+
+pub let sdk_version : String
 
 pub fn span_to_otlp(@moontrace.Span) -> OtlpSpan
 
@@ -34,6 +42,26 @@ pub(all) struct InstrumentationScope {
   attributes : Array[OtlpAttribute]
 } derive(@debug.Debug)
 pub fn InstrumentationScope::to_json(Self) -> Json
+
+pub(all) struct OtelConfig {
+  disabled : Bool
+  service_name : String?
+  resource_attributes : Array[OtlpAttribute]
+  traces_endpoint : String
+  logs_endpoint : String
+  headers : Map[String, String]
+  timeout_ms : Int32
+  protocol : String
+  compression : String
+  sampler : String
+  sampler_ratio : Double
+  batch_delay_ms : Int32
+  max_queue_size : Int32
+  max_export_batch_size : Int32
+  warnings : Array[String]
+}
+pub fn OtelConfig::resource(Self, extra? : Resource) -> Resource
+pub fn OtelConfig::span_sampler(Self) -> @moontrace.SpanSampler
 
 pub(all) struct OtlpAttribute {
   key : String
@@ -115,6 +143,7 @@ pub fn OtlpValue::to_json(Self) -> Json
 pub(all) struct Resource {
   attributes : Array[OtlpAttribute]
 } derive(@debug.Debug)
+pub fn Resource::merge(Self, Self) -> Self
 pub fn Resource::to_json(Self) -> Json
 
 // Type aliases

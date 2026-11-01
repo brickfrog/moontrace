@@ -22,6 +22,7 @@ priv struct ManagedBatch {
   logs : Bool
   payload : String
   bytes : Int32
+  records : Int32
 }
 
 ///|
@@ -30,6 +31,8 @@ priv struct ManagedState {
   capacity : Int32
   max_pending_bytes : Int32
   max_payload_bytes : Int32
+  max_pending_records : Int32?
+  mut pending_records : Int32
   mut log_bytes : Int32
   mut span_bytes : Int32
   mut log_count : Int32
@@ -62,6 +65,7 @@ pub struct ManagedJsonExporter {
   priv interval_ms : Int32
   priv log_overhead : Int32
   priv span_overhead : Int32
+  priv disabled : Bool
 }
 
 ///|
@@ -82,7 +86,9 @@ fn managed_bytes(value : String) -> Int32 {
 /// Bounds cover serialized queued/in-flight payloads plus one partial batch per
 /// signal, each capped by max_payload_bytes. Serialization uses transient memory.
 /// Nonpositive settings clamp to one; max_payload_bytes also clamps to the total
-/// pending-byte budget. No tasks are started by construction or logging.
+/// pending-byte budget. `max_queue_records`, when given, also caps the records
+/// held in queued and in-flight batches; a batch that would exceed it is
+/// dropped. No tasks are started by construction or logging.
 pub fn managed_json_exporter(
   transport : OtlpHttpTransport,
   batch_size~ : Int32 = 64,
@@ -92,6 +98,7 @@ pub fn managed_json_exporter(
   flush_interval_ms~ : Int32 = 1000,
   resource~ : @otlp.Resource = @otlp.resource(),
   scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
+  max_queue_records? : Int32,
 ) -> ManagedJsonExporter {
   let capacity = managed_positive(queue_capacity)
   let budget = managed_positive(max_pending_bytes)
@@ -105,6 +112,8 @@ pub fn managed_json_exporter(
     } else {
       payload_limit
     },
+    max_pending_records: max_queue_records.map(managed_positive),
+    pending_records: 0,
     log_bytes: 0,
     span_bytes: 0,
     log_count: 0,
@@ -145,6 +154,7 @@ pub fn managed_json_exporter(
     span_overhead: managed_bytes(
       @otlp.wrap_spans([], resource=batcher.resource, scope=batcher.scope).stringify(),
     ),
+    disabled: false,
   }
 }
 
@@ -165,19 +175,24 @@ fn ManagedState::offer(
   let bytes = managed_bytes(payload)
   if self.closed ||
     self.pending_batches >= self.capacity ||
+    (
+      self.max_pending_records is Some(limit) &&
+      records > limit - self.pending_records
+    ) ||
     bytes > self.max_payload_bytes ||
     bytes > self.max_pending_bytes - self.pending_bytes {
     self.dropped += 1L
     self.dropped_records += records.to_int64()
     return
   }
-  let accepted = self.queue.try_put({ logs, payload, bytes, }) catch {
+  let accepted = self.queue.try_put({ logs, payload, bytes, records, }) catch {
     _ => false
   }
   if accepted {
     self.enqueued += 1L
     self.pending_batches += 1
     self.pending_bytes += bytes
+    self.pending_records += records
   } else {
     self.dropped += 1L
     self.dropped_records += records.to_int64()
@@ -190,6 +205,9 @@ pub fn ManagedJsonExporter::subscriber(
 ) -> (@moontrace.Event) -> Unit {
   event => {
     let state = self.state
+    if self.disabled {
+      return
+    }
     if state.closing {
       state.dropped_records += 1L
       return
@@ -220,6 +238,9 @@ pub fn ManagedJsonExporter::span_observer(
 ) -> @moontrace.SpanLifecycleObserver {
   @moontrace.completed_span_observer(span => {
     let state = self.state
+    if self.disabled {
+      return
+    }
     if state.closing {
       state.dropped_records += 1L
       return
@@ -286,6 +307,7 @@ async fn ManagedJsonExporter::send(
   defer {
     state.pending_batches -= 1
     state.pending_bytes -= batch.bytes
+    state.pending_records -= batch.records
     state.completed += 1L
     if !settled {
       state.failed += 1L

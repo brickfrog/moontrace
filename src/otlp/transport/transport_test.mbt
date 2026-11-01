@@ -474,3 +474,37 @@ async test "empty success and malformed success responses are terminal" {
     assert_eq(client.calls.length(), 1)
   }
 }
+
+///|
+async test "transport_from_otel_config uses resolved signal URLs and headers" {
+  let config = @otlp.parse_otel_config(name => {
+    let vars : Map[String, String] = {
+      "OTEL_EXPORTER_OTLP_ENDPOINT": "http://collector:4318",
+      "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT": "http://logs.example/ingest",
+      "OTEL_EXPORTER_OTLP_HEADERS": "api-key=secret",
+    }
+    vars.get(name)
+  })
+  let client = fake_client([
+    FakeResponse(response(200)),
+    FakeResponse(response(200)),
+  ])
+  let tx = @transport.transport_from_otel_config(client, config)
+  ignore(
+    unwrap_outcome(
+      @async.with_timeout(1000, () => tx.export_spans([test_span("work")])),
+    ),
+  )
+  ignore(
+    unwrap_outcome(
+      @async.with_timeout(1000, () => tx.export_logs([test_log_record("hello")])),
+    ),
+  )
+  assert_eq(client.calls[0].url, "http://collector:4318/v1/traces")
+  assert_eq(client.calls[1].url, "http://logs.example/ingest")
+  assert_eq(client.calls[0].headers.get("api-key"), Some("secret"))
+  assert_eq(
+    client.calls[0].headers.get("Content-Type"),
+    Some("application/json"),
+  )
+}
