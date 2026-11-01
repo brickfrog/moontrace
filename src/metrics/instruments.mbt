@@ -164,6 +164,26 @@ pub fn Meter::histogram(
 }
 
 ///|
+/// Recursively copy JSON containers so stored series and snapshots never share
+/// mutable data with callers.
+fn copy_json(value : Json) -> Json {
+  match value {
+    Object(fields) => {
+      let copied : Map[String, Json] = Map([])
+      fields.each((key, inner) => copied.set(key, copy_json(inner)))
+      Json(copied)
+    }
+    Array(items) => Json(items.map(copy_json))
+    other => other
+  }
+}
+
+///|
+fn copy_fields(fields : Array[@moontrace.Field]) -> Array[@moontrace.Field] {
+  fields.map(field => { key: field.key, value: copy_json(field.value), })
+}
+
+///|
 /// A stable key for an attribute set: sorted `key=json` pairs, last value per
 /// key winning.
 fn attribute_set(
@@ -193,7 +213,7 @@ fn InstrumentState::point(
     Some(point) => point
     None => {
       let point : PointState = {
-        attributes: normalized,
+        attributes: copy_fields(normalized),
         value: 0.0,
         count: 0L,
         min: 0.0,
@@ -280,7 +300,7 @@ pub fn Meter::collect(self : Meter) -> Array[MetricData] {
     let points = ids.map(id => {
       let point = state.points.get(id).unwrap()
       MetricPoint::{
-        attributes: point.attributes.copy(),
+        attributes: copy_fields(point.attributes),
         value: point.value,
         count: point.count,
         min: point.min,

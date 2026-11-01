@@ -92,3 +92,23 @@ test "to_otlp_json builds an ExportMetricsServiceRequest" {
     "{\"resourceMetrics\":[{\"resource\":{\"attributes\":[{\"key\":\"service.name\",\"value\":{\"stringValue\":\"api\"}}]},\"scopeMetrics\":[{\"scope\":{\"name\":\"svc\",\"version\":\"1.0\",\"attributes\":[]},\"metrics\":[{\"name\":\"reqs\",\"unit\":\"1\",\"sum\":{\"dataPoints\":[{\"attributes\":[{\"key\":\"ok\",\"value\":{\"boolValue\":true}}],\"startTimeUnixNano\":\"2000000\",\"timeUnixNano\":\"2000000\",\"asDouble\":3}],\"aggregationTemporality\":2,\"isMonotonic\":true}},{\"name\":\"active\",\"sum\":{\"dataPoints\":[{\"attributes\":[],\"startTimeUnixNano\":\"2000000\",\"timeUnixNano\":\"2000000\",\"asDouble\":-1}],\"aggregationTemporality\":2,\"isMonotonic\":false}},{\"name\":\"lat\",\"histogram\":{\"dataPoints\":[{\"attributes\":[],\"startTimeUnixNano\":\"2000000\",\"timeUnixNano\":\"2000000\",\"count\":\"1\",\"sum\":4,\"bucketCounts\":[\"1\",\"0\"],\"explicitBounds\":[10],\"min\":4,\"max\":4}],\"aggregationTemporality\":2}}]}]}]}",
   )
 }
+
+///|
+test "series attributes are isolated from callers and snapshots" {
+  let m = @metrics.meter(clock=() => 0UL)
+  let c = m.counter("c")
+  let tags : Json = ["a"]
+  c.add(1.0, attributes=[@moontrace.field("tags", tags)])
+  if tags is Array(items) {
+    items.push(Json("caller-mutated"))
+  }
+  let first = m.collect()
+  if first[0].points[0].attributes[0].value is Array(items) {
+    items.push(Json("snapshot-mutated"))
+  }
+  let second = m.collect()
+  assert_eq(second[0].points[0].attributes[0].value, Json(["a"]))
+  c.add(1.0, attributes=[@moontrace.field("tags", ["a"])])
+  assert_eq(m.collect()[0].points.length(), 1)
+  assert_eq(m.collect()[0].points[0].value, 2.0)
+}
