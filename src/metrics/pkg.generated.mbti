@@ -3,16 +3,66 @@ package "brickfrog/moontrace/metrics"
 
 import {
   "brickfrog/moontrace",
+  "brickfrog/moontrace/otlp",
 }
 
 // Values
 pub let default_duration_buckets_ms : Array[UInt64]
+
+pub let default_histogram_bounds : Array[Double]
+
+pub fn meter(name? : String, version? : String, clock? : () -> UInt64) -> Meter
 
 pub fn span_metrics(buckets_ms? : Array[UInt64]) -> SpanMetrics
 
 // Errors
 
 // Types and methods
+pub struct Counter {
+  // private fields
+}
+pub fn Counter::add(Self, Double, attributes? : Array[@moontrace.Field]) -> Unit
+
+pub struct Histogram {
+  // private fields
+}
+pub fn Histogram::record(Self, Double, attributes? : Array[@moontrace.Field]) -> Unit
+
+pub struct Meter {
+  // private fields
+}
+pub fn Meter::collect(Self) -> Array[MetricData]
+pub fn Meter::counter(Self, String, description? : String, unit? : String) -> Counter
+pub fn Meter::histogram(Self, String, description? : String, unit? : String, bounds? : Array[Double]) -> Histogram
+pub fn Meter::to_otlp_json(Self, resource? : @otlp.Resource) -> Json
+pub fn Meter::up_down_counter(Self, String, description? : String, unit? : String) -> UpDownCounter
+
+pub(all) struct MetricData {
+  name : String
+  description : String
+  unit : String
+  kind : MetricKind
+  bucket_bounds : Array[Double]
+  points : Array[MetricPoint]
+  start_time_ms : UInt64
+  time_ms : UInt64
+}
+
+pub(all) enum MetricKind {
+  MonotonicSum
+  NonMonotonicSum
+  ExplicitHistogram
+}
+
+pub(all) struct MetricPoint {
+  attributes : Array[@moontrace.Field]
+  value : Double
+  count : Int64
+  min : Double
+  max : Double
+  bucket_counts : Array[Int64]
+}
+
 pub struct SpanMetrics {
   // private fields
 }
@@ -33,6 +83,11 @@ pub(all) struct SpanSeriesSnapshot {
   bucket_counts : Array[Int64]
 }
 pub fn SpanSeriesSnapshot::to_json(Self) -> Json
+
+pub struct UpDownCounter {
+  // private fields
+}
+pub fn UpDownCounter::add(Self, Double, attributes? : Array[@moontrace.Field]) -> Unit
 
 // Type aliases
 

@@ -997,6 +997,32 @@ Event filters don't otherwise apply, so spans without a level are always
 counted even when their `span.enter`/`span.exit` events are filtered. Combine
 with exporters through `compose_span_observers`.
 
+### Metric Instruments
+
+For explicit metrics, create instruments from a meter and export them as OTLP:
+
+```moonbit
+let meter = @metrics.meter(name="checkout", version="1.2.3")
+let requests = meter.counter("http.server.requests", unit="1")
+let in_flight = meter.up_down_counter("http.server.active_requests")
+let latency = meter.histogram("http.server.duration", unit="ms")
+
+in_flight.add(1.0)
+requests.add(1.0, attributes=[@moontrace.field("http.route", "/cart")])
+latency.record(42.0, attributes=[@moontrace.field("http.route", "/cart")])
+in_flight.add(-1.0)
+
+// Periodically, e.g. from a timer task:
+let payload = meter.to_otlp_json(resource=@otlp.resource(service_name="checkout"))
+// tx.export_json("http://collector:4318/v1/metrics", payload.stringify())
+```
+
+Each distinct attribute set (order-insensitive) is a separate series.
+Aggregation is cumulative from the meter's creation. Counters ignore negative
+values. Histograms use OpenTelemetry's default bounds unless `bounds=` is
+given, and track count, sum, min, and max. `collect()` returns the same data as
+`MetricData` values.
+
 ### Telemetry Events
 
 `brickfrog/moontrace/telemetry` lets libraries publish measurements without
