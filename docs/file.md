@@ -31,10 +31,41 @@ let files = @file.file_subscriber(
 })
 ```
 
-Rotation is size-based. When the active file crosses `max_size_bytes`, it is
-renamed to `path.1`, older rotated files are shifted up, and files beyond
-`max_files` are removed. With `gzip=true`, rotated files are written as
-`path.N.gz` and the temporary uncompressed rotation is removed.
+By default rotation is size-based. When the active file crosses
+`max_size_bytes`, it is renamed to `path.1`, older rotated files are shifted
+up, and files beyond `max_files` are removed. With `gzip=true`, rotated files
+are written as `path.N.gz` and the temporary uncompressed rotation is removed.
+
+## Time-based rotation
+
+`rotate_every=Daily` or `rotate_every=Hourly` archives the active file when a
+UTC day or hour ends, like tracing-appender's `rolling::daily`:
+
+```moonbit
+let files = @file.file_subscriber(
+  "logs/app.jsonl",
+  rotate_every=Daily,
+  max_age_ms=7UL * 24UL * 60UL * 60UL * 1000UL,
+  max_files=30,
+  gzip=true,
+)
+```
+
+Archives are named for the period they cover: `app.jsonl.2026-03-28` for daily
+rotation and `app.jsonl.2026-03-28T14` for hourly rotation, plus `.gz` with
+`gzip=true`. Reaching `max_size_bytes` inside a period also archives the file,
+as `app.jsonl.2026-03-28.1`, `.2`, and so on. The check runs when a batch is
+written, so a quiet period rotates on the next write and the archive keeps the
+stamp of the period the file covered. A subscriber that starts with an
+existing active file treats it as part of the current period.
+
+Retention applies to dated archives next to the active file. Archives whose
+period started more than `max_age_ms` ago are deleted, and only the newest
+`max_files` are kept. Files that don't match the `path.<stamp>[.n][.gz]`
+pattern are never touched.
+
+`file_subscriber(clock=...)` and `FileSubscriber::new(config, clock=...)`
+accept a millisecond clock so tests can move time deterministically.
 
 On Unix, every active or gzip file newly created by the subscriber requests
 mode `0600` (owner read/write only). The process umask may make that mode more

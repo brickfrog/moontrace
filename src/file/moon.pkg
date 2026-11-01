@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/env",
   "brickfrog/moontrace",
   "moonbitlang/async",
   "moonbitlang/async/aqueue",
