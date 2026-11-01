@@ -35,6 +35,10 @@ pub(all) struct OtelConfig {
   max_queue_size : Int32
   /// `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` (default 512).
   max_export_batch_size : Int32
+  /// `OTEL_METRIC_EXPORT_INTERVAL` in milliseconds (default 60000).
+  metric_export_interval_ms : Int32
+  /// `OTEL_METRIC_EXPORT_TIMEOUT` in milliseconds (default 30000).
+  metric_export_timeout_ms : Int32
   /// Messages for values that were ignored.
   warnings : Array[String]
 }
@@ -209,6 +213,12 @@ pub fn parse_otel_config(lookup : (String) -> String?) -> OtelConfig {
     max_queue_size: non_negative_int("OTEL_BSP_MAX_QUEUE_SIZE", 2048),
     max_export_batch_size: non_negative_int(
       "OTEL_BSP_MAX_EXPORT_BATCH_SIZE", 512,
+    ),
+    metric_export_interval_ms: non_negative_int(
+      "OTEL_METRIC_EXPORT_INTERVAL", 60000,
+    ),
+    metric_export_timeout_ms: non_negative_int(
+      "OTEL_METRIC_EXPORT_TIMEOUT", 30000,
     ),
     warnings,
   }

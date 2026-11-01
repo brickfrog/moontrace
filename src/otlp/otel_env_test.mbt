@@ -32,6 +32,8 @@ test "OTEL defaults follow the specification" {
   assert_eq(config.batch_delay_ms, 5000)
   assert_eq(config.max_queue_size, 2048)
   assert_eq(config.max_export_batch_size, 512)
+  assert_eq(config.metric_export_interval_ms, 60000)
+  assert_eq(config.metric_export_timeout_ms, 30000)
   assert_eq(config.warnings, [])
 }
 
@@ -133,13 +135,17 @@ test "numeric settings reject invalid values with warnings" {
     "OTEL_BSP_MAX_QUEUE_SIZE": "lots",
     "OTEL_BSP_MAX_EXPORT_BATCH_SIZE": "128",
     "OTEL_TRACES_SAMPLER_ARG": "1.5",
+    "OTEL_METRIC_EXPORT_INTERVAL": "15000",
+    "OTEL_METRIC_EXPORT_TIMEOUT": "soon",
   })
+  assert_eq(config.metric_export_interval_ms, 15000)
+  assert_eq(config.metric_export_timeout_ms, 30000)
   assert_eq(config.timeout_ms, 2500)
   assert_eq(config.batch_delay_ms, 5000)
   assert_eq(config.max_queue_size, 2048)
   assert_eq(config.max_export_batch_size, 128)
   assert_eq(config.sampler_ratio, 1.0)
-  assert_eq(config.warnings.length(), 3)
+  assert_eq(config.warnings.length(), 4)
 }
 
 ///|

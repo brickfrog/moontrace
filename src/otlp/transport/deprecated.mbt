@@ -158,3 +158,13 @@ pub extend ExportOutcome with Compare::{compare, op_ge, op_gt, op_le, op_lt}
 #deprecated("use `@debug.to_string` or `Debug::to_repr` instead")
 #doc(hidden)
 pub extend ExportOutcome with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `==` or `!=` instead")
+#doc(hidden)
+pub extend MetricReaderStats with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `@debug.to_string` or `Debug::to_repr` instead")
+#doc(hidden)
+pub extend MetricReaderStats with @debug.Debug::{to_repr}

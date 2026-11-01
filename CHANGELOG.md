@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Upgrade notes:
+
+- `OtelConfig` literals need `metric_export_interval_ms` and `metric_export_timeout_ms` (#135).
+
+### Added
+
+- Periodic metric export: `periodic_metric_reader(transport, meters, interval_ms?, timeout_ms?, resource?)` collects meters on a timer and exports them through the transport's encoder, with `run`, `flush`, `shutdown`, `stats`, `last_report`, and `last_error`. Each export is bounded by `timeout_ms`, meters without data points are skipped, and the transport stays open for sharing. `metric_reader_from_otel_config` applies `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT`, the configured resource, and `OTEL_SDK_DISABLED`, which `OtelConfig` now parses (#135).
+
 ## [0.18.0] - 2026-11-01
 
 ### Added
