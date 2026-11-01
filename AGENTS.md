@@ -19,6 +19,8 @@ request and async context explicit.
 - `src/span_async/` provides async span wrappers; `src/flame/` observes completed
   spans; `src/file/` provides the native buffered file subscriber; `src/queue/`
   provides a generic bounded async queue in front of slow sinks.
+- `src/telemetry/` provides named instrumentation events with attachable
+  handlers.
 - `src/metrics/` derives span RED metrics (request count, errors, duration
   histograms) from completed spans.
 - `src/semconv/` provides OpenTelemetry semantic-convention field helpers.

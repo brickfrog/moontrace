@@ -997,6 +997,32 @@ Event filters don't otherwise apply, so spans without a level are always
 counted even when their `span.enter`/`span.exit` events are filtered. Combine
 with exporters through `compose_span_observers`.
 
+### Telemetry Events
+
+`brickfrog/moontrace/telemetry` lets libraries publish measurements without
+choosing a logging or metrics policy, like Elixir's `:telemetry`. Libraries
+emit named events; applications attach handlers:
+
+```moonbit
+// In a library:
+@telemetry.execute("my_db.query", { "rows": 12.0 }, metadata={ "table": Json("users") })
+let user = @telemetry.span("my_db.transaction", () => "ok")
+
+// In the application:
+let _ = @telemetry.attach("log-queries", "my_db.query", event => {
+  @moontrace.debug("query", fields=[
+    @moontrace.field("rows", event.measurements.get("rows").unwrap_or(0.0)),
+  ])
+})
+```
+
+`span(name, f)` emits `<name>.start`, then `<name>.stop` with `duration_ms`,
+or `<name>.exception` with the error in `metadata["error"]` before re-raising.
+Handlers receive their own copies of measurements and metadata and run in
+attachment order. With nothing attached, `execute` only looks up handlers.
+`attach_many`, `detach`, `handler_ids`, and the scoped `with_handler` manage
+registration.
+
 ### Flame Export
 
 `brickfrog/moontrace/flame` observes completed spans and writes folded-stack output for flamegraph tools. It reconstructs stacks from span IDs and sums identical collapsed stacks.
