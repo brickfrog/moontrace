@@ -354,6 +354,40 @@ not repeat a key. `parse_span_context` preserves a valid `traceparent` while
 dropping malformed, oversized, or duplicate-key `tracestate`, matching its
 partial-recovery behavior.
 
+#### Header maps and baggage
+
+`extract_headers` and `inject_headers` work on a `Map[String, String]` of
+HTTP headers, matching names case-insensitively. They carry W3C trace context
+and an immutable `Baggage` value, passed explicitly like `SpanContext`:
+
+```moonbit
+fn handle(incoming : Map[String, String]) -> Map[String, String] {
+  let (remote, baggage) = @moontrace.extract_headers(incoming)
+  let server = match remote {
+    Some(ctx) => @moontrace.span_from_remote_context(ctx, "handle_request")
+    None => @moontrace.span("handle_request", kind=@moontrace.Server)
+  }
+  let user = baggage.get("user.id")
+  let outgoing : Map[String, String] = Map([])
+  let _ = @moontrace.inject_span_headers(
+    outgoing,
+    server,
+    baggage=baggage.set("tenant", "acme"),
+  )
+  ignore(user)
+  outgoing
+}
+```
+
+`extract_headers` never raises: a missing or invalid trace header gives `None`,
+and `parse_baggage` skips malformed members. Baggage values are percent-encoded
+on the wire, member properties (`;ttl=30`) are preserved, and at most 64
+members and 8192 bytes are kept or written, the minimums W3C requires. Pass
+`format=B3Single` or `format=B3Multi` to inject Zipkin B3 headers instead of
+`traceparent`; `extract_headers` falls back to `b3` and then `X-B3-*` headers
+when `traceparent` is absent. A B3 context without a sampling decision is
+treated as not sampled.
+
 ### Span Links
 
 Parent/child spans model ownership. Links model causal edges that should not change the parent relationship, such as retries, queued work, or fan-in.
