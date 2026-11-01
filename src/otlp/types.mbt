@@ -8,6 +8,8 @@ pub(all) enum OtlpValue {
   DoubleVal(Double)
   ArrayVal(Array[OtlpValue])
   KvlistVal(Array[OtlpAttribute])
+  /// An `AnyValue` with no value set, OTLP's representation of null.
+  EmptyVal
 } derive(Debug)
 
 ///|
@@ -154,6 +156,10 @@ pub fn OtlpValue::to_json(self : OtlpValue) -> Json {
       inner.set("values", Json(entries.map(a => a.to_json())))
       let m : Map[String, Json] = Map([])
       m.set("kvlistValue", Json(inner))
+      Json(m)
+    }
+    EmptyVal => {
+      let m : Map[String, Json] = Map([])
       Json(m)
     }
   }

@@ -1361,3 +1361,38 @@ test "protobuf encodes span dropped counts" {
     ).resource_spans[0].scope_spans[0].spans[0]
   assert_eq(plain.dropped_attributes_count, 0U)
 }
+
+///|
+fn assert_empty_value(value : DecodedAnyValue) -> Unit raise {
+  assert_true(value.string_value is None)
+  assert_true(value.bool_value is None)
+  assert_true(value.int_value is None)
+  assert_true(value.double_value is None)
+  assert_true(value.array_values is None)
+  assert_true(value.kvlist_values is None)
+}
+
+///|
+test "protobuf encodes null attributes as empty AnyValue messages" {
+  let record = {
+    ..protobuf_test_log_record(),
+    attributes: [
+      @otlp.field_to_attribute(@moontrace.field("none", Json::null())),
+      @otlp.field_to_attribute(
+        @moontrace.field("mixed", Json([Json::null(), Json(1)])),
+      ),
+    ],
+  }
+  let payload = unwrap_payload(
+    @transport.protobuf_encoder().encode_logs([record]),
+  )
+  let request = decode_logs_request(payload.body)
+  let attributes = request.resource_logs[0].scope_logs[0].log_records[0].attributes
+  assert_empty_value(find_attribute(attributes, "none"))
+  guard find_attribute(attributes, "mixed").array_values is Some(items) else {
+    fail("expected array value")
+  }
+  assert_eq(items.length(), 2)
+  assert_empty_value(items[0])
+  assert_eq(items[1].int_value, Some(1L))
+}

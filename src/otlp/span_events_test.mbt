@@ -18,7 +18,7 @@ test "nested field values convert to OTLP array and kvlist values" {
       #|{"key":"request","value":{"kvlistValue":{"values":[
       #|{"key":"method","value":{"stringValue":"GET"}},
       #|{"key":"ids","value":{"arrayValue":{"values":[{"intValue":"1"},{"doubleValue":2.5}]}}},
-      #|{"key":"none","value":{"stringValue":"null"}}]}}}
+      #|{"key":"none","value":{}}]}}}
     ).replace_all(old="\n", new=""),
   )
 }

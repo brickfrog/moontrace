@@ -800,3 +800,13 @@ test "otlp whole numbers outside Int64 stay doubles" {
   )
   assert_true(attr(4096.0).value is IntVal(4096L))
 }
+
+///|
+test "otlp null fields convert to an empty AnyValue" {
+  let attr = @otlp.field_to_attribute(@moontrace.Field::{
+    key: "n",
+    value: Json::null(),
+  })
+  assert_true(attr.value is EmptyVal)
+  assert_eq(attr.to_json().stringify(), "{\"key\":\"n\",\"value\":{}}")
+}
