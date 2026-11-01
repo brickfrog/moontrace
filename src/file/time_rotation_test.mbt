@@ -1,11 +1,14 @@
 ///|
 /// 2026-03-28T00:00:00Z in milliseconds.
+#cfg(target="native")
 const DAY0 : UInt64 = 1774656000000UL
 
 ///|
+#cfg(target="native")
 const DAY_MS : UInt64 = 86400000UL
 
 ///|
+#cfg(target="native")
 const HOUR_MS : UInt64 = 3600000UL
 
 ///|
