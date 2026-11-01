@@ -703,8 +703,8 @@ let exporter = @transport.managed_exporter_from_otel_config(tx, config)
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | Full per-signal URLs, used as given |
 | `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT` | Request headers and client timeout |
 | `OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG` | `config.span_sampler()` |
-| `OTEL_BSP_SCHEDULE_DELAY`, `OTEL_BSP_MAX_QUEUE_SIZE`, `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | Managed exporter flush interval, queue, and batch size |
-| `OTEL_SDK_DISABLED` | `config.disabled`; `span_sampler()` then samples nothing |
+| `OTEL_BSP_SCHEDULE_DELAY`, `OTEL_BSP_MAX_QUEUE_SIZE`, `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | Managed exporter flush interval, queued-record cap, and batch size |
+| `OTEL_SDK_DISABLED` | `config.disabled`; `span_sampler()` samples nothing and the configured exporter accepts nothing |
 
 `OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION` are parsed
 into `config.protocol` and `config.compression`, but the transport currently

@@ -390,3 +390,99 @@ test "managed nonpositive limits reject oversized records without queueing" {
   assert_eq(stats.buffered_logs, 0)
   assert_eq(stats.buffered_spans, 0)
 }
+
+///|
+async test "managed record cap counts records, not assumed full batches" {
+  let client = fake_client([
+    FakeResponse(response(200)),
+    FakeResponse(response(200)),
+    FakeResponse(response(200)),
+  ])
+  let managed = @transport.managed_json_exporter(
+    test_transport(client),
+    batch_size=2,
+    queue_capacity=10,
+    max_queue_records=3,
+  )
+  let emit = managed.subscriber()
+  // A full two-record batch, then a one-record partial batch fits exactly.
+  emit(managed_event("a"))
+  emit(managed_event("b"))
+  emit(managed_event("c"))
+  ignore(managed.flush())
+  assert_eq(managed.stats().delivered_batches, 2L)
+  assert_eq(managed.stats().dropped_records, 0L)
+  ignore(managed.shutdown())
+}
+
+///|
+test "managed record cap drops batches that would exceed it" {
+  let client = fake_client([])
+  let managed = @transport.managed_json_exporter(
+    test_transport(client),
+    batch_size=2,
+    queue_capacity=10,
+    max_queue_records=3,
+  )
+  let emit = managed.subscriber()
+  for index in 0..<6 {
+    emit(managed_event(index.to_string()))
+  }
+  // Batches of 2 records: the first fits (2 ≤ 3); the next two would exceed.
+  assert_eq(managed.stats().pending_batches, 1)
+  assert_eq(managed.stats().dropped_batches, 2L)
+  assert_eq(managed.stats().dropped_records, 4L)
+}
+
+///|
+test "OTEL BSP settings map onto the managed exporter" {
+  let config = @otlp.parse_otel_config(name => {
+    let vars : Map[String, String] = {
+      "OTEL_BSP_MAX_QUEUE_SIZE": "3",
+      "OTEL_BSP_MAX_EXPORT_BATCH_SIZE": "512",
+    }
+    vars.get(name)
+  })
+  let managed = @transport.managed_exporter_from_otel_config(
+    test_transport(fake_client([])),
+    config,
+  )
+  let emit = managed.subscriber()
+  for index in 0..<7 {
+    emit(managed_event(index.to_string()))
+  }
+  // Batch size is limited to the 3-record queue: two full batches, one fits.
+  assert_eq(managed.stats().pending_batches, 1)
+  assert_eq(managed.stats().dropped_records, 3L)
+  assert_eq(managed.stats().buffered_logs, 1)
+}
+
+///|
+async test "OTEL_SDK_DISABLED makes the configured exporter export nothing" {
+  let client = fake_client([])
+  let config = @otlp.parse_otel_config(name => {
+    if name == "OTEL_SDK_DISABLED" {
+      Some("true")
+    } else {
+      None
+    }
+  })
+  let managed = @transport.managed_exporter_from_otel_config(
+    test_transport(client),
+    config,
+  )
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_span_sampler(@moontrace.always_on_sampler())
+    @moontrace.set_span_observer(managed.span_observer())
+    managed.subscriber()(managed_event("ignored"))
+    let span = @moontrace.span("ignored")
+    span.enter()
+    span.exit()
+  })
+  let stats = managed.shutdown()
+  assert_eq(client.calls.length(), 0)
+  assert_eq(stats.enqueued_batches, 0L)
+  assert_eq(stats.dropped_records, 0L)
+  assert_eq(stats.buffered_logs, 0)
+  assert_eq(stats.buffered_spans, 0)
+}
