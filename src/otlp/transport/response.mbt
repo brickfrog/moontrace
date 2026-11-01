@@ -170,3 +170,172 @@ pub fn parse_export_response(
   }
   Ok(Some({ rejected_spans, rejected_log_records, error_message, }))
 }
+
+///|
+fn invalid_protobuf_response() -> TransportError {
+  Request("invalid OTLP protobuf export response")
+}
+
+///|
+/// Read a base-128 varint at `pos` that must end before `limit`, returning the
+/// value and next position.
+fn read_proto_varint(
+  body : Bytes,
+  pos : Int32,
+  limit : Int32,
+) -> (UInt64, Int32)? {
+  let mut value = 0UL
+  let mut shift = 0
+  let mut i = pos
+  while i < limit && shift < 64 {
+    let byte = body[i].to_uint64()
+    value = value | ((byte & 0x7FUL) << shift)
+    i += 1
+    if (byte & 0x80UL) == 0UL {
+      return Some((value, i))
+    }
+    shift += 7
+  }
+  None
+}
+
+///|
+/// Skip one field of `wire_type` at `pos` that must end by `limit`, returning
+/// the next position.
+fn skip_proto_field(
+  body : Bytes,
+  pos : Int32,
+  wire_type : Int32,
+  limit : Int32,
+) -> Int32? {
+  match wire_type {
+    0 => read_proto_varint(body, pos, limit).map(r => r.1)
+    1 => if pos + 8 <= limit { Some(pos + 8) } else { None }
+    2 => read_proto_length(body, pos, limit).map(r => r.1)
+    5 => if pos + 4 <= limit { Some(pos + 4) } else { None }
+    _ => None
+  }
+}
+
+///|
+/// Read a length prefix at `pos` and check that the delimited bytes end by
+/// `limit`. Returns the start and end of the delimited bytes.
+fn read_proto_length(
+  body : Bytes,
+  pos : Int32,
+  limit : Int32,
+) -> (Int32, Int32)? {
+  guard read_proto_varint(body, pos, limit) is Some((len, start)) &&
+    start <= limit &&
+    len <= (limit - start).to_uint64() else {
+    return None
+  }
+  Some((start, start + len.to_int()))
+}
+
+///|
+/// Parse an `Export{Trace,Logs}ServiceResponse` protobuf body. Both carry
+/// `partial_success` as field 1, a message with the rejected count (field 1,
+/// int64) and `error_message` (field 2). The count is reported as
+/// `rejected_spans` or `rejected_log_records` according to `signal`. Empty
+/// bodies give `None`; unknown fields are skipped.
+pub fn parse_protobuf_export_response(
+  body : Bytes,
+  signal : OtlpSignal,
+) -> Result[ExportPartialSuccess?, TransportError] {
+  if body.length() > 65536 {
+    return Err(invalid_protobuf_response())
+  }
+  let mut partial : ExportPartialSuccess? = None
+  let mut pos = 0
+  let limit = body.length()
+  while pos < limit {
+    guard read_proto_varint(body, pos, limit) is Some((tag, next)) else {
+      return Err(invalid_protobuf_response())
+    }
+    let field = (tag >> 3).to_int()
+    let wire_type = (tag & 7UL).to_int()
+    if field == 1 && wire_type == 2 {
+      guard read_proto_length(body, next, limit) is Some((start, end)) else {
+        return Err(invalid_protobuf_response())
+      }
+      match parse_protobuf_partial(body, start, end, signal) {
+        Some(details) => partial = Some(details)
+        None => return Err(invalid_protobuf_response())
+      }
+      pos = end
+    } else {
+      guard skip_proto_field(body, next, wire_type, limit) is Some(after) else {
+        return Err(invalid_protobuf_response())
+      }
+      pos = after
+    }
+  }
+  Ok(partial)
+}
+
+///|
+fn parse_protobuf_partial(
+  body : Bytes,
+  start : Int32,
+  end : Int32,
+  signal : OtlpSignal,
+) -> ExportPartialSuccess? {
+  let mut rejected = 0L
+  let mut message = ""
+  let mut pos = start
+  while pos < end {
+    guard read_proto_varint(body, pos, end) is Some((tag, next)) else {
+      return None
+    }
+    let field = (tag >> 3).to_int()
+    let wire_type = (tag & 7UL).to_int()
+    match (field, wire_type) {
+      (1, 0) => {
+        guard read_proto_varint(body, next, end) is Some((value, after)) else {
+          return None
+        }
+        let count = value.reinterpret_as_int64()
+        if count < 0L {
+          return None
+        }
+        rejected = count
+        pos = after
+      }
+      (2, 2) => {
+        guard read_proto_length(body, next, end) is Some((text_start, text_end)) else {
+          return None
+        }
+        message = @utf8.decode(body[text_start:text_end]) catch {
+          _ => return None
+        }
+        pos = text_end
+      }
+      _ => {
+        guard skip_proto_field(body, next, wire_type, end) is Some(after) else {
+          return None
+        }
+        pos = after
+      }
+    }
+  }
+  if pos != end {
+    return None
+  }
+  Some(
+    match signal {
+      Traces =>
+        {
+          rejected_spans: rejected,
+          rejected_log_records: 0L,
+          error_message: message,
+        }
+      Logs =>
+        {
+          rejected_spans: 0L,
+          rejected_log_records: rejected,
+          error_message: message,
+        }
+    },
+  )
+}

@@ -182,8 +182,12 @@ This bead adds the non-invasive slot:
   is not valid hex, an enum-like integer is negative, or the runtime writer
   raises an error.
 
-Future transport work can wire these pieces into the send path without
-rewriting today's JSON code:
+**Status:** the send path is wired. `OtlpHttpClient::post_bytes` carries
+binary bodies (its default forwards UTF-8 bodies to `post`, so existing
+clients keep working), `transport(encoder=ProtobufEncoder)` sends protobuf with
+`Content-Type: application/x-protobuf`, `compression=GzipCompression` adds
+`Content-Encoding: gzip`, and `parse_protobuf_export_response` reads protobuf
+partial-success replies. JSON remains the default. The original plan follows:
 
 - Add a bytes-capable HTTP client method or body variant, for example a
   separate `post_bytes(url, body : Bytes, headers)` method or a request body

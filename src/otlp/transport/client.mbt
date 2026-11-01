@@ -55,18 +55,18 @@ fn to_http_headers(
 }
 
 ///|
+/// Send one request and return the status, raw body, and Retry-After delay.
 #cfg(any(target="native", target="js"))
-pub impl OtlpHttpClient for AsyncHttpClient with fn post(
-  self,
-  url,
-  body,
-  headers,
-) {
+async fn AsyncHttpClient::send(
+  self : AsyncHttpClient,
+  url : String,
+  content : &@io.Data,
+  headers : Map[String, String],
+) -> Result[HttpBytesResponse, TransportError] {
   if self.is_shut_down {
     return Err(Request("HTTP client is shut down"))
   }
   @async.with_timeout(self.timeout_ms, () => {
-    let content : &@io.Data = body
     let client = @http.post_stream(url, headers=to_http_headers(headers))
     defer client.close()
     client.write(content)
@@ -76,7 +76,7 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
       Ok(data) =>
         Ok({
           status_code: response.code,
-          body: @utf8.decode(data),
+          body: data,
           retry_after_ms: match response.headers.get("Retry-After") {
             Some(value) => parse_retry_after_value_ms(value)
             None => None
@@ -91,6 +91,40 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
       Err(Request("unsupported HTTP protocol: " + protocol))
     err => Err(Network("\{err}"))
   }
+}
+
+///|
+#cfg(any(target="native", target="js"))
+pub impl OtlpHttpClient for AsyncHttpClient with fn post(
+  self,
+  url,
+  body,
+  headers,
+) {
+  match self.send(url, body, headers) {
+    Ok(response) => {
+      let text = @utf8.decode(response.body) catch {
+        _ => return Err(Network("HTTP response body is not valid UTF-8"))
+      }
+      Ok({
+        status_code: response.status_code,
+        body: text,
+        retry_after_ms: response.retry_after_ms,
+      })
+    }
+    Err(err) => Err(err)
+  }
+}
+
+///|
+#cfg(any(target="native", target="js"))
+pub impl OtlpHttpClient for AsyncHttpClient with fn post_bytes(
+  self,
+  url,
+  body,
+  headers,
+) {
+  self.send(url, body, headers)
 }
 
 ///|
@@ -109,4 +143,19 @@ pub impl OtlpHttpClient for AsyncHttpClient with fn post(
 }
 
 ///|
-pub extend AsyncHttpClient with OtlpHttpClient::{post}
+#cfg(not(any(target="native", target="js")))
+pub impl OtlpHttpClient for AsyncHttpClient with fn post_bytes(
+  self,
+  _url,
+  _body,
+  _headers,
+) {
+  if self.is_shut_down {
+    Err(Request("HTTP client is shut down"))
+  } else {
+    Err(Request("moonbitlang/async/http is not available on this target"))
+  }
+}
+
+///|
+pub extend AsyncHttpClient with OtlpHttpClient::{post, post_bytes}

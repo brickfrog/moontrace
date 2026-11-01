@@ -5,8 +5,10 @@
 /// `async_http_client(timeout_ms=config.timeout_ms)` to honor
 /// `OTEL_EXPORTER_OTLP_TIMEOUT`.
 ///
-/// The transport currently sends OTLP/HTTP JSON without compression whatever
-/// `config.protocol` and `config.compression` say.
+/// `config.protocol` selects the encoder for `export_spans` and `export_logs`
+/// (`http/protobuf` by default, as the specification requires) and
+/// `config.compression` selects gzip. The managed exporter always sends JSON
+/// but uses the configured compression.
 pub fn transport_from_otel_config(
   client : &OtlpHttpClient,
   config : @otlp.OtelConfig,
@@ -23,6 +25,16 @@ pub fn transport_from_otel_config(
     headers~,
     max_retries~,
     base_backoff_ms~,
+    encoder=if config.protocol == "http/json" {
+      JsonEncoder
+    } else {
+      ProtobufEncoder
+    },
+    compression=if config.compression == "gzip" {
+      GzipCompression
+    } else {
+      NoCompression
+    },
   )
 }
 

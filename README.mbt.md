@@ -654,7 +654,7 @@ exp.shutdown()  // stop accepting new events, then flush buffered records
 
 `span_observer()` captures completed spans when they close, without parsing `span.enter` / `span.exit` trace messages or calling `add_span` manually. Manual `add_span(@otlp.span_to_otlp(s))` remains available for spans collected outside the global observer path. The OTLP package handles format conversion, resource attributes, instrumentation scope metadata, span flags, links, and span events such as recorded exceptions. Nested JSON field values become OTLP `arrayValue` and `kvlistValue` attributes rather than strings. Log records carry the event's call site as `code.file.path` and `code.line.number` attributes.
 
-For OTLP/HTTP JSON export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
+For OTLP/HTTP export, use `brickfrog/moontrace/otlp/transport`. The transport package is async, provides a default HTTP client, accepts injected `OtlpHttpClient` implementations, and handles retry classification and backoff:
 
 ```mbt
 pub async fn export_batch(
@@ -675,6 +675,16 @@ pub async fn export_batch(
   client.shutdown()
 }
 ```
+
+`export_spans` and `export_logs` send OTLP/HTTP JSON by default. Pass
+`encoder=ProtobufEncoder` to `transport(...)` for `application/x-protobuf`
+bodies, and `compression=GzipCompression` to gzip every request with
+`Content-Encoding: gzip`; protobuf partial-success replies are parsed with
+`parse_protobuf_export_response`. Binary bodies go through
+`OtlpHttpClient::post_bytes`. `AsyncHttpClient` implements it, and the trait's
+default forwards UTF-8 bodies to `post`, so a custom client that only
+implements `post` keeps working for uncompressed JSON and returns a
+non-retryable `Request` error for binary bodies.
 
 The default HTTP client streams response bodies and retains at most 64 KiB.
 Larger responses return `Request("HTTP response body exceeds 65536 bytes")` and
@@ -741,9 +751,10 @@ let exporter = @transport.managed_exporter_from_otel_config(tx, config)
 | `OTEL_BSP_SCHEDULE_DELAY`, `OTEL_BSP_MAX_QUEUE_SIZE`, `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | Managed exporter flush interval, queued-record cap, and batch size |
 | `OTEL_SDK_DISABLED` | `config.disabled`; `span_sampler()` samples nothing and the configured exporter accepts nothing |
 
-`OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION` are parsed
-into `config.protocol` and `config.compression`, but the transport currently
-always sends uncompressed OTLP/HTTP JSON. `@otlp.default_resource()` provides
+`transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` (protobuf by
+default, as the specification requires; `http/json` selects JSON) and
+`OTEL_EXPORTER_OTLP_COMPRESSION`. The managed exporter always batches JSON but
+uses the configured compression. `@otlp.default_resource()` provides
 `service.name` (default `unknown_service`) and the `telemetry.sdk.*` attributes
 the resource specification requires, and `Resource::merge` layers resources with
 later attributes winning.

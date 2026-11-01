@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Upgrade notes:
+
+- `OtlpHttpTransport` has new `encoder` and `compression` fields; build it with `transport(...)` rather than a struct literal (#93).
+
 ### Added
+
+- OTLP protobuf and gzip export: `transport(encoder=ProtobufEncoder, compression=GzipCompression)` sends `application/x-protobuf` and/or gzip bodies from `export_spans`, `export_logs`, and their `_report` variants, with the same retry handling. `parse_protobuf_export_response` reads protobuf partial-success replies. `OtlpHttpClient` gains `post_bytes` (with a default that forwards UTF-8 bodies to `post`), implemented by `AsyncHttpClient`. `transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION`; the managed exporter uses the configured compression (#93).
 
 - `OTEL_*` environment configuration: `@otlp.parse_otel_config(lookup)` and `otel_config_from_env()` read service name, resource attributes, endpoints (with per-signal semantics), headers, timeout, protocol, compression, sampler, batch settings, and `OTEL_SDK_DISABLED` into an `OtelConfig`, ignoring invalid values with warnings. `OtelConfig::resource()` and `OtelConfig::span_sampler()` apply them, and `@transport.transport_from_otel_config` and `managed_exporter_from_otel_config` build the exporter; a disabled SDK makes that exporter accept nothing (#94).
 - `managed_json_exporter(max_queue_records?)` caps the records held in queued and in-flight batches (#94).
