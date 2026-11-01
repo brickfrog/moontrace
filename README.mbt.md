@@ -237,6 +237,26 @@ The legacy `duration_ns` field currently contains the same millisecond value as
 
 Every span gets auto-generated `trace_id` (32 hex chars) and `span_id` (16 hex chars).
 
+### Span Levels
+
+Pass `level=` to make a span verbose, like Rust's `debug_span!`. The level is
+checked against the global and package filters for the caller's package, just
+like an event:
+
+```moonbit
+@moontrace.set_filter_from_directives("info,my/app/db=debug") |> ignore
+let query = @moontrace.span("db.query", level=@moontrace.Debug)
+```
+
+A span whose level is filtered out is disabled (`is_enabled()` is false). It
+keeps its IDs and still propagates through `traceparent`, but emits no
+`span.enter`/`span.exit` events and is not delivered to span observers or
+exporters. A child of a disabled span records the nearest enabled ancestor as
+its parent, so exported traces never point at a span that was not exported.
+Spans without a level are always enabled. `span`, `child_span`,
+`span_with_trace`, `span_from_remote_context`, the `with_span*` wrappers, and
+the `span_async` helpers all accept `level`.
+
 ### Error Handling on Spans
 
 ```mbt

@@ -11,12 +11,14 @@ Upgrade notes:
 
 - `OtlpHttpTransport` has new `encoder` and `compression` fields; build it with `transport(...)` rather than a struct literal (#93).
 - `FileSubscriberConfig` literals need `rotate_every` and `max_age_ms`; prefer `FileSubscriberConfig::new(...)` (#99).
+- `Span` literals need `level` and `enabled` fields; use `level: None, enabled: true` (#108).
 
 ### Added
 
 - OTLP protobuf and gzip export: `transport(encoder=ProtobufEncoder, compression=GzipCompression)` sends `application/x-protobuf` and/or gzip bodies from `export_spans`, `export_logs`, and their `_report` variants, with the same retry handling. `parse_protobuf_export_response` reads protobuf partial-success replies. `OtlpHttpClient` gains `post_bytes` (with a default that forwards UTF-8 bodies to `post`), implemented by `AsyncHttpClient`. `transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION`; the managed exporter uses the configured compression (#93).
 - Time-based file rotation: `rotate_every=Daily | Hourly` archives the active file by UTC period as `path.<stamp>[.n][.gz]`, size limits within a period add sequence numbers, and `max_age_ms` plus `max_files` prune dated archives. `file_subscriber(clock=...)` and `FileSubscriber::new(config, clock=...)` take an injectable millisecond clock (#99).
 - `brickfrog/moontrace/queue`: `queued(sink, capacity?, max_batch?)` puts a bounded, non-blocking queue in front of any async batch sink, with `run`, `flush`, `shutdown`, and `enqueued`/`delivered`/`failed`/`dropped` counters (#99).
+- Span levels: `level=` on `span`, `child_span`, `span_with_trace`, `span_from_remote_context`, the `with_span*` wrappers, and the `span_async` helpers is checked against the global and package filters for the caller's package. Disabled spans keep IDs and propagation but emit no lifecycle events and reach no observers, and their children are parented to the nearest enabled ancestor. `Span::is_enabled` reports the result (#108).
 - `OTEL_*` environment configuration: `@otlp.parse_otel_config(lookup)` and `otel_config_from_env()` read service name, resource attributes, endpoints (with per-signal semantics), headers, timeout, protocol, compression, sampler, batch settings, and `OTEL_SDK_DISABLED` into an `OtelConfig`, ignoring invalid values with warnings. `OtelConfig::resource()` and `OtelConfig::span_sampler()` apply them, and `@transport.transport_from_otel_config` and `managed_exporter_from_otel_config` build the exporter; a disabled SDK makes that exporter accept nothing (#94).
 - `managed_json_exporter(max_queue_records?)` caps the records held in queued and in-flight batches (#94).
 - `@otlp.default_resource()` adds `service.name` (default `unknown_service`) and `telemetry.sdk.{name,language,version}`; `Resource::merge` layers resources (#94).

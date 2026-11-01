@@ -37,6 +37,8 @@ fn test_span_with_trace(
     active: false,
     status: @moontrace.Unset,
     status_message: "",
+    level: None,
+    enabled: true,
   }
 }
 

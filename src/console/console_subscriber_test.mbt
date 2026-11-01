@@ -258,6 +258,8 @@ test "format_span_close escapes the span name" {
     active: false,
     status: @moontrace.Unset,
     status_message: "",
+    level: None,
+    enabled: true,
   }
   assert_eq(
     @moontrace.format_span_close(span, format_timestamp=_ => "T"),

@@ -25,7 +25,8 @@ pub fn burst_key_level_message(Event) -> String
 
 pub fn burst_sampler((Event) -> Unit, Int32, Int32, UInt64, key? : (Event) -> String, buckets? : Int32, clock? : () -> UInt64) -> BurstSampler
 
-pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind) -> Span
+#callsite(autofill(loc))
+pub fn child_span(Span, String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
 pub fn clear_global_fields() -> Unit
 
@@ -164,7 +165,8 @@ pub fn set_subscriber((Event) -> Unit) -> Unit
 
 pub fn should_sample_trace(String, Double) -> Bool
 
-pub fn span(String, fields? : Array[Field], kind? : SpanKind) -> Span
+#callsite(autofill(loc))
+pub fn span(String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
 pub fn span_context(TraceId, SpanId, flags? : TraceFlags, trace_state? : TraceState, is_remote? : Bool) -> SpanContext
 
@@ -172,7 +174,8 @@ pub fn span_context_from_ids(String, String, flags? : TraceFlags, trace_state? :
 
 pub fn span_context_from_span(Span) -> Result[SpanContext, TraceContextError]
 
-pub fn span_from_remote_context(SpanContext, String, fields? : Array[Field], kind? : SpanKind) -> Span
+#callsite(autofill(loc))
+pub fn span_from_remote_context(SpanContext, String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
 pub fn span_id(String) -> Result[SpanId, TraceContextError]
 
@@ -188,7 +191,8 @@ pub fn span_trace_flags(Span) -> TraceFlags
 
 pub fn span_trace_state(Span) -> TraceState
 
-pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind) -> Span
+#callsite(autofill(loc))
+pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind, level? : Level, loc~ : SourceLoc) -> Span
 
 #callsite(autofill(loc))
 pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -218,7 +222,8 @@ pub fn warn(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn warn_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 
-pub fn[T] with_child_span(Span, String, fields? : Array[Field], (Span) -> T raise?) -> T raise?
+#callsite(autofill(loc))
+pub fn[T] with_child_span(Span, String, fields? : Array[Field], level? : Level, loc~ : SourceLoc, (Span) -> T raise?) -> T raise?
 
 pub fn with_directives((Event) -> Unit, ParsedFilter) -> (Event) -> Unit
 
@@ -232,9 +237,11 @@ pub fn[T] with_min_level(Level, () -> T raise?) -> T raise?
 
 pub fn[T] with_module_filter(String, Level, () -> T raise?) -> T raise?
 
-pub fn[T] with_span(String, fields? : Array[Field], () -> T raise?) -> T raise?
+#callsite(autofill(loc))
+pub fn[T] with_span(String, fields? : Array[Field], level? : Level, loc~ : SourceLoc, () -> T raise?) -> T raise?
 
-pub fn[T] with_span_ctx(String, fields? : Array[Field], (Span) -> T raise?) -> T raise?
+#callsite(autofill(loc))
+pub fn[T] with_span_ctx(String, fields? : Array[Field], level? : Level, loc~ : SourceLoc, (Span) -> T raise?) -> T raise?
 
 pub fn[T] with_span_sampler(SpanSampler, () -> T raise?) -> T raise?
 
@@ -427,6 +434,8 @@ pub(all) struct Span {
   mut active : Bool
   mut status : SpanStatus
   mut status_message : String
+  level : Level?
+  enabled : Bool
 } derive(@debug.Debug)
 pub fn Span::add_event(Self, String, fields? : Array[Field]) -> Unit
 #callsite(autofill(loc))
@@ -443,6 +452,7 @@ pub fn Span::follows_from_context(Self, SpanContext, fields? : Array[Field]) -> 
 #callsite(autofill(loc))
 pub fn Span::info(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Span::is_active(Self) -> Bool
+pub fn Span::is_enabled(Self) -> Bool
 pub fn Span::is_sampled(Self) -> Bool
 pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn Span::link_context(Self, SpanContext, fields? : Array[Field]) -> Unit

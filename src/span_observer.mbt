@@ -58,6 +58,8 @@ fn span_snapshot(span : Span) -> Span {
     active: span.active,
     status: span.status,
     status_message: span.status_message,
+    level: span.level,
+    enabled: span.enabled,
   }
 }
 
@@ -240,11 +242,11 @@ pub fn SpanLink::to_json(self : SpanLink) -> Json {
 }
 
 ///|
-/// The installed observer, if `span` should be observed. Unsampled spans are
-/// not delivered to observers.
+/// The installed observer, if `span` should be observed. Unsampled spans and
+/// spans disabled by their level are not delivered to observers.
 fn observer_for(span : Span) -> SpanLifecycleObserver? {
   match global_span_observer.val {
-    Some(observer) if span.is_sampled() => Some(observer)
+    Some(observer) if span.is_sampled() && span.enabled => Some(observer)
     _ => None
   }
 }
