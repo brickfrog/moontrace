@@ -8,12 +8,14 @@
 /// NO_COLOR to be unset/empty, and TERM not to be "dumb". Custom outputs default
 /// to plain text. On wasm-gc, the runtime's eprintln falls back to stdout; supply
 /// output to route records through a host-specific error stream instead.
-/// `location=true` appends each event's `file:line`.
+/// `location=true` appends each event's `file:line`, and `pretty=true` writes
+/// fields on separate indented lines.
 pub fn initialize_from_env(
   env_var~ : String = "MOONTRACE_LOG",
   color? : Bool,
   output? : (String) -> Unit,
   location~ : Bool = false,
+  pretty~ : Bool = false,
 ) -> Result[Unit, @moontrace.EnvFilterError] {
   configure_startup(
     @env.get_env_var,
@@ -22,6 +24,7 @@ pub fn initialize_from_env(
     color,
     output,
     location~,
+    pretty~,
   )
 }
 
@@ -57,6 +60,7 @@ fn configure_startup(
   color : Bool?,
   output : ((String) -> Unit)?,
   location~ : Bool = false,
+  pretty~ : Bool = false,
 ) -> Result[Unit, @moontrace.EnvFilterError] {
   let directive = read_env(env_var).unwrap_or("")
   let parsed = match @moontrace.parse_env_filter(directive) {
@@ -75,6 +79,7 @@ fn configure_startup(
     color=use_color,
     output=sink,
     location~,
+    pretty~,
   )
   parsed.apply()
   @moontrace.set_subscriber(installed)
