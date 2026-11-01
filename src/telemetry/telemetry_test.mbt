@@ -53,7 +53,7 @@ test "span emits start and stop with duration" {
   )
   assert_eq(result, 42)
   assert_eq(events.map(e => e.name), ["job.start", "job.stop"])
-  assert_true(events[0].measurements.contains("monotonic_time_ms"))
+  assert_true(events[0].measurements.contains("system_time_ms"))
   assert_true(
     events[1].measurements.get("duration_ms") is Some(ms) && ms >= 0.0,
   )
@@ -79,4 +79,47 @@ test "span reports exceptions and re-raises them" {
     Some(String(text)) => assert_true(text.contains("boom"))
     _ => fail("expected an error description")
   }
+}
+
+///|
+test "handlers get deep copies of nested metadata" {
+  let seen : Array[String] = []
+  let metadata : Map[String, Json] = {
+    "tags": Json(["a"]),
+    "nested": { "k": Json(1) },
+  }
+  let mutate = (event : @telemetry.TelemetryEvent) => {
+    if event.metadata.get("tags") is Some(Array(items)) {
+      items.push(Json("mutated"))
+    }
+    if event.metadata.get("nested") is Some(Object(inner)) {
+      inner.set("k", Json(2))
+    }
+  }
+  let observe = (event : @telemetry.TelemetryEvent) => {
+    let tags = event.metadata.get("tags").unwrap().stringify()
+    let nested = event.metadata.get("nested").unwrap().stringify()
+    seen.push(tags + nested)
+  }
+  @telemetry.with_handler("mutator", ["evt"], mutate, () => {
+    @telemetry.with_handler("observer", ["evt"], observe, () => {
+      @telemetry.execute("evt", {}, metadata~)
+    })
+  })
+  assert_eq(seen, ["[\"a\"]{\"k\":1}"])
+  assert_eq(metadata.get("tags"), Some(Json(["a"])))
+}
+
+///|
+test "span measures durations with an injected clock" {
+  let now = Ref(100UL)
+  let events : Array[@telemetry.TelemetryEvent] = []
+  @telemetry.with_handler(
+    "clock",
+    ["t.start", "t.stop"],
+    event => events.push(event),
+    () => @telemetry.span("t", clock=() => now.val, () => now.val = 145UL),
+  )
+  assert_eq(events[0].measurements.get("system_time_ms"), Some(100.0))
+  assert_eq(events[1].measurements.get("duration_ms"), Some(45.0))
 }

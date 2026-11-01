@@ -12,7 +12,7 @@ pub fn execute(String, Map[String, Double], metadata? : Map[String, Json]) -> Un
 
 pub fn handler_ids(name? : String) -> Array[String]
 
-pub fn[T] span(String, metadata? : Map[String, Json], () -> T raise?) -> T raise?
+pub fn[T] span(String, metadata? : Map[String, Json], clock? : () -> UInt64, () -> T raise?) -> T raise?
 
 pub fn[T] with_handler(String, Array[String], (TelemetryEvent) -> Unit, () -> T raise?) -> T raise?
 

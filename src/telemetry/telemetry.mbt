@@ -18,6 +18,27 @@ priv struct Handler {
 let handlers : Ref[Array[Handler]] = { val: [], }
 
 ///|
+/// Recursively copy JSON containers so each handler gets independent data.
+fn copy_json(value : Json) -> Json {
+  match value {
+    Object(fields) => {
+      let copied : Map[String, Json] = Map([])
+      fields.each((key, inner) => copied.set(key, copy_json(inner)))
+      Json(copied)
+    }
+    Array(items) => Json(items.map(copy_json))
+    other => other
+  }
+}
+
+///|
+fn copy_metadata(metadata : Map[String, Json]) -> Map[String, Json] {
+  let copied : Map[String, Json] = Map([])
+  metadata.each((key, value) => copied.set(key, copy_json(value)))
+  copied
+}
+
+///|
 /// Attach `callback` to events named `name` under a unique `handler_id`.
 /// Returns `false`, leaving existing handlers unchanged, if the id is taken.
 pub fn attach(
@@ -82,6 +103,8 @@ pub fn[T] with_handler(
 
 ///|
 /// Emit the event `name` to every handler attached to it, in attachment order.
+/// Each handler gets its own copy of `measurements` and a deep copy of
+/// `metadata`, including nested JSON objects and arrays.
 /// With no handlers attached this does nothing beyond the lookup, so libraries
 /// can instrument freely. Handlers attached or detached during delivery take
 /// effect from the next event.
@@ -95,7 +118,7 @@ pub fn execute(
     (handler.callback)({
       name,
       measurements: measurements.copy(),
-      metadata: metadata.copy(),
+      metadata: copy_metadata(metadata),
     })
   }
 }
@@ -111,23 +134,25 @@ fn describe_raised(throw_error : () -> Unit raise) -> String {
 
 ///|
 /// Instrument `f` as a unit of work: emit `<name>.start` with a
-/// `monotonic_time_ms` measurement, then `<name>.stop` with `duration_ms`, or
+/// `system_time_ms` measurement, then `<name>.stop` with `duration_ms`, or
 /// `<name>.exception` with `duration_ms` and the error in `metadata["error"]`
 /// before re-raising it unchanged. All three events carry `metadata`.
+///
+/// `clock` returns milliseconds and defaults to the wall clock (`@env.now`),
+/// like span durations elsewhere in moontrace, so a clock adjustment during
+/// `f` can skew `duration_ms`; negative differences are reported as zero.
+/// Pass a monotonic millisecond source as `clock` when that matters.
 #warnings("-fragile_catch_all")
 pub fn[T] span(
   name : String,
   metadata~ : Map[String, Json] = Map([]),
+  clock~ : () -> UInt64 = @env.now,
   f : () -> T raise?,
 ) -> T raise? {
-  let started = @env.now()
-  execute(
-    name + ".start",
-    { "monotonic_time_ms": started.to_double() },
-    metadata~,
-  )
+  let started = clock()
+  execute(name + ".start", { "system_time_ms": started.to_double() }, metadata~)
   let elapsed = () => {
-    let now = @env.now()
+    let now = clock()
     (if now > started { now - started } else { 0UL }).to_double()
   }
   let result = f() catch {
