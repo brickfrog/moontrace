@@ -71,6 +71,10 @@ pub fn filter_events((Event) -> Unit, (Event) -> Bool) -> (Event) -> Unit
 
 pub fn format_event(Event, Bool, (UInt64) -> String, location? : Bool) -> String
 
+pub fn format_event_pretty(Event, Bool, (UInt64) -> String, location? : Bool) -> String
+
+pub fn format_span_close(Span, color? : Bool, format_timestamp? : (UInt64) -> String) -> String
+
 #deprecated
 pub fn format_timestamp_hms(UInt64) -> String
 

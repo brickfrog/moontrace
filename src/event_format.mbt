@@ -147,3 +147,91 @@ fn civil_from_days(days : Int64) -> (Int64, Int64, Int64) {
   let year = year_of_era + era * 400L
   (if month <= 2L { year + 1L } else { year }, month, day)
 }
+
+///|
+/// Format `event` across several lines for local development: the same header
+/// as `format_event`, then one indented `key: value` line per field and, with
+/// `location=true`, an `at file:line` line. String values are written as text
+/// with control characters escaped; other values use indented JSON.
+pub fn format_event_pretty(
+  event : Event,
+  color : Bool,
+  format_timestamp : (UInt64) -> String,
+  location~ : Bool = false,
+) -> String {
+  let header = format_event(
+    { ..event, fields: [], },
+    color,
+    format_timestamp,
+    location=false,
+  )
+  let buf = StringBuilder()
+  buf.write_string(header)
+  if location && !event.file.is_empty() {
+    buf.write_string("\n    at ")
+    buf.write_string(escape_control_chars(event.file))
+    buf.write_string(":")
+    buf.write_string(event.line.to_string())
+  }
+  for field in event.fields {
+    buf.write_string("\n    ")
+    if color {
+      buf.write_string("\u001b[2m")
+      buf.write_string(escape_control_chars(field.key))
+      buf.write_string(":\u001b[0m ")
+    } else {
+      buf.write_string(escape_control_chars(field.key))
+      buf.write_string(": ")
+    }
+    let value = match field.value {
+      String(text) => escape_control_chars(text)
+      other => other.stringify(indent=2)
+    }
+    buf.write_string(value.replace_all(old="\n", new="\n      "))
+  }
+  buf.to_string()
+}
+
+///|
+/// Format a completed span as one console line:
+///
+/// ```text
+/// 14:31:43.903 | SPAN  | db.query — closed  duration_ms=12 status=ERROR status_message="timeout" table="users"
+/// ```
+///
+/// Span durations use the same millisecond clock as event timestamps.
+/// `status` and `status_message` appear only when set. Span fields follow as
+/// `key=json` pairs. Control characters in the name and keys are escaped.
+pub fn format_span_close(
+  span : Span,
+  color~ : Bool = false,
+  format_timestamp~ : (UInt64) -> String = format_timestamp_utc,
+) -> String {
+  let buf = StringBuilder()
+  buf.write_string(format_timestamp(span.end_time))
+  buf.write_string(" | ")
+  if color {
+    buf.write_string("\u001b[36mSPAN \u001b[0m")
+  } else {
+    buf.write_string("SPAN ")
+  }
+  buf.write_string(" | ")
+  buf.write_string(escape_control_chars(span.name))
+  buf.write_string(" — closed  duration_ms=")
+  buf.write_string(span.duration().to_string())
+  if span.status != Unset {
+    buf.write_string(" status=")
+    buf.write_string(span.status.to_string())
+    if !span.status_message.is_empty() {
+      buf.write_string(" status_message=")
+      buf.write_string(Json(span.status_message).stringify())
+    }
+  }
+  for field in span.fields {
+    buf.write_string(" ")
+    buf.write_string(escape_control_chars(field.key))
+    buf.write_string("=")
+    buf.write_string(field.value.stringify())
+  }
+  buf.to_string()
+}

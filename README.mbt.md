@@ -469,7 +469,32 @@ package:
 14:31:43.903 | INFO  | server | src/server/main.mbt:42 — UDS server listening  path=".choir/server.sock"
 ```
 
-Human-readable formatting keeps each event on one physical record. C0/C1
+For local development, `pretty=true` writes each field on its own indented line
+(and the location on an `at` line when `location=true`):
+
+```
+14:31:43.903 | ERROR | server — request failed
+    at src/server/main.mbt:42
+    path: /api/users
+    status: 503
+```
+
+`format=fn(event) { ... }` replaces the built-in layout entirely, and the
+color, timestamp, location, and pretty options are then not used.
+
+To print spans as they close, like Rust's `FmtSpan::CLOSE`, install
+`@console.span_observer()`. Use `min_duration_ms` to skip fast spans:
+
+```moonbit
+@moontrace.set_span_observer(@console.span_observer(min_duration_ms=5UL))
+```
+
+```
+14:31:44.012 | SPAN  | db.query — closed  duration_ms=12 status=ERROR status_message="timeout" table="users"
+```
+
+Human-readable formatting keeps each event on one physical record, except in
+pretty mode. C0/C1
 control codes in event messages, field keys, and trace-context diagnostics are
 rendered visibly (`\\n`, `\\r`, `\\t`, or `\\u{001b}`-style escapes). Printable
 Unicode is preserved. The JSON subscriber remains governed by JSON string

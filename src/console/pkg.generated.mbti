@@ -6,11 +6,13 @@ import {
 }
 
 // Values
-pub fn initialize(min_level? : @moontrace.Level, color? : Bool, output? : (String) -> Unit, format_timestamp? : (UInt64) -> String, location? : Bool) -> Unit
+pub fn initialize(min_level? : @moontrace.Level, color? : Bool, output? : (String) -> Unit, format_timestamp? : (UInt64) -> String, location? : Bool, pretty? : Bool, format? : (@moontrace.Event) -> String) -> Unit
 
-pub fn initialize_from_env(env_var? : String, color? : Bool, output? : (String) -> Unit, location? : Bool) -> Result[Unit, @moontrace.EnvFilterError]
+pub fn initialize_from_env(env_var? : String, color? : Bool, output? : (String) -> Unit, location? : Bool, pretty? : Bool) -> Result[Unit, @moontrace.EnvFilterError]
 
-pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit, color? : Bool, format_timestamp? : (UInt64) -> String, location? : Bool) -> (@moontrace.Event) -> Unit
+pub fn span_observer(output? : (String) -> Unit, color? : Bool, format_timestamp? : (UInt64) -> String, min_duration_ms? : UInt64) -> @moontrace.SpanLifecycleObserver
+
+pub fn subscriber(min_level? : @moontrace.Level, output? : (String) -> Unit, color? : Bool, format_timestamp? : (UInt64) -> String, location? : Bool, pretty? : Bool, format? : (@moontrace.Event) -> String) -> (@moontrace.Event) -> Unit
 
 // Errors
 
