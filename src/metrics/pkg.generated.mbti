@@ -13,6 +13,8 @@ pub let default_histogram_bounds : Array[Double]
 
 pub fn meter(name? : String, version? : String, clock? : () -> UInt64) -> Meter
 
+pub fn metrics_to_otlp_json(Array[MetricData], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Json
+
 pub fn span_metrics(buckets_ms? : Array[UInt64]) -> SpanMetrics
 
 // Errors
@@ -34,6 +36,7 @@ pub struct Meter {
 pub fn Meter::collect(Self) -> Array[MetricData]
 pub fn Meter::counter(Self, String, description? : String, unit? : String) -> Counter
 pub fn Meter::histogram(Self, String, description? : String, unit? : String, bounds? : Array[Double]) -> Histogram
+pub fn Meter::scope(Self) -> @otlp.InstrumentationScope
 pub fn Meter::to_otlp_json(Self, resource? : @otlp.Resource) -> Json
 pub fn Meter::up_down_counter(Self, String, description? : String, unit? : String) -> UpDownCounter
 

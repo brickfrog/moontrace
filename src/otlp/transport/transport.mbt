@@ -4,6 +4,7 @@ pub(all) struct OtlpHttpTransport {
   endpoint : String
   traces_path : String
   logs_path : String
+  metrics_path : String
   headers : Map[String, String]
   max_retries : Int32
   base_backoff_ms : Int32
@@ -18,6 +19,7 @@ pub fn transport(
   endpoint : String,
   traces_path~ : String = "/v1/traces",
   logs_path~ : String = "/v1/logs",
+  metrics_path~ : String = "/v1/metrics",
   headers~ : Map[String, String] = default_headers(),
   max_retries~ : Int32 = 3,
   base_backoff_ms~ : Int32 = 1000,
@@ -29,6 +31,7 @@ pub fn transport(
     endpoint,
     traces_path,
     logs_path,
+    metrics_path,
     headers: copy_headers(headers),
     max_retries: if max_retries < 0 {
       0
@@ -164,7 +167,9 @@ async fn OtlpHttpTransport::export_body_impl(
               None => false
               Some(details) => {
                 on_partial(details)
-                details.rejected_spans > 0L || details.rejected_log_records > 0L
+                details.rejected_spans > 0L ||
+                details.rejected_log_records > 0L ||
+                details.rejected_data_points > 0L
               }
             }
             return Ok({
@@ -175,7 +180,7 @@ async fn OtlpHttpTransport::export_body_impl(
                 let details = partial.unwrap()
                 Some(
                   Request(
-                    "OTLP partial rejection: rejectedSpans=\{details.rejected_spans}, rejectedLogRecords=\{details.rejected_log_records}: \{details.error_message}",
+                    "OTLP partial rejection: rejectedSpans=\{details.rejected_spans}, rejectedLogRecords=\{details.rejected_log_records}, rejectedDataPoints=\{details.rejected_data_points}: \{details.error_message}",
                   ),
                 )
               } else {
@@ -374,6 +379,47 @@ pub async fn OtlpHttpTransport::export_logs_report(
       join_url(self.endpoint, self.logs_path),
       Logs,
       self.encoder.encode_logs(records, resource~, scope~),
+      value => partial.val = Some(value),
+    ) {
+    Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
+    Err(error) => Err(error)
+  }
+}
+
+///|
+/// Collect `meter` and export the cumulative metrics to `metrics_path` using
+/// the transport's encoder and compression, with the meter as the
+/// instrumentation scope. Call it periodically, e.g. from a timer task.
+pub async fn OtlpHttpTransport::export_metrics(
+  self : OtlpHttpTransport,
+  meter : @metrics.Meter,
+  resource~ : @otlp.Resource = @otlp.default_resource(),
+) -> Result[ExportOutcome, TransportError] {
+  self.export_encoded(
+    join_url(self.endpoint, self.metrics_path),
+    Metrics,
+    self.encoder.encode_metrics(meter.collect(), resource~, scope=meter.scope()),
+    _ => (),
+  )
+}
+
+///|
+/// Like `export_metrics`, with structured collector partial-success details.
+pub async fn OtlpHttpTransport::export_metrics_report(
+  self : OtlpHttpTransport,
+  meter : @metrics.Meter,
+  resource~ : @otlp.Resource = @otlp.default_resource(),
+) -> Result[ExportReport, TransportError] {
+  let partial = Ref(None)
+  match
+    self.export_encoded(
+      join_url(self.endpoint, self.metrics_path),
+      Metrics,
+      self.encoder.encode_metrics(
+        meter.collect(),
+        resource~,
+        scope=meter.scope(),
+      ),
       value => partial.val = Some(value),
     ) {
     Ok(outcome) => Ok({ outcome, partial_success: partial.val, })

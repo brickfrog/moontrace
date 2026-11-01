@@ -15,6 +15,8 @@ pub(all) struct OtelConfig {
   traces_endpoint : String
   /// Full logs URL, resolved like `traces_endpoint` with `/v1/logs`.
   logs_endpoint : String
+  /// Full metrics URL, resolved like `traces_endpoint` with `/v1/metrics`.
+  metrics_endpoint : String
   /// Parsed `OTEL_EXPORTER_OTLP_HEADERS` (`key=value,...`, percent-decoded).
   headers : Map[String, String]
   /// `OTEL_EXPORTER_OTLP_TIMEOUT` in milliseconds (default 10000).
@@ -193,6 +195,9 @@ pub fn parse_otel_config(lookup : (String) -> String?) -> OtelConfig {
     ),
     logs_endpoint: signal_endpoint(
       "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "/v1/logs",
+    ),
+    metrics_endpoint: signal_endpoint(
+      "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "/v1/metrics",
     ),
     headers,
     timeout_ms: non_negative_int("OTEL_EXPORTER_OTLP_TIMEOUT", 10000),

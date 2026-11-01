@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Upgrade notes:
 
+- `OtlpSignal` has a `Metrics` variant, `ExportPartialSuccess` has `rejected_data_points`, `OtlpHttpTransport` has `metrics_path`, and `OtelConfig` has `metrics_endpoint`; update exhaustive matches and struct literals (#101).
 - `ParsedFilter` literals need `silenced_modules` and `default_off` (#103).
 - `OtlpSpan` literals need `dropped_attributes_count`, `dropped_events_count`, and `dropped_links_count`; `OtlpSpanEvent`, `OtlpLink`, and `OtlpLogRecord` literals need `dropped_attributes_count` (#103).
 - `OtlpHttpTransport` has new `encoder` and `compression` fields; build it with `transport(...)` rather than a struct literal (#93).
@@ -17,6 +18,7 @@ Upgrade notes:
 
 ### Added
 
+- OTLP metrics export: `OtlpHttpTransport::export_metrics(meter)` and `export_metrics_report` send collected metrics to `/v1/metrics` as JSON or protobuf with the transport's compression; `OtlpEncoder::encode_metrics` and `@metrics.metrics_to_otlp_json` build payloads, `Meter::scope()` exposes the scope, and `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` is honored (#101).
 - `brickfrog/moontrace/telemetry` (phase 2 of #101): `execute(name, measurements, metadata?)` emits named instrumentation events to handlers registered with `attach`, `attach_many`, or the scoped `with_handler`; `span(name, f)` emits `.start`, `.stop`, and `.exception` events with durations.
 - Metric instruments (phase 3 of #101): `@metrics.meter()` creates `counter`, `up_down_counter`, and `histogram` instruments with per-attribute-set cumulative aggregation; `collect()` snapshots them and `to_otlp_json(resource?)` builds an OTLP/HTTP JSON `ExportMetricsServiceRequest`.
 - `off` filter directive: `my/app=off` silences a package and its subpackages and a bare `off` silences everything without a more specific filter, without adding a `Level` variant. `silence_module` and `silence_all` do the same in code, and `ParsedFilter` gains `silenced_modules` and `default_off` (#103).

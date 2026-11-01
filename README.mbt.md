@@ -1012,10 +1012,17 @@ requests.add(1.0, attributes=[@moontrace.field("http.route", "/cart")])
 latency.record(42.0, attributes=[@moontrace.field("http.route", "/cart")])
 in_flight.add(-1.0)
 
-// Periodically, e.g. from a timer task:
+// Periodically, e.g. from a timer task (async):
+// tx.export_metrics(meter, resource=@otlp.resource(service_name="checkout"))
 let payload = meter.to_otlp_json(resource=@otlp.resource(service_name="checkout"))
-// tx.export_json("http://collector:4318/v1/metrics", payload.stringify())
 ```
+
+`OtlpHttpTransport::export_metrics(meter)` collects and sends to the
+transport's `metrics_path` (`/v1/metrics`, or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`
+through `transport_from_otel_config`) in the transport's JSON or protobuf
+encoding and compression; `export_metrics_report` adds partial-success details
+including `rejected_data_points`. `to_otlp_json` and
+`OtlpEncoder::encode_metrics` build the payload directly.
 
 Each distinct attribute set (order-insensitive) is a separate series.
 Aggregation is cumulative from the meter's creation. Counters ignore negative

@@ -383,20 +383,23 @@ fn MetricData::to_otlp_json(self : MetricData) -> Json {
 }
 
 ///|
-/// Collect and wrap every instrument as an OTLP/HTTP JSON
-/// `ExportMetricsServiceRequest`, with this meter as the instrumentation scope.
-/// Send it to the collector's `/v1/metrics` path, for example with
-/// `@transport.OtlpHttpTransport::export_json`.
-pub fn Meter::to_otlp_json(
-  self : Meter,
+/// The OTLP instrumentation scope for this meter: its `name` and `version`.
+pub fn Meter::scope(self : Meter) -> @otlp.InstrumentationScope {
+  @otlp.instrumentation_scope(name=self.name, version=self.version)
+}
+
+///|
+/// Wrap collected metrics as an OTLP/HTTP JSON `ExportMetricsServiceRequest`.
+pub fn metrics_to_otlp_json(
+  metrics : Array[MetricData],
   resource~ : @otlp.Resource = @otlp.default_resource(),
+  scope~ : @otlp.InstrumentationScope = @otlp.instrumentation_scope(),
 ) -> Json {
-  let scope = @otlp.instrumentation_scope(name=self.name, version=self.version)
   let scope_metrics : Map[String, Json] = Map([])
   scope_metrics.set("scope", scope.to_json())
   scope_metrics.set(
     "metrics",
-    Json(self.collect().map(metric => metric.to_otlp_json())),
+    Json(metrics.map(metric => metric.to_otlp_json())),
   )
   let resource_metrics : Map[String, Json] = Map([])
   resource_metrics.set("resource", resource.to_json())
@@ -404,4 +407,16 @@ pub fn Meter::to_otlp_json(
   let root : Map[String, Json] = Map([])
   root.set("resourceMetrics", Json([Json(resource_metrics)]))
   Json(root)
+}
+
+///|
+/// Collect and wrap every instrument as an OTLP/HTTP JSON
+/// `ExportMetricsServiceRequest`, with this meter as the instrumentation scope.
+/// `@transport.OtlpHttpTransport::export_metrics` collects and sends in one
+/// step, in JSON or protobuf.
+pub fn Meter::to_otlp_json(
+  self : Meter,
+  resource~ : @otlp.Resource = @otlp.default_resource(),
+) -> Json {
+  metrics_to_otlp_json(self.collect(), resource~, scope=self.scope())
 }

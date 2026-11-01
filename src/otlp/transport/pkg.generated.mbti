@@ -3,6 +3,7 @@ package "brickfrog/moontrace/otlp/transport"
 
 import {
   "brickfrog/moontrace",
+  "brickfrog/moontrace/metrics",
   "brickfrog/moontrace/otlp",
   "moonbitlang/core/debug",
 }
@@ -34,7 +35,7 @@ pub fn parse_retry_after_ms(Map[String, String]) -> Int32?
 
 pub fn protobuf_encoder() -> OtlpEncoder
 
-pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32, encoder? : OtlpEncoder, compression? : OtlpCompression) -> OtlpHttpTransport
+pub fn transport(&OtlpHttpClient, String, traces_path? : String, logs_path? : String, metrics_path? : String, headers? : Map[String, String], max_retries? : Int32, base_backoff_ms? : Int32, encoder? : OtlpEncoder, compression? : OtlpCompression) -> OtlpHttpTransport
 
 pub fn transport_from_otel_config(&OtlpHttpClient, @otlp.OtelConfig, max_retries? : Int32, base_backoff_ms? : Int32) -> OtlpHttpTransport
 
@@ -68,6 +69,7 @@ pub(all) struct ExportOutcome {
 pub(all) struct ExportPartialSuccess {
   rejected_spans : Int64
   rejected_log_records : Int64
+  rejected_data_points : Int64
   error_message : String
 } derive(Compare, Eq, @debug.Debug)
 
@@ -126,6 +128,7 @@ pub(all) enum OtlpEncoder {
 } derive(Compare, Eq, @debug.Debug)
 pub fn OtlpEncoder::content_type(Self) -> String
 pub fn OtlpEncoder::encode_logs(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[OtlpPayload, EncodingError]
+pub fn OtlpEncoder::encode_metrics(Self, Array[@metrics.MetricData], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[OtlpPayload, EncodingError]
 pub fn OtlpEncoder::encode_spans(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[OtlpPayload, EncodingError]
 
 pub(all) struct OtlpHttpTransport {
@@ -133,6 +136,7 @@ pub(all) struct OtlpHttpTransport {
   endpoint : String
   traces_path : String
   logs_path : String
+  metrics_path : String
   headers : Map[String, String]
   max_retries : Int32
   base_backoff_ms : Int32
@@ -144,6 +148,8 @@ pub async fn OtlpHttpTransport::export_json(Self, String, String) -> Result[Expo
 pub async fn OtlpHttpTransport::export_json_report(Self, String, String) -> Result[ExportReport, TransportError]
 pub async fn OtlpHttpTransport::export_logs(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
 pub async fn OtlpHttpTransport::export_logs_report(Self, Array[@otlp.OtlpLogRecord], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportReport, TransportError]
+pub async fn OtlpHttpTransport::export_metrics(Self, @metrics.Meter, resource? : @otlp.Resource) -> Result[ExportOutcome, TransportError]
+pub async fn OtlpHttpTransport::export_metrics_report(Self, @metrics.Meter, resource? : @otlp.Resource) -> Result[ExportReport, TransportError]
 pub async fn OtlpHttpTransport::export_spans(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportOutcome, TransportError]
 pub async fn OtlpHttpTransport::export_spans_report(Self, Array[@otlp.OtlpSpan], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Result[ExportReport, TransportError]
 pub fn OtlpHttpTransport::shutdown(Self) -> Unit
@@ -156,6 +162,7 @@ pub(all) struct OtlpPayload {
 pub(all) enum OtlpSignal {
   Traces
   Logs
+  Metrics
 } derive(Compare, Eq, @debug.Debug)
 pub fn OtlpSignal::to_string(Self) -> String
 
