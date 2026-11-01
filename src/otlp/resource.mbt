@@ -1,7 +1,7 @@
 ///|
 /// The moontrace release reported as `telemetry.sdk.version`. Update it with
 /// `moon.mod` when cutting a release.
-pub let sdk_version : String = "0.18.0"
+pub let sdk_version : String = "0.19.0"
 
 ///|
 /// A resource with the attributes the OpenTelemetry resource specification
