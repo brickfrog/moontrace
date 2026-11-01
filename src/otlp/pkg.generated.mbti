@@ -61,6 +61,8 @@ pub(all) struct OtelConfig {
   batch_delay_ms : Int32
   max_queue_size : Int32
   max_export_batch_size : Int32
+  metric_export_interval_ms : Int32
+  metric_export_timeout_ms : Int32
   warnings : Array[String]
 }
 pub fn OtelConfig::resource(Self, extra? : Resource) -> Resource

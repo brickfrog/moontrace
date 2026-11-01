@@ -822,6 +822,7 @@ let exporter = @transport.managed_exporter_from_otel_config(tx, config)
 | `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT` | Request headers and client timeout |
 | `OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG` | `config.span_sampler()` |
 | `OTEL_BSP_SCHEDULE_DELAY`, `OTEL_BSP_MAX_QUEUE_SIZE`, `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | Managed exporter flush interval, queued-record cap, and batch size |
+| `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT` | `metric_reader_from_otel_config` export interval and per-export timeout |
 | `OTEL_SDK_DISABLED` | `config.disabled`; `span_sampler()` samples nothing and the configured exporter accepts nothing |
 
 `transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` (protobuf by
@@ -1013,7 +1014,7 @@ requests.add(1.0, attributes=[@moontrace.field("http.route", "/cart")])
 latency.record(42.0, attributes=[@moontrace.field("http.route", "/cart")])
 in_flight.add(-1.0)
 
-// Periodically, e.g. from a timer task (async):
+// Export on a timer with a periodic reader (see below), or once (async):
 // tx.export_metrics(meter, resource=@otlp.resource(service_name="checkout"))
 let payload = meter.to_otlp_json(resource=@otlp.resource(service_name="checkout"))
 ```
@@ -1024,6 +1025,30 @@ through `transport_from_otel_config`) in the transport's JSON or protobuf
 encoding and compression; `export_metrics_report` adds partial-success details
 including `rejected_data_points`. `to_otlp_json` and
 `OtlpEncoder::encode_metrics` build the payload directly.
+
+`periodic_metric_reader(tx, [meter], interval_ms?, timeout_ms?)` exports on a
+timer. Run `reader.run()` in your task group; `flush()` exports now and
+`shutdown()` stops the timer and exports a final time. Each meter is one
+request; meters without data points are skipped, and `stats()`,
+`last_report()`, and `last_error()` report outcomes. The reader leaves the
+transport open, so it can share one with the managed exporter.
+`metric_reader_from_otel_config(tx, [meter], config)` reads
+`OTEL_METRIC_EXPORT_INTERVAL` (default 60 s) and `OTEL_METRIC_EXPORT_TIMEOUT`
+(default 30 s):
+
+```mbt
+pub async fn run_with_metrics(meter : @metrics.Meter) -> Unit {
+  let config = @otlp.otel_config_from_env()
+  let client = @transport.async_http_client(timeout_ms=config.timeout_ms)
+  let tx = @transport.transport_from_otel_config(client, config)
+  let reader = @transport.metric_reader_from_otel_config(tx, [meter], config)
+  @async.with_task_group(group => {
+    group.spawn_bg(() => reader.run())
+    // ... application work ...
+    ignore(reader.shutdown())
+  })
+}
+```
 
 Each distinct attribute set (order-insensitive) is a separate series.
 Aggregation is cumulative from the meter's creation. Counters ignore negative

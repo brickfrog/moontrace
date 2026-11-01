@@ -23,6 +23,8 @@ pub fn managed_exporter_from_otel_config(OtlpHttpTransport, @otlp.OtelConfig, re
 
 pub fn managed_json_exporter(OtlpHttpTransport, batch_size? : Int32, queue_capacity? : Int32, max_payload_bytes? : Int32, max_pending_bytes? : Int32, flush_interval_ms? : Int32, resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope, max_queue_records? : Int32) -> ManagedJsonExporter
 
+pub fn metric_reader_from_otel_config(OtlpHttpTransport, Array[@metrics.Meter], @otlp.OtelConfig, resource? : @otlp.Resource) -> PeriodicMetricReader
+
 pub fn otlp_json_content_type() -> String
 
 pub fn otlp_protobuf_content_type() -> String
@@ -32,6 +34,8 @@ pub fn parse_export_response(String) -> Result[ExportPartialSuccess?, TransportE
 pub fn parse_protobuf_export_response(Bytes, OtlpSignal) -> Result[ExportPartialSuccess?, TransportError]
 
 pub fn parse_retry_after_ms(Map[String, String]) -> Int32?
+
+pub fn periodic_metric_reader(OtlpHttpTransport, Array[@metrics.Meter], interval_ms? : Int32, timeout_ms? : Int32, resource? : @otlp.Resource) -> PeriodicMetricReader
 
 pub fn protobuf_encoder() -> OtlpEncoder
 
@@ -117,6 +121,16 @@ pub fn ManagedJsonExporter::span_observer(Self) -> @moontrace.SpanLifecycleObser
 pub fn ManagedJsonExporter::stats(Self) -> ManagedExportStats
 pub fn ManagedJsonExporter::subscriber(Self) -> (@moontrace.Event) -> Unit
 
+pub(all) struct MetricReaderStats {
+  exports : Int64
+  delivered : Int64
+  failed : Int64
+  timed_out : Int64
+  skipped_empty : Int64
+  closed : Bool
+  running : Bool
+} derive(Eq, @debug.Debug)
+
 pub(all) enum OtlpCompression {
   NoCompression
   GzipCompression
@@ -165,6 +179,16 @@ pub(all) enum OtlpSignal {
   Metrics
 } derive(Compare, Eq, @debug.Debug)
 pub fn OtlpSignal::to_string(Self) -> String
+
+pub struct PeriodicMetricReader {
+  // private fields
+}
+pub async fn PeriodicMetricReader::flush(Self) -> MetricReaderStats
+pub fn PeriodicMetricReader::last_error(Self) -> String?
+pub fn PeriodicMetricReader::last_report(Self) -> ExportReport?
+pub async fn PeriodicMetricReader::run(Self) -> Unit
+pub async fn PeriodicMetricReader::shutdown(Self) -> MetricReaderStats
+pub fn PeriodicMetricReader::stats(Self) -> MetricReaderStats
 
 pub(all) enum RetryClass {
   Success
