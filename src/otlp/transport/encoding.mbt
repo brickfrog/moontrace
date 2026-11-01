@@ -362,6 +362,11 @@ fn write_span_link(
   protobuf_bytes_field(writer, 2, hex_id_bytes("link.span_id", link.span_id, 8))
   protobuf_string_field(writer, 3, link.trace_state)
   write_key_values(writer, 4, link.attributes)
+  protobuf_uint32_field(
+    writer,
+    5,
+    unsigned_int("link.dropped_attributes_count", link.dropped_attributes_count),
+  )
 }
 
 ///|
@@ -382,16 +387,39 @@ fn write_span(writer : &@protobuf.Writer, span : @otlp.OtlpSpan) -> Unit raise {
   protobuf_fixed64_field(writer, 7, span.start_time_unix_nano)
   protobuf_fixed64_field(writer, 8, span.end_time_unix_nano)
   write_key_values(writer, 9, span.attributes)
+  protobuf_uint32_field(
+    writer,
+    10,
+    unsigned_int("span.dropped_attributes_count", span.dropped_attributes_count),
+  )
   for event in span.events {
     protobuf_message_field(writer, 11, writer => {
       protobuf_fixed64_field(writer, 1, event.time_unix_nano)
       protobuf_string_field(writer, 2, event.name)
       write_key_values(writer, 3, event.attributes)
+      protobuf_uint32_field(
+        writer,
+        4,
+        unsigned_int(
+          "event.dropped_attributes_count",
+          event.dropped_attributes_count,
+        ),
+      )
     })
   }
+  protobuf_uint32_field(
+    writer,
+    12,
+    unsigned_int("span.dropped_events_count", span.dropped_events_count),
+  )
   for link in span.links {
     protobuf_message_field(writer, 13, writer => write_span_link(writer, link))
   }
+  protobuf_uint32_field(
+    writer,
+    14,
+    unsigned_int("span.dropped_links_count", span.dropped_links_count),
+  )
   if span.status_code != 0 || !span.status_message.is_empty() {
     protobuf_message_field(writer, 15, writer => {
       write_status(writer, span.status_code, span.status_message)
@@ -455,6 +483,14 @@ fn write_log_record(
     write_any_value(writer, StringVal(record.body))
   })
   write_key_values(writer, 6, record.attributes)
+  protobuf_uint32_field(
+    writer,
+    7,
+    unsigned_int(
+      "log_record.dropped_attributes_count",
+      record.dropped_attributes_count,
+    ),
+  )
   protobuf_bytes_field(
     writer,
     9,

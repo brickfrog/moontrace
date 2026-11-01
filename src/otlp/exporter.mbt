@@ -124,24 +124,33 @@ pub fn OtlpExporter::shutdown(self : OtlpExporter) -> Unit {
 }
 
 ///|
-fn link_to_otlp(link : @moontrace.SpanLink) -> OtlpLink? {
+fn link_to_otlp(link : @moontrace.SpanLink, limits : OtlpLimits) -> OtlpLink? {
   match link.kind {
     @moontrace.SpanChildOf => None
-    _ =>
+    _ => {
+      let (attributes, dropped) = limit_attributes(
+        link.fields.map(fn(f) { field_to_attribute(f) }),
+        limits,
+      )
       Some({
         trace_id: link.trace_id,
         span_id: link.span_id,
         trace_state: link.trace_state,
-        attributes: link.fields.map(fn(f) { field_to_attribute(f) }),
+        attributes,
+        dropped_attributes_count: dropped,
       })
+    }
   }
 }
 
 ///|
-fn links_to_otlp(links : Array[@moontrace.SpanLink]) -> Array[OtlpLink] {
+fn links_to_otlp(
+  links : Array[@moontrace.SpanLink],
+  limits : OtlpLimits,
+) -> Array[OtlpLink] {
   let converted : Array[OtlpLink] = []
   links.each(fn(link) {
-    match link_to_otlp(link) {
+    match link_to_otlp(link, limits) {
       Some(otlp_link) => converted.push(otlp_link)
       None => ()
     }
@@ -152,12 +161,29 @@ fn links_to_otlp(links : Array[@moontrace.SpanLink]) -> Array[OtlpLink] {
 // Helper: create an OtlpSpan from a completed moontrace Span
 
 ///|
-pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
+/// Convert a completed span, applying `limits` (OpenTelemetry defaults unless
+/// given) to its attributes, events, and links.
+pub fn span_to_otlp(
+  span : @moontrace.Span,
+  limits~ : OtlpLimits = otlp_limits(),
+) -> OtlpSpan {
   let status_code = match span.status {
     Unset => 0
     Ok => 1
     SpanError => 2
   }
+  let (attributes, dropped_attributes_count) = limit_attributes(
+    span.fields.map(fn(f) { field_to_attribute(f) }),
+    limits,
+  )
+  let (events, dropped_events_count) = limit_items(
+    span.events,
+    limits.event_count,
+  )
+  let (links, dropped_links_count) = limit_items(
+    links_to_otlp(span.links, limits),
+    limits.link_count,
+  )
   {
     trace_id: span.trace_id,
     span_id: span.span_id,
@@ -167,14 +193,24 @@ pub fn span_to_otlp(span : @moontrace.Span) -> OtlpSpan {
     kind: span.kind.to_int(),
     start_time_unix_nano: milliseconds_to_nanoseconds(span.start_time),
     end_time_unix_nano: milliseconds_to_nanoseconds(span.end_time),
-    attributes: span.fields.map(fn(f) { field_to_attribute(f) }),
-    events: span.events.map(event => OtlpSpanEvent::{
-      time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
-      name: event.name,
-      attributes: event.fields.map(field_to_attribute),
+    attributes,
+    events: events.map(event => {
+      let (attributes, dropped) = limit_attributes(
+        event.fields.map(field_to_attribute),
+        limits,
+      )
+      OtlpSpanEvent::{
+        time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
+        name: event.name,
+        attributes,
+        dropped_attributes_count: dropped,
+      }
     }),
-    links: links_to_otlp(span.links),
+    links,
     status_code,
     status_message: span.status_message,
+    dropped_attributes_count,
+    dropped_events_count,
+    dropped_links_count,
   }
 }

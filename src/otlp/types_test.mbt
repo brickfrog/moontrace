@@ -106,6 +106,9 @@ test "otlp span to_json has required fields" {
     links: [],
     status_code: 1,
     status_message: "",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
   let obj = otlp_json_object(span.to_json(), "span")
   assert_otlp_json_eq(
@@ -140,6 +143,9 @@ test "otlp span to_json includes parentSpanId when set" {
     links: [],
     status_code: 1,
     status_message: "",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
   let obj = otlp_json_object(span.to_json(), "span")
   assert_otlp_json_eq(
@@ -158,6 +164,7 @@ test "otlp link to_json includes tracestate and attributes" {
     attributes: [
       @otlp.OtlpAttribute::{ key: "edge", value: @otlp.StringVal("remote"), },
     ],
+    dropped_attributes_count: 0,
   }
   let obj = otlp_json_object(link.to_json(), "link")
   assert_otlp_json_eq(
@@ -187,6 +194,7 @@ test "otlp log record to_json" {
     span_id: "",
     body: "hello",
     attributes: [],
+    dropped_attributes_count: 0,
   }
   let j = record.to_json().stringify()
   assert_true(j.contains("\"severityNumber\":9"))

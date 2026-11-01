@@ -370,6 +370,9 @@ fn test_span(name : String) -> @otlp.OtlpSpan {
     links: [],
     status_code: 1,
     status_message: "",
+    dropped_attributes_count: 0,
+    dropped_events_count: 0,
+    dropped_links_count: 0,
   }
 }
 
@@ -383,6 +386,7 @@ fn test_log_record(body : String) -> @otlp.OtlpLogRecord {
     span_id: "",
     body,
     attributes: [],
+    dropped_attributes_count: 0,
   }
 }
 

@@ -22,6 +22,7 @@ pub(all) struct OtlpLink {
   span_id : String
   trace_state : String
   attributes : Array[OtlpAttribute]
+  dropped_attributes_count : Int32
 } derive(Debug)
 
 ///|
@@ -29,6 +30,7 @@ pub(all) struct OtlpSpanEvent {
   time_unix_nano : UInt64
   name : String
   attributes : Array[OtlpAttribute]
+  dropped_attributes_count : Int32
 } derive(Debug)
 
 ///|
@@ -46,6 +48,9 @@ pub(all) struct OtlpSpan {
   links : Array[OtlpLink]
   status_code : Int32 // 0=UNSET, 1=OK, 2=ERROR
   status_message : String
+  dropped_attributes_count : Int32
+  dropped_events_count : Int32
+  dropped_links_count : Int32
 } derive(Debug)
 
 ///|
@@ -57,6 +62,7 @@ pub(all) struct OtlpLogRecord {
   attributes : Array[OtlpAttribute]
   trace_id : String
   span_id : String
+  dropped_attributes_count : Int32
 } derive(Debug)
 
 ///|
@@ -170,7 +176,16 @@ pub fn OtlpLink::to_json(self : OtlpLink) -> Json {
     m.set("traceState", Json(self.trace_state))
   }
   m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  set_dropped(m, "droppedAttributesCount", self.dropped_attributes_count)
   Json(m)
+}
+
+///|
+/// Write a dropped count only when it is non-zero, as OTLP JSON omits defaults.
+fn set_dropped(m : Map[String, Json], key : String, count : Int32) -> Unit {
+  if count > 0 {
+    m.set(key, Json(count))
+  }
 }
 
 ///|
@@ -179,6 +194,7 @@ pub fn OtlpSpanEvent::to_json(self : OtlpSpanEvent) -> Json {
   m.set("timeUnixNano", Json(self.time_unix_nano.to_string()))
   m.set("name", Json(self.name))
   m.set("attributes", Json(self.attributes.map(a => a.to_json())))
+  set_dropped(m, "droppedAttributesCount", self.dropped_attributes_count)
   Json(m)
 }
 
@@ -196,10 +212,13 @@ pub fn OtlpSpan::to_json(self : OtlpSpan) -> Json {
   m.set("startTimeUnixNano", Json(self.start_time_unix_nano.to_string()))
   m.set("endTimeUnixNano", Json(self.end_time_unix_nano.to_string()))
   m.set("attributes", Json(self.attributes.map(fn(a) { a.to_json() })))
+  set_dropped(m, "droppedAttributesCount", self.dropped_attributes_count)
   if !self.events.is_empty() {
     m.set("events", Json(self.events.map(event => event.to_json())))
   }
+  set_dropped(m, "droppedEventsCount", self.dropped_events_count)
   m.set("links", Json(self.links.map(fn(link) { link.to_json() })))
+  set_dropped(m, "droppedLinksCount", self.dropped_links_count)
   let status : Map[String, Json] = Map([])
   status.set("code", Json(self.status_code))
   if !self.status_message.is_empty() {
@@ -225,6 +244,7 @@ pub fn OtlpLogRecord::to_json(self : OtlpLogRecord) -> Json {
   if !self.span_id.is_empty() {
     m.set("spanId", Json(self.span_id))
   }
+  set_dropped(m, "droppedAttributesCount", self.dropped_attributes_count)
   Json(m)
 }
 

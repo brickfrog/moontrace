@@ -45,7 +45,12 @@ pub fn field_to_attribute(field : @moontrace.Field) -> OtlpAttribute {
 // Convert moontrace Event to OTLP log record
 
 ///|
-pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
+/// Convert an event, applying `limits` (OpenTelemetry defaults unless given)
+/// to its attributes.
+pub fn event_to_log_record(
+  event : @moontrace.Event,
+  limits~ : OtlpLimits = otlp_limits(),
+) -> OtlpLogRecord {
   let trace_id = match event_string_field(event, "trace_id") {
     Some(value) =>
       match @moontrace.TraceId::parse(value) {
@@ -62,14 +67,19 @@ pub fn event_to_log_record(event : @moontrace.Event) -> OtlpLogRecord {
         Err(_) => ""
       }
   }
+  let (attributes, dropped_attributes_count) = limit_attributes(
+    log_record_attributes(event),
+    limits,
+  )
   {
     time_unix_nano: milliseconds_to_nanoseconds(event.timestamp),
     severity_number: level_to_severity(event.level),
     severity_text: event.level.to_string(),
     body: event.message,
-    attributes: log_record_attributes(event),
+    attributes,
     trace_id,
     span_id,
+    dropped_attributes_count,
   }
 }
 
