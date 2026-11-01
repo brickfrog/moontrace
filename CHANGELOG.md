@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-01
+
 ### Added
 
 - The managed exporter encodes batches with its transport's encoder, so a protobuf transport (or `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` through `managed_exporter_from_otel_config`) delivers protobuf batches; protobuf partial-success replies are read per signal (#117).
