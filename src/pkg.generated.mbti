@@ -207,7 +207,7 @@ pub fn span_with_trace(String, String, fields? : Array[Field], kind? : SpanKind,
 
 pub fn tail_policy(keep_errors? : Bool, min_duration_ms? : UInt64, ratio? : Double) -> (TraceSummary) -> Bool
 
-pub fn tail_sampler(SpanLifecycleObserver, policy? : (TraceSummary) -> Bool, max_traces? : Int32, max_spans_per_trace? : Int32, trace_timeout_ms? : UInt64, clock? : () -> UInt64) -> TailSampler
+pub fn tail_sampler(SpanLifecycleObserver, policy? : (TraceSummary) -> Bool, max_traces? : Int32, max_spans_per_trace? : Int32, max_events_per_trace? : Int32, trace_timeout_ms? : UInt64, clock? : () -> UInt64) -> TailSampler
 
 #callsite(autofill(loc))
 pub fn trace(String, fields? : Array[Field], loc~ : SourceLoc) -> Unit

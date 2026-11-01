@@ -45,6 +45,7 @@ pub struct TailSampler {
   priv policy : (TraceSummary) -> Bool
   priv max_traces : Int32
   priv max_spans_per_trace : Int32
+  priv max_events_per_trace : Int32
   priv trace_timeout_ms : UInt64
   priv clock : () -> UInt64
   priv pending : Map[String, PendingTrace]
@@ -69,7 +70,8 @@ pub struct TailSampler {
 /// wrapped subscriber; dropped traces are discarded.
 ///
 /// Memory is bounded: past `max_traces` pending traces the oldest is decided
-/// early, a trace is decided early on reaching `max_spans_per_trace`, and
+/// early, a trace is decided early on reaching `max_spans_per_trace` completed
+/// spans or `max_events_per_trace` held events, and
 /// traces pending longer than `trace_timeout_ms` (for example with spans that
 /// never close) are decided on the next callback. Early decisions set
 /// `TraceSummary.forced`. Call `flush()` at shutdown. `clock` returns
@@ -79,6 +81,7 @@ pub fn tail_sampler(
   policy~ : (TraceSummary) -> Bool = tail_policy(),
   max_traces~ : Int32 = 1000,
   max_spans_per_trace~ : Int32 = 1000,
+  max_events_per_trace~ : Int32 = 1000,
   trace_timeout_ms~ : UInt64 = 30_000UL,
   clock~ : () -> UInt64 = @env.now,
 ) -> TailSampler {
@@ -94,6 +97,11 @@ pub fn tail_sampler(
       1
     } else {
       max_spans_per_trace
+    },
+    max_events_per_trace: if max_events_per_trace < 1 {
+      1
+    } else {
+      max_events_per_trace
     },
     trace_timeout_ms,
     clock,
@@ -139,9 +147,10 @@ fn TailSampler::remember(
   trace_id : String,
   keep : Bool,
 ) -> Unit {
-  if !self.decided.contains(trace_id) {
-    self.decided_order.push(trace_id)
-  }
+  // Keep one order entry per trace so evicting an old entry can never remove
+  // a newer decision for the same trace.
+  self.decided_order.retain(id => id != trace_id)
+  self.decided_order.push(trace_id)
   self.decided.set(trace_id, keep)
   // Remember as many decisions as traces may be pending, for late events.
   while self.decided_order.length() > self.max_traces {
@@ -171,7 +180,9 @@ fn TailSampler::decide(
   }
   let keep = (self.policy)({
     trace_id,
-    spans: trace.spans.copy(),
+    // Independent snapshots, so a policy that mutates them cannot change the
+    // spans replayed to `inner`.
+    spans: trace.spans.map(span_snapshot),
     has_error,
     max_duration_ms,
     forced,
@@ -240,6 +251,7 @@ pub fn TailSampler::observer(self : TailSampler) -> SpanLifecycleObserver {
       if self.decided.contains(span.trace_id) {
         // A late span for a decided trace starts a fresh pending trace.
         self.decided.remove(span.trace_id)
+        self.decided_order.retain(id => id != span.trace_id)
       }
       let trace = self.trace_for(span.trace_id)
       trace.open += 1
@@ -287,8 +299,12 @@ pub fn TailSampler::subscriber(
     match trace_id {
       Some(id) =>
         match self.pending.get(id) {
-          Some(trace) =>
+          Some(trace) => {
             trace.events.push({ ..event, fields: event.fields.copy(), })
+            if trace.events.length() >= self.max_events_per_trace {
+              self.decide(id, true)
+            }
+          }
           None =>
             match self.decided.get(id) {
               Some(false) => ()

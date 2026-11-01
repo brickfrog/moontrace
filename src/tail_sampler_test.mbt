@@ -142,3 +142,81 @@ test "tail_policy keeps errors, slow traces, and a ratio" {
   assert_false(slow(summary(true, 10UL)))
   assert_true(@moontrace.tail_policy(ratio=1.0)(summary(false, 0UL)))
 }
+
+///|
+test "the per-trace event buffer is bounded" {
+  let forced : Array[Bool] = []
+  let sampler = @moontrace.tail_sampler(
+    @moontrace.completed_span_observer(_ => ()),
+    policy=summary => {
+      forced.push(summary.forced)
+      true
+    },
+    max_events_per_trace=3,
+  )
+  let events : Array[String] = []
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_min_level(@moontrace.Info)
+    @moontrace.set_subscriber(sampler.subscriber(e => events.push(e.message)))
+    @moontrace.set_span_observer(sampler.observer())
+    let busy = @moontrace.span("busy")
+    busy.enter()
+    for i in 0..<5 {
+      busy.info("e\{i}")
+    }
+    // The third event forced a keep decision; later events pass straight on.
+    assert_eq(forced, [true])
+    assert_eq(events, ["e0", "e1", "e2", "e3", "e4"])
+  })
+}
+
+///|
+test "reopened traces keep their newest decision" {
+  let decisions : Array[String] = []
+  let sampler = @moontrace.tail_sampler(
+    @moontrace.completed_span_observer(_ => ()),
+    policy=summary => {
+      decisions.push(summary.spans[0].name)
+      summary.spans[0].name == "first"
+    },
+    max_traces=1,
+  )
+  let events : Array[String] = []
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_min_level(@moontrace.Info)
+    @moontrace.set_subscriber(sampler.subscriber(e => events.push(e.message)))
+    @moontrace.set_span_observer(sampler.observer())
+    let first = @moontrace.span("first")
+    first.enter()
+    first.exit()
+    // A late span reopens the trace; this time it is dropped.
+    let late = @moontrace.child_span(first, "late")
+    late.enter()
+    late.exit()
+    late.info("after drop")
+  })
+  assert_eq(decisions, ["first", "late"])
+  assert_eq(events, [])
+}
+
+///|
+test "policies see span snapshots, not the replayed spans" {
+  let delivered : Array[@moontrace.Span] = []
+  let sampler = @moontrace.tail_sampler(
+    @moontrace.completed_span_observer(span => delivered.push(span)),
+    policy=summary => {
+      summary.spans[0].set_status(@moontrace.SpanError)
+      summary.spans[0].fields.push(@moontrace.field("policy", true))
+      true
+    },
+  )
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_span_observer(sampler.observer())
+    let span = @moontrace.span("op")
+    span.enter()
+    span.exit()
+  })
+  assert_eq(delivered.length(), 1)
+  assert_eq(delivered[0].status, @moontrace.Unset)
+  assert_eq(delivered[0].fields.length(), 0)
+}

@@ -193,7 +193,8 @@ optionally slow traces, and a deterministic ratio of the rest; any
 `(TraceSummary) -> Bool` works as a policy.
 
 Memory is bounded. Past `max_traces` pending traces, the oldest is decided
-early. A trace is decided early when it reaches `max_spans_per_trace`, and
+early. A trace is decided early when it reaches `max_spans_per_trace` completed
+spans or `max_events_per_trace` held events (both default 1000), and
 traces pending longer than `trace_timeout_ms` (default 30s), such as ones with
 spans that never close, are decided on the next callback. These early
 decisions set `TraceSummary.forced`; `kept()`, `dropped()`, `forced()`, and
