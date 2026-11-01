@@ -91,3 +91,19 @@ test "series snapshots serialize to JSON" {
     "{\"name\":\"op\",\"kind\":\"INTERNAL\",\"count\":1,\"errors\":1,\"duration_ms\":{\"sum\":3,\"min\":3,\"max\":3},\"histogram\":{\"bounds_ms\":[10],\"counts\":[1,0]}}",
   )
 }
+
+///|
+test "level-disabled spans are not counted; unleveled spans always are" {
+  let metrics = @metrics.span_metrics()
+  @moontrace.with_trace_state(() => {
+    @moontrace.set_min_level(@moontrace.Info)
+    @moontrace.set_span_observer(metrics.observer())
+    let quiet = @moontrace.span("quiet", level=@moontrace.Debug)
+    quiet.enter()
+    quiet.exit()
+    let plain = @moontrace.span("plain")
+    plain.enter()
+    plain.exit()
+  })
+  assert_eq(metrics.snapshot().map(s => s.name), ["plain"])
+}
