@@ -13,6 +13,10 @@ pub fn always_on_sampler() -> SpanSampler
 
 pub fn apply_env_filter(ParsedFilter) -> Unit
 
+pub let baggage_max_bytes : Int32
+
+pub let baggage_max_members : Int32
+
 pub fn breadcrumbs((Event) -> Unit, capacity? : Int32, trigger? : Level) -> Breadcrumbs
 
 pub fn buffer((Event) -> Unit, capacity? : Int32) -> EventBuffer
@@ -61,6 +65,8 @@ pub fn event_in_span(Span, Level, String, fields? : Array[Field], loc~ : SourceL
 
 pub fn exception_fields(Error, type_name? : String) -> Array[Field]
 
+pub fn extract_headers(Map[String, String]) -> (SpanContext?, Baggage)
+
 pub fn[T : ToJson] field(String, T) -> Field
 
 pub fn fields(Array[(String, Json)]) -> Array[Field]
@@ -98,6 +104,10 @@ pub fn info_in_span(Span, String, fields? : Array[Field], loc~ : SourceLoc) -> U
 
 pub fn initialize_from_env(env_var? : String) -> Result[Unit, EnvFilterError]
 
+pub fn inject_headers(Map[String, String], SpanContext, baggage? : Baggage, format? : PropagationFormat) -> Unit
+
+pub fn inject_span_headers(Map[String, String], Span, baggage? : Baggage, format? : PropagationFormat) -> Bool
+
 pub fn intercept((Event) -> Unit, (Event) -> Unit) -> (Event) -> Unit
 
 pub fn level_color(Level) -> String
@@ -113,6 +123,8 @@ pub fn next_trace_id() -> String
 pub fn noop() -> (Event) -> Unit
 
 pub fn parent_based_sampler(SpanSampler) -> SpanSampler
+
+pub fn parse_baggage(String) -> Baggage
 
 pub fn parse_env_filter(String) -> Result[ParsedFilter, EnvFilterError]
 
@@ -233,6 +245,24 @@ pub fn[T] with_trace_state(() -> T raise?) -> T raise?
 // Errors
 
 // Types and methods
+pub struct Baggage {
+  // private fields
+}
+pub fn Baggage::empty() -> Self
+pub fn Baggage::entries(Self) -> Array[BaggageEntry]
+pub fn Baggage::get(Self, String) -> String?
+pub fn Baggage::is_empty(Self) -> Bool
+pub fn Baggage::len(Self) -> Int32
+pub fn Baggage::remove(Self, String) -> Self
+pub fn Baggage::set(Self, String, String, properties? : String) -> Self
+pub fn Baggage::to_header(Self) -> String
+
+pub struct BaggageEntry {
+  key : String
+  value : String
+  properties : String
+}
+
 pub struct Breadcrumbs {
   // private fields
 }
@@ -326,6 +356,12 @@ pub(all) struct ParsedFilter {
   module_filters : Map[String, Level]
 } derive(@debug.Debug)
 pub fn ParsedFilter::apply(Self) -> Unit
+
+pub(all) enum PropagationFormat {
+  W3C
+  B3Single
+  B3Multi
+}
 
 pub(all) struct RateLimiter {
   inner : (Event) -> Unit
