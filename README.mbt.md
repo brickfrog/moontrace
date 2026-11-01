@@ -894,7 +894,7 @@ See [docs/flame.md](docs/flame.md) for rendering with `inferno-flamegraph` or `f
 
 ### File Subscriber
 
-`brickfrog/moontrace/file` provides a native-only buffered JSONL file subscriber. The synchronous subscriber enqueues without blocking the logging call site; an async worker drains, rotates, optionally gzips rotated files, and tracks written/dropped counts.
+`brickfrog/moontrace/file` provides a native-only buffered JSONL file subscriber. The synchronous subscriber enqueues without blocking the logging call site; an async worker drains, rotates, optionally gzips rotated files, and tracks written/dropped counts. Rotation is by size, or with `rotate_every=Daily` / `Hourly` by UTC period into date-stamped archives, with `max_age_ms` and `max_files` retention.
 
 On Unix, files newly created by the subscriber request owner-only `0600`
 permissions. Existing file modes are left unchanged.
