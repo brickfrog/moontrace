@@ -14,14 +14,17 @@ pub(all) enum PropagationFormat {
 ///
 /// `format` selects W3C (default) or B3 trace headers. A non-empty `baggage`
 /// is written as the W3C `baggage` header in every format, and a non-empty
-/// tracestate is written only for W3C. Existing headers with the same names
-/// are replaced, matching names case-insensitively.
+/// tracestate is written only for W3C. Every existing trace header of any
+/// supported format (`traceparent`, `tracestate`, `b3`, `X-B3-*`) is removed
+/// first, matching names case-insensitively, so stale headers cannot override
+/// `ctx` on extraction.
 pub fn inject_headers(
   headers : Map[String, String],
   ctx : SpanContext,
   baggage~ : Baggage = Baggage::empty(),
   format~ : PropagationFormat = W3C,
 ) -> Unit {
+  remove_headers(headers, trace_header_names)
   match format {
     W3C => {
       set_header(headers, "traceparent", format_traceparent(ctx))
@@ -126,15 +129,31 @@ pub fn extract_headers(
 }
 
 ///|
+/// Lowercase names of every trace-context header `inject_headers` can write or
+/// `extract_headers` reads.
+let trace_header_names : Array[String] = [
+  "traceparent", "tracestate", "b3", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid",
+  "x-b3-sampled", "x-b3-flags",
+]
+
+///|
+/// Remove headers whose lowercase names are in `names`.
+fn remove_headers(headers : Map[String, String], names : Array[String]) -> Unit {
+  let existing = headers
+    .keys()
+    .filter(key => names.contains(key.to_lower()))
+    .collect()
+  existing.each(key => headers.remove(key))
+}
+
+///|
 /// Replace any header named `name` (case-insensitively) with `value`.
 fn set_header(
   headers : Map[String, String],
   name : String,
   value : String,
 ) -> Unit {
-  let lower = name.to_lower()
-  let existing = headers.keys().filter(key => key.to_lower() == lower).collect()
-  existing.each(key => headers.remove(key))
+  remove_headers(headers, [name.to_lower()])
   headers.set(name, value)
 }
 

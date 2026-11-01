@@ -58,18 +58,21 @@ pub fn Baggage::entries(self : Baggage) -> Array[BaggageEntry] {
 
 ///|
 /// Return baggage with `key` set to `value`. An existing key keeps its
-/// position. Returns the baggage unchanged when `key` is not an HTTP token, or
-/// when adding a new key would exceed `baggage_max_members`.
+/// position. `properties` is the `;`-separated W3C property list, each
+/// property a token or `token=value` with a baggage-safe value. Returns the
+/// baggage unchanged when `key` is not an HTTP token, `properties` is
+/// malformed, or adding a new key would exceed `baggage_max_members`.
 pub fn Baggage::set(
   self : Baggage,
   key : String,
   value : String,
   properties~ : String = "",
 ) -> Baggage {
-  if !is_baggage_key(key) {
+  guard is_baggage_key(key) &&
+    normalize_properties(properties) is Some(properties) else {
     return self
   }
-  let entry = { key, value, properties: properties.trim().to_owned(), }
+  let entry = { key, value, properties, }
   let entries = self.entries.copy()
   match entries.search_by(existing => existing.key == key) {
     Some(index) => entries[index] = entry
@@ -121,8 +124,8 @@ pub fn Baggage::to_header(self : Baggage) -> String {
 }
 
 ///|
-/// Parse a W3C `baggage` header value. Parsing never fails: malformed members
-/// are skipped, a later duplicate key replaces an earlier one, and members
+/// Parse a W3C `baggage` header value. Parsing never fails: malformed members,
+/// including members with malformed properties, are skipped, a later duplicate key replaces an earlier one, and members
 /// past `baggage_max_members` are ignored. Values are percent-decoded; a value
 /// that does not decode is kept as received.
 pub fn parse_baggage(header : String) -> Baggage {
@@ -142,6 +145,38 @@ pub fn parse_baggage(header : String) -> Baggage {
     baggage = baggage.set(key, decoded, properties~)
   }
   baggage
+}
+
+///|
+/// Validate a `;`-separated property list and normalize whitespace around
+/// each property, its key, and its value. Empty input is valid; empty
+/// properties (`a;;b`) are not.
+fn normalize_properties(properties : String) -> String? {
+  let trimmed = properties.trim()
+  if trimmed.is_empty() {
+    return Some("")
+  }
+  let normalized : Array[String] = []
+  for property in trimmed.split(";") {
+    match property.split_once("=") {
+      Some((key, value)) => {
+        let key = key.trim().to_owned()
+        let value = value.trim().to_owned()
+        if !is_baggage_key(key) || !value.iter().all(is_baggage_value_char) {
+          return None
+        }
+        normalized.push("\{key}=\{value}")
+      }
+      None => {
+        let key = property.trim().to_owned()
+        if !is_baggage_key(key) {
+          return None
+        }
+        normalized.push(key)
+      }
+    }
+  }
+  Some(normalized.join(";"))
 }
 
 ///|

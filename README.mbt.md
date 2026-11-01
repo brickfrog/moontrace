@@ -381,11 +381,12 @@ fn handle(incoming : Map[String, String]) -> Map[String, String] {
 
 `extract_headers` never raises: a missing or invalid trace header gives `None`,
 and `parse_baggage` skips malformed members. Baggage values are percent-encoded
-on the wire, member properties (`;ttl=30`) are preserved, and at most 64
+on the wire, valid member properties (`;ttl=30`) are preserved, and at most 64
 members and 8192 bytes are kept or written, the minimums W3C requires. Pass
 `format=B3Single` or `format=B3Multi` to inject Zipkin B3 headers instead of
 `traceparent`; `extract_headers` falls back to `b3` and then `X-B3-*` headers
-when `traceparent` is absent. A B3 context without a sampling decision is
+when `traceparent` is absent. Injecting first removes any existing trace
+headers of every format, so stale headers cannot win on extraction. A B3 context without a sampling decision is
 treated as not sampled.
 
 ### Span Links

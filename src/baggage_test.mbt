@@ -68,3 +68,17 @@ test "baggage enforces member and byte limits" {
   assert_true(header.has_prefix("a="))
   assert_true(header.has_suffix(",c=small"))
 }
+
+///|
+test "baggage rejects malformed properties when setting and parsing" {
+  let base = @moontrace.Baggage::empty().set("a", "v")
+  for bad in ["p,b=other", "p\r\nx", "p;;q", "bad key", "k=a b", "=v"] {
+    assert_eq(base.set("b", "v", properties=bad).len(), 1)
+  }
+  let ok = base.set("b", "v", properties=" ttl = 30 ; secret ")
+  assert_eq(ok.entries()[1].properties, "ttl=30;secret")
+  assert_eq(ok.to_header(), "a=v,b=v;ttl=30;secret")
+  let parsed = @moontrace.parse_baggage("a=1;p q,b=2;ok;k=v,c=3;;x")
+  assert_eq(parsed.entries().map(e => e.key), ["b"])
+  assert_eq(parsed.entries()[0].properties, "ok;k=v")
+}

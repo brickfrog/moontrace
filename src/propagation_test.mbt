@@ -121,3 +121,29 @@ test "inject_span_headers propagates a local span" {
   assert_false(@moontrace.inject_span_headers(untouched, invalid))
   assert_eq(untouched.length(), 0)
 }
+
+///|
+test "inject removes stale trace headers of every format" {
+  let headers : Map[String, String] = {
+    "TraceParent": "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+    "TraceState": "old=1",
+    "B3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-1",
+    "X-B3-Flags": "1",
+    "X-B3-ParentSpanId": "cccccccccccccccc",
+    "baggage": "keep=1",
+    "accept": "*/*",
+  }
+  @moontrace.inject_headers(headers, propagation_ctx(false), format=B3Multi)
+  assert_eq(headers.length(), 5)
+  assert_eq(headers.get("baggage"), Some("keep=1"))
+  assert_eq(headers.get("accept"), Some("*/*"))
+  let (ctx, _) = @moontrace.extract_headers(headers)
+  guard ctx is Some(ctx) else { fail("expected context") }
+  assert_eq(ctx.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736")
+  assert_false(ctx.is_sampled())
+
+  @moontrace.inject_headers(headers, propagation_ctx(true))
+  assert_eq(headers.get("X-B3-TraceId"), None)
+  assert_eq(headers.get("X-B3-Sampled"), None)
+  assert_eq(headers.get("tracestate"), Some("vendor=opaque"))
+}
