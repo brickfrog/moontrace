@@ -180,6 +180,15 @@ match @moontrace.parse_env_filter("warn,my/queue/package=trace") {
 }
 ```
 
+`off` silences instead of setting a level, without adding a `Level` variant:
+`info,my/noisy/dep=off` drops every event from that package (and its spans
+created with `level=`), and a bare `off,my/app=debug` silences everything
+except `my/app`. The longest matching package still wins, so a more specific
+filter under a silenced package applies. In code, use
+`@moontrace.silence_module("my/noisy/dep")` and `@moontrace.silence_all()`;
+`set_min_level` turns a global `off` back on. `ParsedFilter` reports these as
+`silenced_modules` and `default_off`.
+
 `@moontrace.initialize_from_env()` reads `MOONTRACE_LOG` and changes filters only;
 it does not install a subscriber. Missing or blank values leave existing filters
 unchanged. For combined subscriber and filter setup, see [Application Startup](#application-startup):

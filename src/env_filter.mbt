@@ -22,10 +22,33 @@ pub impl Show for EnvFilterError with fn output(self, logger) {
 }
 
 ///|
+/// A parsed filter directive. `default_off` is set by a bare `off`, and
+/// `silenced_modules` lists packages set to `off`; a package appears in at
+/// most one of `module_filters` and `silenced_modules`.
 pub(all) struct ParsedFilter {
   default_level : Level
   module_filters : Map[String, Level]
+  silenced_modules : Array[String]
+  default_off : Bool
 } derive(Debug)
+
+///|
+/// Package filters in resolver form, with silenced packages as `None`.
+fn ParsedFilter::resolved_filters(self : ParsedFilter) -> Map[String, Level?] {
+  let resolved : Map[String, Level?] = Map([])
+  self.module_filters.each((target, level) => resolved.set(target, Some(level)))
+  self.silenced_modules.each(target => resolved.set(target, None))
+  resolved
+}
+
+///|
+fn ParsedFilter::resolved_default(self : ParsedFilter) -> Level? {
+  if self.default_off {
+    None
+  } else {
+    Some(self.default_level)
+  }
+}
 
 ///|
 fn trim_env_filter_part(value : StringView) -> String {
@@ -44,7 +67,9 @@ fn parse_env_filter_level(level : String) -> Result[Level, EnvFilterError] {
 /// Parse a compact filter directive string.
 ///
 /// Supported directives are comma-separated bare levels (`info`) and package
-/// filters (`brickfrog/moontrace=debug`). A package filter also applies to its
+/// filters (`brickfrog/moontrace=debug`). `off` (any case) silences: a bare
+/// `off` silences every package without a more specific filter, and
+/// `my/app=off` silences that package. A package filter also applies to its
 /// subpackages; the longest matching package wins. Empty directives are skipped,
 /// duplicate defaults or package filters are accepted, and the last directive
 /// wins. If no bare default is present, the parsed default is `Info`.
@@ -52,7 +77,8 @@ pub fn parse_env_filter(
   directive : String,
 ) -> Result[ParsedFilter, EnvFilterError] {
   let mut default_level = Info
-  let filters : Map[String, Level] = Map([])
+  let mut default_off = false
+  let filters : Map[String, Level?] = Map([])
   for raw_part in directive.split(",") {
     let part = trim_env_filter_part(raw_part)
     if !part.is_empty() {
@@ -67,20 +93,39 @@ pub fn parse_env_filter(
           if target.is_empty() || level_text.is_empty() {
             return Err(MalformedDirective(part))
           }
-          match parse_env_filter_level(level_text) {
-            Ok(level) => filters.set(target, level)
-            Err(err) => return Err(err)
+          if level_text.to_lower() == "off" {
+            filters.set(target, None)
+          } else {
+            match parse_env_filter_level(level_text) {
+              Ok(level) => filters.set(target, Some(level))
+              Err(err) => return Err(err)
+            }
           }
         }
         None =>
-          match parse_env_filter_level(part) {
-            Ok(level) => default_level = level
-            Err(err) => return Err(err)
+          if part.to_lower() == "off" {
+            default_off = true
+          } else {
+            match parse_env_filter_level(part) {
+              Ok(level) => {
+                default_level = level
+                default_off = false
+              }
+              Err(err) => return Err(err)
+            }
           }
       }
     }
   }
-  Ok({ default_level, module_filters: filters, })
+  let module_filters : Map[String, Level] = Map([])
+  let silenced_modules : Array[String] = []
+  filters.each((target, level) => {
+    match level {
+      Some(level) => module_filters.set(target, level)
+      None => silenced_modules.push(target)
+    }
+  })
+  Ok({ default_level, module_filters, silenced_modules, default_off, })
 }
 
 ///|
@@ -88,9 +133,13 @@ pub fn parse_env_filter(
 pub fn apply_env_filter(parsed : ParsedFilter) -> Unit {
   clear_module_filters()
   set_min_level(parsed.default_level)
+  if parsed.default_off {
+    silence_all()
+  }
   parsed.module_filters.each(fn(target, level) {
     set_module_filter(target, level)
   })
+  parsed.silenced_modules.each(silence_module)
 }
 
 ///|

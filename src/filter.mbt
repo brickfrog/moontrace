@@ -1,6 +1,7 @@
 ///|
-/// Global module filter map: package_name -> min_level
-let module_filters : Ref[Map[String, Level]] = { val: {}, }
+/// Global module filter map: package name -> minimum level, or `None` when the
+/// package is silenced.
+let module_filters : Ref[Map[String, Level?]] = { val: {}, }
 
 ///|
 /// Set a filter for a specific module to the given minimum level
@@ -10,7 +11,16 @@ let module_filters : Ref[Map[String, Level]] = { val: {}, }
 /// * `level` - The minimum level to log for this module
 ///
 pub fn set_module_filter(module_name : String, level : Level) -> Unit {
-  module_filters.val.set(module_name, level)
+  module_filters.val.set(module_name, Some(level))
+}
+
+///|
+/// Silence a package and its subpackages: no events from them reach the
+/// subscriber, and spans created there with `level=` are disabled. A more
+/// specific package filter, such as `my/app/db` under a silenced `my/app`,
+/// still applies.
+pub fn silence_module(module_name : String) -> Unit {
+  module_filters.val.set(module_name, None)
 }
 
 ///|
@@ -27,18 +37,18 @@ pub fn clear_module_filters() -> Unit {
 /// matches `my/app` and `my/app/db`, but not `my/apple`. The longest matching
 /// package path wins, so an exact filter overrides a parent filter. Sources
 /// without a matching filter fall back to the global minimum level.
-fn effective_min(source : String) -> Level {
-  resolve_module_level(module_filters.val, global_min_level.val, source)
+fn effective_min(source : String) -> Level? {
+  resolve_module_level(module_filters.val, global_default_level(), source)
 }
 
 ///|
 /// Resolve `source` against package filters by longest matching package path,
 /// falling back to `default_level`.
 fn resolve_module_level(
-  filters : Map[String, Level],
-  default_level : Level,
+  filters : Map[String, Level?],
+  default_level : Level?,
   source : String,
-) -> Level {
+) -> Level? {
   if filters.is_empty() {
     return default_level
   }
@@ -66,7 +76,10 @@ fn resolve_module_level(
 /// Returns true if the event should be logged, false otherwise
 ///
 fn should_log_module(source : String, level : Level) -> Bool {
-  level >= effective_min(source)
+  match effective_min(source) {
+    Some(min) => level >= min
+    None => false
+  }
 }
 
 ///|
