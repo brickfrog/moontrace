@@ -15,6 +15,7 @@ Upgrade notes:
 
 ### Added
 
+- `brickfrog/moontrace/metrics` (phase 1 of #101): `span_metrics(buckets_ms?)` records count, errors, duration sum/min/max, and a duration histogram per span name and kind from a span observer, with `snapshot()`, `reset()`, and `SpanSeriesSnapshot::to_json()`.
 - OTLP protobuf and gzip export: `transport(encoder=ProtobufEncoder, compression=GzipCompression)` sends `application/x-protobuf` and/or gzip bodies from `export_spans`, `export_logs`, and their `_report` variants, with the same retry handling. `parse_protobuf_export_response` reads protobuf partial-success replies. `OtlpHttpClient` gains `post_bytes` (with a default that forwards UTF-8 bodies to `post`), implemented by `AsyncHttpClient`. `transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` and `OTEL_EXPORTER_OTLP_COMPRESSION`; the managed exporter uses the configured compression (#93).
 - Time-based file rotation: `rotate_every=Daily | Hourly` archives the active file by UTC period as `path.<stamp>[.n][.gz]`, size limits within a period add sequence numbers, and `max_age_ms` plus `max_files` prune dated archives. `file_subscriber(clock=...)` and `FileSubscriber::new(config, clock=...)` take an injectable millisecond clock (#99).
 - `brickfrog/moontrace/queue`: `queued(sink, capacity?, max_batch?)` puts a bounded, non-blocking queue in front of any async batch sink, with `run`, `flush`, `shutdown`, and `enqueued`/`delivered`/`failed`/`dropped` counters (#99).

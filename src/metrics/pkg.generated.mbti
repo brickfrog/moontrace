@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/metrics"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub let default_duration_buckets_ms : Array[UInt64]
+
+pub fn span_metrics(buckets_ms? : Array[UInt64]) -> SpanMetrics
+
+// Errors
+
+// Types and methods
+pub struct SpanMetrics {
+  // private fields
+}
+pub fn SpanMetrics::observer(Self) -> @moontrace.SpanLifecycleObserver
+pub fn SpanMetrics::record(Self, @moontrace.Span) -> Unit
+pub fn SpanMetrics::reset(Self) -> Unit
+pub fn SpanMetrics::snapshot(Self) -> Array[SpanSeriesSnapshot]
+
+pub(all) struct SpanSeriesSnapshot {
+  name : String
+  kind : @moontrace.SpanKind
+  count : Int64
+  errors : Int64
+  duration_sum_ms : UInt64
+  duration_min_ms : UInt64
+  duration_max_ms : UInt64
+  bucket_bounds_ms : Array[UInt64]
+  bucket_counts : Array[Int64]
+}
+pub fn SpanSeriesSnapshot::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
