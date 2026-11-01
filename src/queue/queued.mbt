@@ -11,6 +11,7 @@ pub struct QueuedSubscriber {
   priv mut dropped : Int64
   priv mut closing : Bool
   priv mut worker_running : Bool
+  priv mut in_flight : Bool
 }
 
 ///|
@@ -43,6 +44,7 @@ pub fn queued(
     dropped: 0L,
     closing: false,
     worker_running: false,
+    in_flight: false,
   }
 }
 
@@ -112,14 +114,24 @@ fn QueuedSubscriber::take_batch(
 
 ///|
 /// Deliver one batch, counting it as failed if the sink raises or the task is
-/// cancelled during delivery.
+/// cancelled during delivery. Deliveries are serialized across the worker and
+/// draining callers, so batches reach the sink one at a time and in order.
 async fn QueuedSubscriber::deliver(
   self : QueuedSubscriber,
   batch : Array[@moontrace.Event],
 ) -> Unit {
+  while self.in_flight {
+    @async.pause()
+  }
+  self.in_flight = true
   let count = batch.length().to_int64()
   let mut settled = false
-  defer (if !settled { self.failed += count })
+  defer {
+    self.in_flight = false
+    if !settled {
+      self.failed += count
+    }
+  }
   (self.sink)(batch) catch {
     _ => {
       self.failed += count
@@ -153,30 +165,22 @@ pub async fn QueuedSubscriber::run(self : QueuedSubscriber) -> Unit {
 }
 
 ///|
-async fn QueuedSubscriber::drain_here(self : QueuedSubscriber) -> Unit {
-  while true {
-    let next = self.queue.try_get() catch { _ => None }
-    match next {
-      Some(first) => self.deliver(self.take_batch(first))
-      None => return
-    }
-  }
-}
-
-///|
 /// Wait until every event accepted before this call is delivered or failed.
+/// Without a worker, the calling task delivers queued batches itself, stopping
+/// as soon as that target is settled even if producers keep logging. While a
+/// worker runs or another task is delivering, it waits instead.
 pub async fn QueuedSubscriber::flush(self : QueuedSubscriber) -> Unit {
   let target = self.enqueued
   while self.settled() < target {
-    if self.worker_running {
+    if self.worker_running || self.in_flight {
       @async.pause()
-    } else {
-      self.drain_here()
-      if self.settled() < target && !self.worker_running {
-        // Remaining events are in a batch held by a stopped worker's
-        // cancelled delivery; nothing more can settle them.
-        return
-      }
+      continue
+    }
+    let next = self.queue.try_get() catch { _ => None }
+    match next {
+      Some(first) => self.deliver(self.take_batch(first))
+      // Nothing is queued or in flight, so nothing else can settle the target.
+      None => return
     }
   }
 }

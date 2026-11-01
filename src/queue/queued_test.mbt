@@ -120,3 +120,45 @@ async test "only one worker may run" {
   })
   assert_true(rejected.val)
 }
+
+///|
+async test "shutdown waits for another task's in-flight caller-side delivery" {
+  let delivered : Array[String] = []
+  let q = @queue.queued(
+    batch => {
+      @async.sleep(20)
+      batch.each(e => delivered.push(e.message))
+    },
+    max_batch=1,
+  )
+  let sub = q.subscriber()
+  sub(queue_event("a"))
+  @async.with_task_group(group => {
+    group.spawn_bg(() => q.flush())
+    @async.pause()
+    // The flush task now holds "a" in its suspended sink call.
+    q.shutdown()
+    assert_eq(delivered, ["a"])
+    assert_eq(q.delivered(), 1L)
+  })
+}
+
+///|
+async test "flush stops at its target while producers keep logging" {
+  let q_ref : Ref[@queue.QueuedSubscriber?] = Ref(None)
+  let q = @queue.queued(
+    batch => {
+      @async.pause()
+      // Each delivery produces another event, so the queue never empties.
+      if q_ref.val is Some(q) && batch[0].message.length() < 20 {
+        q.subscriber()(queue_event(batch[0].message + "+"))
+      }
+    },
+    max_batch=1,
+  )
+  q_ref.val = Some(q)
+  q.subscriber()(queue_event("seed"))
+  @async.with_timeout(1000, () => q.flush())
+  assert_true(q.delivered() >= 1L)
+  assert_true(q.enqueued() > q.delivered())
+}
