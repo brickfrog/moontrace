@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Upgrade notes:
+## [0.19.0] - 2026-11-01
+
+Upgrade notes for code that constructs moontrace values directly or matches on them exhaustively:
 
 - `OtelConfig` literals need `metric_export_interval_ms` and `metric_export_timeout_ms` (#135).
 - `OtlpValue` has an `EmptyVal` variant; update exhaustive matches (#136).
