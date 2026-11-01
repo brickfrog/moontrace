@@ -789,7 +789,7 @@ nonnegative int64 JSON numbers or decimal strings, including exponent notation;
 quoted counts retain int64 precision, while bare numbers follow ProtoJSON Double
 coercion. Unknown fields are ignored. Existing export method signatures remain unchanged.
 
-For timed JSON delivery with bounded buffering, use
+For timed delivery with bounded buffering, use
 `@transport.managed_json_exporter(tx)`. Its synchronous subscriber and completed
 span observer drop new batches under pressure; `run()` is owned by your task
 group. Async `flush()` provides a terminal-outcome barrier, and `shutdown()` closes
@@ -826,8 +826,7 @@ let exporter = @transport.managed_exporter_from_otel_config(tx, config)
 
 `transport_from_otel_config` applies `OTEL_EXPORTER_OTLP_PROTOCOL` (protobuf by
 default, as the specification requires; `http/json` selects JSON) and
-`OTEL_EXPORTER_OTLP_COMPRESSION`. The managed exporter always batches JSON but
-uses the configured compression. `@otlp.default_resource()` provides
+`OTEL_EXPORTER_OTLP_COMPRESSION`, and the managed exporter follows both. `@otlp.default_resource()` provides
 `service.name` (default `unknown_service`) and the `telemetry.sdk.*` attributes
 the resource specification requires, and `Resource::merge` layers resources with
 later attributes winning.

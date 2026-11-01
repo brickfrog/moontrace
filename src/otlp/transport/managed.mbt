@@ -20,7 +20,8 @@ pub(all) struct ManagedExportStats {
 ///|
 priv struct ManagedBatch {
   logs : Bool
-  payload : String
+  payload : Bytes
+  content_type : String
   bytes : Int32
   records : Int32
 }
@@ -54,7 +55,11 @@ priv struct ManagedState {
 }
 
 ///|
-/// A single-event-loop JSON exporter. Run its worker in the caller's task group.
+/// A single-event-loop OTLP exporter. Batches are encoded with the transport's
+/// encoder (JSON or protobuf) and compression; the name predates protobuf
+/// support. Batch sizing estimates records by their JSON size, which overstates
+/// protobuf payloads, so batches stay within `max_payload_bytes`. Run its worker
+/// in the caller's task group.
 /// The transport is exclusively owned for lifecycle purposes; shutdown closes it
 /// after draining, but the caller remains responsible for the HTTP client's lifetime.
 pub struct ManagedJsonExporter {
@@ -133,9 +138,11 @@ pub fn managed_json_exporter(
     last_report: None,
     last_error: None,
   }
+  // Batches are cut and encoded by `cut_logs`/`cut_spans`; the batcher only
+  // buffers records, so its JSON outputs are never used.
   let batcher = @otlp.exporter(
-    log_output=payload => state.offer(true, payload),
-    span_output=payload => state.offer(false, payload),
+    log_output=_ => (),
+    span_output=_ => (),
     capacity=batch_size,
     resource~,
     scope~,
@@ -162,7 +169,7 @@ pub fn managed_json_exporter(
 fn ManagedState::offer(
   self : ManagedState,
   logs : Bool,
-  payload : String,
+  encoded : Result[OtlpPayload, EncodingError],
 ) -> Unit {
   let records = if logs { self.log_count } else { self.span_count }
   if logs {
@@ -172,7 +179,16 @@ fn ManagedState::offer(
     self.span_count = 0
     self.span_bytes = 0
   }
-  let bytes = managed_bytes(payload)
+  let payload = match encoded {
+    Ok(payload) => payload
+    Err(error) => {
+      self.dropped += 1L
+      self.dropped_records += records.to_int64()
+      self.last_error = Some(error.to_string())
+      return
+    }
+  }
+  let bytes = payload.body.length()
   if self.closed ||
     self.pending_batches >= self.capacity ||
     (
@@ -185,7 +201,13 @@ fn ManagedState::offer(
     self.dropped_records += records.to_int64()
     return
   }
-  let accepted = self.queue.try_put({ logs, payload, bytes, records, }) catch {
+  let accepted = self.queue.try_put({
+    logs,
+    payload: payload.body,
+    content_type: payload.content_type,
+    bytes,
+    records,
+  }) catch {
     _ => false
   }
   if accepted {
@@ -197,6 +219,42 @@ fn ManagedState::offer(
     self.dropped += 1L
     self.dropped_records += records.to_int64()
   }
+}
+
+///|
+/// Encode and queue the buffered log records as one batch.
+fn ManagedJsonExporter::cut_logs(self : ManagedJsonExporter) -> Unit {
+  let records = self.batcher.log_records
+  if records.is_empty() {
+    return
+  }
+  self.batcher.log_records = []
+  self.state.offer(
+    true,
+    self.transport.encoder.encode_logs(
+      records,
+      resource=self.batcher.resource,
+      scope=self.batcher.scope,
+    ),
+  )
+}
+
+///|
+/// Encode and queue the buffered spans as one batch.
+fn ManagedJsonExporter::cut_spans(self : ManagedJsonExporter) -> Unit {
+  let spans = self.batcher.spans
+  if spans.is_empty() {
+    return
+  }
+  self.batcher.spans = []
+  self.state.offer(
+    false,
+    self.transport.encoder.encode_spans(
+      spans,
+      resource=self.batcher.resource,
+      scope=self.batcher.scope,
+    ),
+  )
 }
 
 ///|
@@ -221,13 +279,13 @@ pub fn ManagedJsonExporter::subscriber(
     }
     let separator = if state.log_count == 0 { 0 } else { 1 }
     if state.log_bytes > room - size - separator {
-      self.batcher.flush_logs()
+      self.cut_logs()
     }
     state.log_bytes += size + (if state.log_count == 0 { 0 } else { 1 })
     state.log_count += 1
     self.batcher.log_records.push(record)
     if state.log_count >= self.batcher.capacity {
-      self.batcher.flush_logs()
+      self.cut_logs()
     }
   }
 }
@@ -254,11 +312,14 @@ pub fn ManagedJsonExporter::span_observer(
     }
     let separator = if state.span_count == 0 { 0 } else { 1 }
     if state.span_bytes > room - size - separator {
-      self.batcher.flush_spans()
+      self.cut_spans()
     }
     state.span_bytes += size + (if state.span_count == 0 { 0 } else { 1 })
     state.span_count += 1
-    self.batcher.add_span(converted)
+    self.batcher.spans.push(converted)
+    if state.span_count >= self.batcher.capacity {
+      self.cut_spans()
+    }
   })
 }
 
@@ -322,11 +383,23 @@ async fn ManagedJsonExporter::send(
   } else {
     self.transport.traces_path
   }
-  match
-    self.transport.export_json_report(
-      join_url(self.transport.endpoint, path),
-      batch.payload,
-    ) {
+  let format = match self.transport.encoder {
+    JsonEncoder => JsonResponse
+    ProtobufEncoder => ProtobufResponse(if batch.logs { Logs } else { Traces })
+  }
+  let partial = Ref(None)
+  let result = self.transport.export_body_impl(
+    join_url(self.transport.endpoint, path),
+    batch.payload,
+    Some(batch.content_type),
+    format,
+    value => partial.val = Some(value),
+  )
+  let result : Result[ExportReport, TransportError] = match result {
+    Ok(outcome) => Ok({ outcome, partial_success: partial.val, })
+    Err(error) => Err(error)
+  }
+  match result {
     Ok(report) => {
       state.last_report = Some(report)
       if report.outcome.success {
@@ -380,7 +453,8 @@ pub async fn ManagedJsonExporter::run(self : ManagedJsonExporter) -> Unit {
       while !state.closing {
         @async.sleep(self.interval_ms)
         if !state.closing {
-          self.batcher.flush()
+          self.cut_logs()
+          self.cut_spans()
         }
       }
     })
@@ -441,7 +515,8 @@ pub async fn ManagedJsonExporter::flush(
     )
   }
   if !self.state.closing {
-    self.batcher.flush()
+    self.cut_logs()
+    self.cut_spans()
   }
   let target = self.state.enqueued
   self.wait_until(target)
@@ -462,11 +537,11 @@ pub async fn ManagedJsonExporter::shutdown(
   defer self.unlock()
   if !state.closed {
     self.wait_until(state.enqueued)
-    self.batcher.flush_logs()
+    self.cut_logs()
     self.wait_until(state.enqueued)
-    self.batcher.flush_spans()
+    self.cut_spans()
     self.wait_until(state.enqueued)
-    self.batcher.shutdown()
+    self.batcher.is_shut_down = true
     state.queue.close()
   }
   while state.worker_running {
