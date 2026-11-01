@@ -93,3 +93,17 @@ test "log record limits apply to attributes" {
   )
   assert_eq(@otlp.otlp_limits(attribute_count=-5).attribute_count, 0)
 }
+
+///|
+test "value length limits count characters, not UTF-16 code units" {
+  let span = @moontrace.span("op", fields=[
+    @moontrace.field("emoji", "😀😀"),
+    @moontrace.field("mixed", "a😀b😀c"),
+  ])
+  let otlp = @otlp.span_to_otlp(
+    span,
+    limits=@otlp.otlp_limits(attribute_value_length=3),
+  )
+  assert_true(otlp.attributes[0].value is StringVal("😀😀"))
+  assert_true(otlp.attributes[1].value is StringVal("a😀b"))
+}

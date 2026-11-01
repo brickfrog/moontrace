@@ -32,8 +32,16 @@ pub fn otlp_limits(
 ///|
 fn truncate_value(value : OtlpValue, max_length : Int32?) -> OtlpValue {
   match (value, max_length) {
-    (StringVal(text), Some(limit)) if text.length() > limit =>
-      StringVal(String::from_array(text.to_array()[0:limit]))
+    (StringVal(text), Some(limit)) => {
+      // Count and cut characters, not UTF-16 code units, so surrogate pairs
+      // are never split and short strings stay unchanged.
+      let chars = text.to_array()
+      if chars.length() > limit {
+        StringVal(String::from_array(chars[0:limit]))
+      } else {
+        value
+      }
+    }
     (ArrayVal(items), Some(_)) =>
       ArrayVal(items.map(item => truncate_value(item, max_length)))
     _ => value
