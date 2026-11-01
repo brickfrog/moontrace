@@ -17,7 +17,8 @@ request and async context explicit.
 - `src/otlp/` handles OTLP conversion and buffering; `src/otlp/transport/` handles
   async HTTP transport and JSON/protobuf encoding.
 - `src/span_async/` provides async span wrappers; `src/flame/` observes completed
-  spans; `src/file/` provides the native buffered file subscriber.
+  spans; `src/file/` provides the native buffered file subscriber; `src/queue/`
+  provides a generic bounded async queue in front of slow sinks.
 - `src/test/` provides test subscribers and assertion helpers. `*_test.mbt`
   files are blackbox tests; `*_wbtest.mbt` files can access package internals.
 - See [README.mbt.md](README.mbt.md) for usage and the guides in [docs](docs).

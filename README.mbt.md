@@ -920,6 +920,31 @@ pub async fn install_file_subscriber() -> Unit {
 
 See [docs/file.md](docs/file.md) for worker ownership, rotation, retention, and native-target behavior.
 
+### Queued Subscriber
+
+`brickfrog/moontrace/queue` puts a bounded queue in front of any slow async
+sink, so logging stays synchronous and non-blocking:
+
+```mbt
+pub async fn ship_logs(send : async (Array[@moontrace.Event]) -> Unit) -> Unit {
+  let q = @queue.queued(send, capacity=1024, max_batch=128)
+  @moontrace.set_subscriber(q.subscriber())
+  @async.with_task_group(group => {
+    group.spawn_bg(() => q.run())
+    @moontrace.info("service started")
+    q.shutdown()
+  })
+}
+```
+
+`subscriber()` copies each event and drops it, counting the drop, when the
+queue is full or shutting down. `run()` delivers batches of up to `max_batch`
+events; a batch whose sink raises counts toward `failed()` and the worker
+continues. `flush()` waits for everything accepted so far, and `shutdown()`
+also stops intake and ends the worker; both drain in the calling task when no
+worker is running. `enqueued()`, `delivered()`, `failed()`, and `dropped()`
+report totals.
+
 ## Performance
 
 Set a global minimum level to skip event allocation entirely:

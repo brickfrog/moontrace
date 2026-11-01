@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "brickfrog/moontrace/queue"
+
+import {
+  "brickfrog/moontrace",
+}
+
+// Values
+pub fn queued(async (Array[@moontrace.Event]) -> Unit, capacity? : Int32, max_batch? : Int32) -> QueuedSubscriber
+
+// Errors
+
+// Types and methods
+pub struct QueuedSubscriber {
+  // private fields
+}
+pub fn QueuedSubscriber::delivered(Self) -> Int64
+pub fn QueuedSubscriber::dropped(Self) -> Int64
+pub fn QueuedSubscriber::enqueued(Self) -> Int64
+pub fn QueuedSubscriber::failed(Self) -> Int64
+pub async fn QueuedSubscriber::flush(Self) -> Unit
+pub async fn QueuedSubscriber::run(Self) -> Unit
+pub async fn QueuedSubscriber::shutdown(Self) -> Unit
+pub fn QueuedSubscriber::subscriber(Self) -> (@moontrace.Event) -> Unit
+
+// Type aliases
+
+// Traits
