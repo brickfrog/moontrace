@@ -292,6 +292,8 @@ fn write_any_value(
       protobuf_message_field(writer, 6, writer => {
         write_key_values(writer, 1, entries)
       })
+    // An empty AnyValue message.
+    EmptyVal => ()
   }
 }
 

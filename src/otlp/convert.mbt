@@ -37,7 +37,7 @@ fn json_to_otlp_value(value : Json) -> OtlpValue {
       }
       KvlistVal(attributes)
     }
-    _ => StringVal(value.stringify())
+    Null => EmptyVal
   }
 }
 

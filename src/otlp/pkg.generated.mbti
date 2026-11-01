@@ -155,6 +155,7 @@ pub(all) enum OtlpValue {
   DoubleVal(Double)
   ArrayVal(Array[OtlpValue])
   KvlistVal(Array[OtlpAttribute])
+  EmptyVal
 } derive(@debug.Debug)
 pub fn OtlpValue::to_json(Self) -> Json
 
