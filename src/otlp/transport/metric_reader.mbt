@@ -1,6 +1,7 @@
 ///|
 /// Counters are per-meter export attempts. A timed-out export also counts as
 /// failed.
+#derive(Eq, Debug)
 pub(all) struct MetricReaderStats {
   exports : Int64
   delivered : Int64
@@ -9,7 +10,7 @@ pub(all) struct MetricReaderStats {
   skipped_empty : Int64
   closed : Bool
   running : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 priv struct MetricReaderState {

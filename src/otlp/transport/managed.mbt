@@ -2,6 +2,7 @@
 /// Counters are batches except dropped_records and the buffer/payload gauges.
 /// pending_* includes queued and in-flight batches. Partial rejection is a failed
 /// batch; a zero-rejection collector warning is a delivered batch.
+#derive(Eq, Debug)
 pub(all) struct ManagedExportStats {
   enqueued_batches : Int64
   delivered_batches : Int64
@@ -15,7 +16,7 @@ pub(all) struct ManagedExportStats {
   closing : Bool
   closed : Bool
   worker_running : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 priv struct ManagedBatch {

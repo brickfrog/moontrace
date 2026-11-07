@@ -17,9 +17,10 @@ impl @transport.OtlpHttpClient for CaptureClient with fn post(
 }
 
 ///|
+#derive(Debug)
 suberror RequestError {
   RequestFailure(String)
-} derive(Debug)
+}
 
 ///|
 fn context(header : String, state : String) -> @moontrace.SpanContext {

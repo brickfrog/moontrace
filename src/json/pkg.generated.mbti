@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn event_json(@moontrace.Event, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> Json
+pub fn event_json(@moontrace.Event, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> @moonbitlang/core/json.Json
 
 pub fn initialize(min_level? : @moontrace.Level, output? : (String) -> Unit, timestamp? : TimestampFormat, flatten? : Bool, trace_ids? : Bool, keys? : JsonKeys) -> Unit
 

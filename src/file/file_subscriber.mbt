@@ -16,12 +16,13 @@ const FILE_PERMISSION : Int32 = 0o600
 
 ///|
 /// Calendar periods for time-based rotation, in UTC.
+#derive(Eq, Compare, Debug)
 pub(all) enum RotationPeriod {
   /// Archive as `path.YYYY-MM-DDTHH`.
   Hourly
   /// Archive as `path.YYYY-MM-DD`.
   Daily
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 /// File subscriber settings.
@@ -33,6 +34,7 @@ pub(all) enum RotationPeriod {
 /// the period the file covered. Dated archives older than `max_age_ms`,
 /// measured from the start of their period, are deleted, and at most
 /// `max_files` of the newest are kept. `gzip` adds `.gz` to archives.
+#derive(Eq, Compare, Debug)
 pub(all) struct FileSubscriberConfig {
   path : String
   max_size_bytes : Int32
@@ -42,7 +44,7 @@ pub(all) struct FileSubscriberConfig {
   queue_capacity : Int32
   rotate_every : RotationPeriod?
   max_age_ms : UInt64?
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn FileSubscriberConfig::new(

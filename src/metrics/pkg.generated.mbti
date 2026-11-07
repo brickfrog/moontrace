@@ -4,6 +4,7 @@ package "brickfrog/moontrace/metrics"
 import {
   "brickfrog/moontrace",
   "brickfrog/moontrace/otlp",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -13,7 +14,7 @@ pub let default_histogram_bounds : Array[Double]
 
 pub fn meter(name? : String, version? : String, clock? : () -> UInt64) -> Meter
 
-pub fn metrics_to_otlp_json(Array[MetricData], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> Json
+pub fn metrics_to_otlp_json(Array[MetricData], resource? : @otlp.Resource, scope? : @otlp.InstrumentationScope) -> @json.Json
 
 pub fn span_metrics(buckets_ms? : Array[UInt64]) -> SpanMetrics
 
@@ -37,7 +38,7 @@ pub fn Meter::collect(Self) -> Array[MetricData]
 pub fn Meter::counter(Self, String, description? : String, unit? : String) -> Counter
 pub fn Meter::histogram(Self, String, description? : String, unit? : String, bounds? : Array[Double]) -> Histogram
 pub fn Meter::scope(Self) -> @otlp.InstrumentationScope
-pub fn Meter::to_otlp_json(Self, resource? : @otlp.Resource) -> Json
+pub fn Meter::to_otlp_json(Self, resource? : @otlp.Resource) -> @json.Json
 pub fn Meter::up_down_counter(Self, String, description? : String, unit? : String) -> UpDownCounter
 
 pub(all) struct MetricData {
@@ -85,7 +86,7 @@ pub(all) struct SpanSeriesSnapshot {
   bucket_bounds_ms : Array[UInt64]
   bucket_counts : Array[Int64]
 }
-pub fn SpanSeriesSnapshot::to_json(Self) -> Json
+pub fn SpanSeriesSnapshot::to_json(Self) -> @json.Json
 
 pub struct UpDownCounter {
   // private fields

@@ -2,10 +2,11 @@
 let env_filter_ws = " \t\r\n"
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum EnvFilterError {
   InvalidLevel(String)
   MalformedDirective(String)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn EnvFilterError::to_string(self : EnvFilterError) -> String {
@@ -25,12 +26,13 @@ pub impl Show for EnvFilterError with fn output(self, logger) {
 /// A parsed filter directive. `default_off` is set by a bare `off`, and
 /// `silenced_modules` lists packages set to `off`; a package appears in at
 /// most one of `module_filters` and `silenced_modules`.
+#derive(Debug)
 pub(all) struct ParsedFilter {
   default_level : Level
   module_filters : Map[String, Level]
   silenced_modules : Array[String]
   default_off : Bool
-} derive(Debug)
+}
 
 ///|
 /// Package filters in resolver form, with silenced packages as `None`.

@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum SpanLifecycleKind {
   SpanCreated
   SpanEntered
@@ -6,25 +7,28 @@ pub(all) enum SpanLifecycleKind {
   SpanExited
   SpanClosed
   SpanLinked
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct SpanLifecycleEvent {
   index : Int32
   kind : SpanLifecycleKind
   span : @moontrace.Span
   field : @moontrace.Field?
   link : @moontrace.SpanLink?
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct CapturedRecord {
   index : Int32
   event : @moontrace.Event?
   lifecycle : SpanLifecycleEvent?
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct EventQuery {
   level : @moontrace.Level?
   message : String?
@@ -33,22 +37,24 @@ pub struct EventQuery {
   field_value : Json?
   span_id : String?
   span_name : String?
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct LifecycleQuery {
   kind : SpanLifecycleKind?
   span_id : String?
   span_name : String?
   field_key : String?
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct TestSubscriber {
   events : Array[@moontrace.Event]
   lifecycle : Array[SpanLifecycleEvent]
   records : Array[CapturedRecord]
-} derive(Debug)
+}
 
 ///|
 pub fn test_subscriber() -> TestSubscriber {

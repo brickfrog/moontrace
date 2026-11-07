@@ -5,6 +5,7 @@
 /// when that level was filtered out for the creating package; a disabled span
 /// keeps its IDs and propagation but emits no enter/exit events and is not
 /// delivered to span observers.
+#derive(Debug)
 pub(all) struct Span {
   name : String
   fields : Array[Field]
@@ -23,7 +24,7 @@ pub(all) struct Span {
   mut status_message : String
   level : Level?
   enabled : Bool
-} derive(Debug)
+}
 
 ///|
 /// Whether a span at `level`, created from `loc`'s package, passes the global

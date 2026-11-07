@@ -4,6 +4,7 @@ package "brickfrog/moontrace"
 import {
   "moonbitlang/core/builtin",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -68,11 +69,11 @@ pub fn exception_fields(Error, type_name? : String) -> Array[Field]
 
 pub fn extract_headers(Map[String, String]) -> (SpanContext?, Baggage)
 
-pub fn[T : ToJson] field(String, T) -> Field
+pub fn[T : @json.ToJson] field(String, T) -> Field
 
-pub fn fields(Array[(String, Json)]) -> Array[Field]
+pub fn fields(Array[(String, @json.Json)]) -> Array[Field]
 
-pub fn fields_to_json(Array[Field]) -> Json
+pub fn fields_to_json(Array[Field]) -> @json.Json
 
 pub fn filter_events((Event) -> Unit, (Event) -> Bool) -> (Event) -> Unit
 
@@ -93,7 +94,7 @@ pub fn format_traceparent(SpanContext) -> String
 
 pub fn format_tracestate(TraceState) -> String
 
-pub fn get_global_field(String) -> Json?
+pub fn get_global_field(String) -> @json.Json?
 
 pub fn get_min_level() -> Level
 
@@ -158,7 +159,7 @@ pub fn sample_trace_decision(TraceFlags?, String, Double) -> Bool
 
 pub fn set_filter_from_directives(String) -> Result[Unit, EnvFilterError]
 
-pub fn[T : ToJson] set_global_field(String, T) -> Unit
+pub fn[T : @json.ToJson] set_global_field(String, T) -> Unit
 
 pub fn set_min_level(Level) -> Unit
 
@@ -244,7 +245,7 @@ pub fn with_directives((Event) -> Unit, ParsedFilter) -> (Event) -> Unit
 
 pub fn with_filter((Event) -> Unit, Level) -> (Event) -> Unit
 
-pub fn[V : ToJson, T] with_global_field(String, V, () -> T raise?) -> T raise?
+pub fn[V : @json.ToJson, T] with_global_field(String, V, () -> T raise?) -> T raise?
 
 pub fn[T] with_global_fields(Array[Field], () -> T raise?) -> T raise?
 
@@ -302,13 +303,15 @@ pub fn BurstSampler::dropped(Self) -> Int32
 pub fn BurstSampler::kept(Self) -> Int32
 pub fn BurstSampler::subscriber(Self) -> (Event) -> Unit
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum EnvFilterError {
   InvalidLevel(String)
   MalformedDirective(String)
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn EnvFilterError::to_string(Self) -> String
 pub impl Show for EnvFilterError
 
+#derive(@debug.Debug)
 pub(all) struct Event {
   level : Level
   message : String
@@ -317,9 +320,9 @@ pub(all) struct Event {
   source : String
   file : String
   line : Int32
-} derive(@debug.Debug)
+}
 pub fn Event::format(Self, color? : Bool, location? : Bool) -> String
-pub fn Event::to_json(Self) -> Json
+pub fn Event::to_json(Self) -> @json.Json
 pub fn Event::to_string(Self) -> String
 pub impl Show for Event
 
@@ -332,23 +335,25 @@ pub fn EventBuffer::flush(Self) -> Unit
 pub fn EventBuffer::len(Self) -> Int32
 pub fn EventBuffer::subscriber(Self) -> (Event) -> Unit
 
+#derive(@debug.Debug)
 pub(all) struct Field {
   key : String
-  value : Json
-} derive(@debug.Debug)
-pub fn Field::to_json(Self) -> Json
+  value : @json.Json
+}
+pub fn Field::to_json(Self) -> @json.Json
 pub fn Field::to_string(Self) -> String
 pub impl Show for Field
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum Level {
   Trace
   Debug
   Info
   Warn
   Error_
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn Level::from_string(String) -> Self?
-pub fn Level::to_json(Self) -> Json
+pub fn Level::to_json(Self) -> @json.Json
 pub fn Level::to_string(Self) -> String
 pub impl Show for Level
 
@@ -383,12 +388,13 @@ pub fn Logger::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> 
 pub fn Logger::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 pub fn Logger::with_min_level(Self, Level) -> Self
 
+#derive(@debug.Debug)
 pub(all) struct ParsedFilter {
   default_level : Level
   module_filters : Map[String, Level]
   silenced_modules : Array[String]
   default_off : Bool
-} derive(@debug.Debug)
+}
 pub fn ParsedFilter::apply(Self) -> Unit
 
 pub(all) enum PropagationFormat {
@@ -422,19 +428,21 @@ pub fn RatioSampler::dropped(Self) -> Int32
 pub fn RatioSampler::kept(Self) -> Int32
 pub fn RatioSampler::subscriber(Self) -> (Event) -> Unit
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum RedactionMode {
   Redact
   Drop
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn RedactionMode::to_string(Self) -> String
 pub impl Show for RedactionMode
 
+#derive(@debug.Debug)
 pub(all) struct RedactionPolicy {
   deny : Array[String]
   allow : Array[String]?
   mode : RedactionMode
   placeholder : String
-} derive(@debug.Debug)
+}
 
 pub struct ReloadHandle {
   // private fields
@@ -451,6 +459,7 @@ pub(all) struct SamplingInput {
   parent_is_remote : Bool
 }
 
+#derive(@debug.Debug)
 pub(all) struct Span {
   name : String
   fields : Array[Field]
@@ -469,7 +478,7 @@ pub(all) struct Span {
   mut status_message : String
   level : Level?
   enabled : Bool
-} derive(@debug.Debug)
+}
 pub fn Span::add_event(Self, String, fields? : Array[Field]) -> Unit
 #callsite(autofill(loc))
 pub fn Span::debug(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
@@ -489,54 +498,58 @@ pub fn Span::is_enabled(Self) -> Bool
 pub fn Span::is_sampled(Self) -> Bool
 pub fn Span::link(Self, Self, fields? : Array[Field]) -> Unit
 pub fn Span::link_context(Self, SpanContext, fields? : Array[Field]) -> Unit
-pub fn[T : ToJson] Span::record(Self, String, T) -> Unit
+pub fn[T : @json.ToJson] Span::record(Self, String, T) -> Unit
 pub fn Span::record_error(Self, String) -> Unit
 pub fn Span::record_exception(Self, Error, type_name? : String, fields? : Array[Field]) -> Unit
 pub fn Span::set_status(Self, SpanStatus, message? : String?) -> Unit
-pub fn Span::to_json(Self) -> Json
+pub fn Span::to_json(Self) -> @json.Json
 pub fn Span::to_string(Self) -> String
 #callsite(autofill(loc))
 pub fn Span::trace(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
 #callsite(autofill(loc))
 pub fn Span::warn(Self, String, fields? : Array[Field], loc~ : SourceLoc) -> Unit
-pub fn[T : ToJson] Span::with_field(Self, String, T) -> Self
+pub fn[T : @json.ToJson] Span::with_field(Self, String, T) -> Self
 pub fn Span::with_kind(Self, SpanKind) -> Self
 pub impl Show for Span
 
+#derive(@debug.Debug)
 pub struct SpanContext {
   trace_id : String
   span_id : String
   flags : TraceFlags
   trace_state : TraceState
   is_remote : Bool
-} derive(@debug.Debug)
+}
 pub fn SpanContext::is_remote(Self) -> Bool
 pub fn SpanContext::is_sampled(Self) -> Bool
 pub fn SpanContext::trace_flags_int(Self) -> Int32
 pub fn SpanContext::traceparent(Self) -> String
 
+#derive(@debug.Debug)
 pub(all) struct SpanEvent {
   name : String
   timestamp : UInt64
   fields : Array[Field]
-} derive(@debug.Debug)
+}
 
+#derive(Compare, Eq, @debug.Debug)
 pub struct SpanId {
   value : String
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn SpanId::parse(String) -> Result[Self, TraceContextError]
 pub fn SpanId::to_string(Self) -> String
 pub impl Show for SpanId
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum SpanKind {
   Internal
   Server
   Client
   Producer
   Consumer
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn SpanKind::to_int(Self) -> Int32
-pub fn SpanKind::to_json(Self) -> Json
+pub fn SpanKind::to_json(Self) -> @json.Json
 pub fn SpanKind::to_string(Self) -> String
 pub impl Show for SpanKind
 
@@ -549,21 +562,23 @@ pub(all) struct SpanLifecycleObserver {
   on_linked : (Span, SpanLink) -> Unit
 }
 
+#derive(@debug.Debug)
 pub(all) struct SpanLink {
   trace_id : String
   span_id : String
   kind : SpanLinkKind
   fields : Array[Field]
   trace_state : String
-} derive(@debug.Debug)
-pub fn SpanLink::to_json(Self) -> Json
+}
+pub fn SpanLink::to_json(Self) -> @json.Json
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum SpanLinkKind {
   SpanLinked
   SpanFollowsFrom
   SpanChildOf
-} derive(Compare, Eq, @debug.Debug)
-pub fn SpanLinkKind::to_json(Self) -> Json
+}
+pub fn SpanLinkKind::to_json(Self) -> @json.Json
 pub fn SpanLinkKind::to_string(Self) -> String
 pub impl Show for SpanLinkKind
 
@@ -572,13 +587,14 @@ pub struct SpanSampler {
 }
 pub fn SpanSampler::should_sample(Self, SamplingInput) -> Bool
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum SpanStatus {
   Unset
   Ok
   SpanError
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn SpanStatus::to_int(Self) -> Int32
-pub fn SpanStatus::to_json(Self) -> Json
+pub fn SpanStatus::to_json(Self) -> @json.Json
 pub fn SpanStatus::to_string(Self) -> String
 pub impl Show for SpanStatus
 
@@ -593,6 +609,7 @@ pub fn TailSampler::observer(Self) -> SpanLifecycleObserver
 pub fn TailSampler::pending(Self) -> Int32
 pub fn TailSampler::subscriber(Self, (Event) -> Unit) -> (Event) -> Unit
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum TraceContextError {
   InvalidTraceId(String)
   InvalidSpanId(String)
@@ -600,13 +617,14 @@ pub(all) enum TraceContextError {
   InvalidTraceParent(String)
   UnsupportedTraceParentVersion(String)
   InvalidTraceState(String)
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn TraceContextError::to_string(Self) -> String
 pub impl Show for TraceContextError
 
+#derive(Compare, Eq, @debug.Debug)
 pub struct TraceFlags {
   flags : Int32
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn TraceFlags::from_hex(String) -> Result[Self, TraceContextError]
 pub fn TraceFlags::from_int(Int32) -> Result[Self, TraceContextError]
 pub fn TraceFlags::is_sampled(Self) -> Bool
@@ -618,9 +636,10 @@ pub fn TraceFlags::unsampled() -> Self
 pub fn TraceFlags::with_sampled(Self, Bool) -> Self
 pub impl Show for TraceFlags
 
+#derive(Compare, Eq, @debug.Debug)
 pub struct TraceId {
   value : String
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn TraceId::parse(String) -> Result[Self, TraceContextError]
 pub fn TraceId::to_string(Self) -> String
 pub impl Show for TraceId
@@ -635,9 +654,10 @@ pub fn TraceSampler::dropped(Self) -> Int32
 pub fn TraceSampler::kept(Self) -> Int32
 pub fn TraceSampler::subscriber(Self) -> (Event) -> Unit
 
+#derive(@debug.Debug)
 pub struct TraceState {
   // private fields
-} derive(@debug.Debug)
+}
 pub fn TraceState::empty() -> Self
 pub fn TraceState::from_entries(Array[TraceStateEntry]) -> Result[Self, TraceContextError]
 pub fn TraceState::get(Self, String) -> String?
@@ -646,10 +666,11 @@ pub fn TraceState::len(Self) -> Int32
 pub fn TraceState::set(Self, String, String) -> Result[Self, TraceContextError]
 pub fn TraceState::to_header(Self) -> String
 
+#derive(Compare, Eq, @debug.Debug)
 pub struct TraceStateEntry {
   key : String
   value : String
-} derive(Compare, Eq, @debug.Debug)
+}
 
 pub(all) struct TraceSummary {
   trace_id : String

@@ -82,11 +82,12 @@ pub(all) enum FakeReply {
 }
 
 ///|
+#derive(Debug)
 pub(all) struct FakeCall {
   url : String
   body : String
   headers : Map[String, String]
-} derive(Debug)
+}
 
 ///|
 pub(all) struct FakeClient {
