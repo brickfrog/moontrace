@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Upgrade the pinned MoonBit toolchain to `0.10.20+65efd5b93`, migrate derived traits to `#derive(...)`, and refresh generated interfaces.
 
+### Fixed
+
+- Sample both incoming contexts in the synthetic request-tracing example so its four-span export assertions match the fixture; run the native tracing examples in CI.
+
 ## [0.19.0] - 2026-11-01
 
 Upgrade notes for code that constructs moontrace values directly or matches on them exhaustively:
