@@ -1,8 +1,9 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum RedactionMode {
   Redact
   Drop
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn RedactionMode::to_string(self : RedactionMode) -> String {
@@ -18,12 +19,13 @@ pub impl Show for RedactionMode with fn output(self, logger) {
 }
 
 ///|
+#derive(Debug)
 pub(all) struct RedactionPolicy {
   deny : Array[String]
   allow : Array[String]?
   mode : RedactionMode
   placeholder : String
-} derive(Debug)
+}
 
 ///|
 pub fn redaction_policy(

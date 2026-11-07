@@ -1,10 +1,11 @@
 ///|
 /// A timestamped annotation recorded on a span, exported as an OTLP span event.
+#derive(Debug)
 pub(all) struct SpanEvent {
   name : String
   timestamp : UInt64
   fields : Array[Field]
-} derive(Debug)
+}
 
 ///|
 /// Record a named event on the span, such as a retry or cache miss. Events are

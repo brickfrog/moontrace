@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum TraceContextError {
   InvalidTraceId(String)
   InvalidSpanId(String)
@@ -6,7 +7,7 @@ pub(all) enum TraceContextError {
   InvalidTraceParent(String)
   UnsupportedTraceParentVersion(String)
   InvalidTraceState(String)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub impl Show for TraceContextError with fn output(self, logger) {
@@ -31,39 +32,45 @@ pub fn TraceContextError::to_string(self : TraceContextError) -> String {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub struct TraceId {
   value : String
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Eq, Compare, Debug)
 pub struct SpanId {
   value : String
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Eq, Compare, Debug)
 pub struct TraceFlags {
   flags : Int32
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Eq, Compare, Debug)
 pub struct TraceStateEntry {
   key : String
   value : String
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct TraceState {
   priv entries : Array[TraceStateEntry]
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub struct SpanContext {
   trace_id : String
   span_id : String
   flags : TraceFlags
   trace_state : TraceState
   is_remote : Bool
-} derive(Debug)
+}
 
 ///|
 const TRACEPARENT_MAX_LENGTH : Int32 = 512

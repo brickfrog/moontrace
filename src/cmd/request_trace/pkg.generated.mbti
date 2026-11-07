@@ -8,7 +8,8 @@ import {
 // Values
 
 // Errors
-type RequestError derive(@debug.Debug)
+#derive(@debug.Debug)
+type RequestError
 
 // Types and methods
 type CaptureClient

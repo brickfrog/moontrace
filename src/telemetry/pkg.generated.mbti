@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "brickfrog/moontrace/telemetry"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
 pub fn attach(String, String, (TelemetryEvent) -> Unit) -> Bool
 
@@ -8,11 +12,11 @@ pub fn attach_many(String, Array[String], (TelemetryEvent) -> Unit) -> Bool
 
 pub fn detach(String) -> Bool
 
-pub fn execute(String, Map[String, Double], metadata? : Map[String, Json]) -> Unit
+pub fn execute(String, Map[String, Double], metadata? : Map[String, @json.Json]) -> Unit
 
 pub fn handler_ids(name? : String) -> Array[String]
 
-pub fn[T] span(String, metadata? : Map[String, Json], clock? : () -> UInt64, () -> T raise?) -> T raise?
+pub fn[T] span(String, metadata? : Map[String, @json.Json], clock? : () -> UInt64, () -> T raise?) -> T raise?
 
 pub fn[T] with_handler(String, Array[String], (TelemetryEvent) -> Unit, () -> T raise?) -> T raise?
 
@@ -22,7 +26,7 @@ pub fn[T] with_handler(String, Array[String], (TelemetryEvent) -> Unit, () -> T 
 pub(all) struct TelemetryEvent {
   name : String
   measurements : Map[String, Double]
-  metadata : Map[String, Json]
+  metadata : Map[String, @json.Json]
 }
 
 // Type aliases

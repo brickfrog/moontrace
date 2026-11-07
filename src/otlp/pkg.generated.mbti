@@ -4,6 +4,7 @@ package "brickfrog/moontrace/otlp"
 import {
   "brickfrog/moontrace",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -31,19 +32,20 @@ pub let sdk_version : String
 
 pub fn span_to_otlp(@moontrace.Span, limits? : OtlpLimits) -> OtlpSpan
 
-pub fn wrap_log_records(Array[OtlpLogRecord], resource? : Resource, scope? : InstrumentationScope) -> Json
+pub fn wrap_log_records(Array[OtlpLogRecord], resource? : Resource, scope? : InstrumentationScope) -> @json.Json
 
-pub fn wrap_spans(Array[OtlpSpan], resource? : Resource, scope? : InstrumentationScope) -> Json
+pub fn wrap_spans(Array[OtlpSpan], resource? : Resource, scope? : InstrumentationScope) -> @json.Json
 
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct InstrumentationScope {
   name : String
   version : String
   attributes : Array[OtlpAttribute]
-} derive(@debug.Debug)
-pub fn InstrumentationScope::to_json(Self) -> Json
+}
+pub fn InstrumentationScope::to_json(Self) -> @json.Json
 
 pub(all) struct OtelConfig {
   disabled : Bool
@@ -68,11 +70,12 @@ pub(all) struct OtelConfig {
 pub fn OtelConfig::resource(Self, extra? : Resource) -> Resource
 pub fn OtelConfig::span_sampler(Self) -> @moontrace.SpanSampler
 
+#derive(@debug.Debug)
 pub(all) struct OtlpAttribute {
   key : String
   value : OtlpValue
-} derive(@debug.Debug)
-pub fn OtlpAttribute::to_json(Self) -> Json
+}
+pub fn OtlpAttribute::to_json(Self) -> @json.Json
 
 pub(all) struct OtlpExporter {
   mut log_records : Array[OtlpLogRecord]
@@ -99,15 +102,17 @@ pub(all) struct OtlpLimits {
   link_count : Int32
 }
 
+#derive(@debug.Debug)
 pub(all) struct OtlpLink {
   trace_id : String
   span_id : String
   trace_state : String
   attributes : Array[OtlpAttribute]
   dropped_attributes_count : Int32
-} derive(@debug.Debug)
-pub fn OtlpLink::to_json(Self) -> Json
+}
+pub fn OtlpLink::to_json(Self) -> @json.Json
 
+#derive(@debug.Debug)
 pub(all) struct OtlpLogRecord {
   time_unix_nano : UInt64
   severity_number : Int32
@@ -117,9 +122,10 @@ pub(all) struct OtlpLogRecord {
   trace_id : String
   span_id : String
   dropped_attributes_count : Int32
-} derive(@debug.Debug)
-pub fn OtlpLogRecord::to_json(Self) -> Json
+}
+pub fn OtlpLogRecord::to_json(Self) -> @json.Json
 
+#derive(@debug.Debug)
 pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
@@ -137,17 +143,19 @@ pub(all) struct OtlpSpan {
   dropped_attributes_count : Int32
   dropped_events_count : Int32
   dropped_links_count : Int32
-} derive(@debug.Debug)
-pub fn OtlpSpan::to_json(Self) -> Json
+}
+pub fn OtlpSpan::to_json(Self) -> @json.Json
 
+#derive(@debug.Debug)
 pub(all) struct OtlpSpanEvent {
   time_unix_nano : UInt64
   name : String
   attributes : Array[OtlpAttribute]
   dropped_attributes_count : Int32
-} derive(@debug.Debug)
-pub fn OtlpSpanEvent::to_json(Self) -> Json
+}
+pub fn OtlpSpanEvent::to_json(Self) -> @json.Json
 
+#derive(@debug.Debug)
 pub(all) enum OtlpValue {
   StringVal(String)
   IntVal(Int64)
@@ -156,14 +164,15 @@ pub(all) enum OtlpValue {
   ArrayVal(Array[OtlpValue])
   KvlistVal(Array[OtlpAttribute])
   EmptyVal
-} derive(@debug.Debug)
-pub fn OtlpValue::to_json(Self) -> Json
+}
+pub fn OtlpValue::to_json(Self) -> @json.Json
 
+#derive(@debug.Debug)
 pub(all) struct Resource {
   attributes : Array[OtlpAttribute]
-} derive(@debug.Debug)
+}
 pub fn Resource::merge(Self, Self) -> Self
-pub fn Resource::to_json(Self) -> Json
+pub fn Resource::to_json(Self) -> @json.Json
 
 // Type aliases
 

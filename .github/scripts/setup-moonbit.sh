@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-readonly MOONBIT_VERSION='0.10.18+6c83a7f62'
-readonly MOONBIT_VERSION_URL='0.10.18%2B6c83a7f62'
+readonly MOONBIT_VERSION='0.10.20+65efd5b93'
+readonly MOONBIT_VERSION_URL='0.10.20%2B65efd5b93'
 readonly MOONBIT_BASE_URL='https://cli.moonbitlang.com'
-readonly TOOLCHAIN_SHA256='0e4cde1ace98e8ef00552a937738b59c6901c4b8a004ebad71ea0e63688f63f1'
-readonly CORE_SHA256='30a8ae1c1e1e8fde478ea742cbc928c8f4ae1f5c00090afe3f10c97be9e5da64'
+readonly TOOLCHAIN_SHA256='80d987523308fa490eba9f1baf98df996a5a7891e118357553b7c2608c0597c5'
+readonly CORE_SHA256='8ec2a2c01335501d703867bb4eef5f92d3cd7e1ae1ee5f7f14d54d16d2c7c2b5'
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set}"
 : "${GITHUB_ENV:?GITHUB_ENV must be set}"

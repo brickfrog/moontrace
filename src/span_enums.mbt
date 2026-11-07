@@ -1,11 +1,12 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum SpanKind {
   Internal // 1 in OTLP
   Server // 2
   Client // 3
   Producer // 4
   Consumer // 5
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub impl Show for SpanKind with fn output(self, logger) {
@@ -35,11 +36,12 @@ pub fn SpanKind::to_int(self : SpanKind) -> Int32 {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum SpanStatus {
   Unset // 0 in OTLP
   Ok // 1
   SpanError // 2 — can't use Error (keyword-adjacent)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub impl Show for SpanStatus with fn output(self, logger) {

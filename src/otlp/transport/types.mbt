@@ -1,16 +1,18 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) struct HttpResponse {
   status_code : Int32
   body : String
   retry_after_ms : Int32?
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum TransportError {
   Network(String)
   Timeout(String)
   Request(String)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn TransportError::to_string(self : TransportError) -> String {
@@ -27,11 +29,12 @@ pub impl Show for TransportError with fn output(self, logger) {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum RetryClass {
   Success
   Retryable
   NonRetryable
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 const MAX_RETRY_AFTER_MS : Int32 = 300000
@@ -57,13 +60,14 @@ pub fn classify_error(error : TransportError) -> RetryClass {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) struct ExportOutcome {
   success : Bool
   attempts : Int32
   status_code : Int32?
   error : TransportError?
   retry_class : RetryClass
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 /// An HTTP response with the raw body, returned by `OtlpHttpClient::post_bytes`.

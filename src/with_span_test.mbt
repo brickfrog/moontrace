@@ -87,9 +87,10 @@ test "with_child_span propagates trace_id" {
 }
 
 ///|
+#derive(Debug)
 suberror SyncSpanFailure {
   SyncSpanFailure(Int32)
-} derive(Debug)
+}
 
 ///|
 fn check_sync_span_failure(

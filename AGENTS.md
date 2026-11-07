@@ -65,6 +65,7 @@ request and async context explicit.
 - Defaulted labeled parameters use `fields~ : Array[Field] = []`; optional values
   use `span? : Span`. Calls use `fields=value`, or `fields~` to forward a binding.
 - Generic parameters follow `fn`: `pub fn[T] name(...) -> T`.
+- Put `#derive(...)` before type declarations; postfix `derive(...)` is deprecated.
 - Use `Json(value)` or `field(key, value)` with the pinned toolchain. Read-only
   JSON variants cannot be constructed as `Json::String(...)` from another
   package, but can be pattern-matched. Build JSON structurally and serialize

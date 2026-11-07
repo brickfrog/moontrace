@@ -1,18 +1,20 @@
 ///|
 /// Counts are nonnegative protobuf int64 values. Zero counts may carry a warning.
+#derive(Eq, Compare, Debug)
 pub(all) struct ExportPartialSuccess {
   rejected_spans : Int64
   rejected_log_records : Int64
   rejected_data_points : Int64
   error_message : String
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 /// Additive response detail without changing the constructible ExportOutcome.
+#derive(Eq, Compare, Debug)
 pub(all) struct ExportReport {
   outcome : ExportOutcome
   partial_success : ExportPartialSuccess?
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 fn invalid_response() -> TransportError {

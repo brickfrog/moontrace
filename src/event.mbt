@@ -1,4 +1,5 @@
 ///|
+#derive(Debug)
 pub(all) struct Event {
   level : Level
   message : String
@@ -7,7 +8,7 @@ pub(all) struct Event {
   source : String
   file : String
   line : Int32
-} derive(Debug)
+}
 
 ///|
 let global_subscriber : Ref[((Event) -> Unit)?] = { val: None, }

@@ -5,11 +5,12 @@ pub(all) struct OtlpPayload {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum OtlpSignal {
   Traces
   Logs
   Metrics
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn OtlpSignal::to_string(self : OtlpSignal) -> String {
@@ -21,10 +22,11 @@ pub fn OtlpSignal::to_string(self : OtlpSignal) -> String {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum EncodingError {
   ProtobufNotImplemented(OtlpSignal)
   ProtobufEncodeFailed(OtlpSignal, String)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn EncodingError::to_string(self : EncodingError) -> String {
@@ -42,10 +44,11 @@ pub impl Show for EncodingError with fn output(self, logger) {
 }
 
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum OtlpEncoder {
   JsonEncoder
   ProtobufEncoder
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn json_encoder() -> OtlpEncoder {

@@ -1,11 +1,12 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum Level {
   Trace
   Debug
   Info
   Warn
   Error_
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub fn Level::to_string(self : Level) -> String {

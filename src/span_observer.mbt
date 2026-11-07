@@ -1,18 +1,20 @@
 ///|
+#derive(Eq, Compare, Debug)
 pub(all) enum SpanLinkKind {
   SpanLinked
   SpanFollowsFrom
   SpanChildOf
-} derive(Eq, Compare, Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct SpanLink {
   trace_id : String
   span_id : String
   kind : SpanLinkKind
   fields : Array[Field]
   trace_state : String
-} derive(Debug)
+}
 
 ///|
 pub(all) struct SpanLifecycleObserver {

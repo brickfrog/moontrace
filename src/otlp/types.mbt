@@ -1,6 +1,7 @@
 // OTLP attribute value
 
 ///|
+#derive(Debug)
 pub(all) enum OtlpValue {
   StringVal(String)
   IntVal(Int64)
@@ -10,32 +11,36 @@ pub(all) enum OtlpValue {
   KvlistVal(Array[OtlpAttribute])
   /// An `AnyValue` with no value set, OTLP's representation of null.
   EmptyVal
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct OtlpAttribute {
   key : String
   value : OtlpValue
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct OtlpLink {
   trace_id : String
   span_id : String
   trace_state : String
   attributes : Array[OtlpAttribute]
   dropped_attributes_count : Int32
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct OtlpSpanEvent {
   time_unix_nano : UInt64
   name : String
   attributes : Array[OtlpAttribute]
   dropped_attributes_count : Int32
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct OtlpSpan {
   trace_id : String
   span_id : String
@@ -53,9 +58,10 @@ pub(all) struct OtlpSpan {
   dropped_attributes_count : Int32
   dropped_events_count : Int32
   dropped_links_count : Int32
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct OtlpLogRecord {
   time_unix_nano : UInt64
   severity_number : Int32
@@ -65,19 +71,21 @@ pub(all) struct OtlpLogRecord {
   trace_id : String
   span_id : String
   dropped_attributes_count : Int32
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct Resource {
   attributes : Array[OtlpAttribute]
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 pub(all) struct InstrumentationScope {
   name : String
   version : String
   attributes : Array[OtlpAttribute]
-} derive(Debug)
+}
 
 ///|
 const SERVICE_NAME_KEY : String = "service.name"
