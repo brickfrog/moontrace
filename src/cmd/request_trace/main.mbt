@@ -91,8 +91,9 @@ async fn main {
   let first = context(
     "00-11111111111111111111111111111111-1111111111111111-01", "vendor=one",
   )
+  // Both incoming requests are sampled so the export assertions see all spans.
   let second = context(
-    "00-22222222222222222222222222222222-2222222222222222-00", "vendor=two",
+    "00-22222222222222222222222222222222-2222222222222222-01", "vendor=two",
   )
   let client = CaptureClient::{ payloads: [], }
   let exporter = @transport.managed_json_exporter(

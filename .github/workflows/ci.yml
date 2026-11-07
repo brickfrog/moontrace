@@ -43,6 +43,11 @@ jobs:
       - name: Test (wasm-gc)
         run: moon test --target wasm-gc
 
+      - name: Run synthetic tracing examples (native)
+        run: |
+          moon run src/cmd/managed_json --target native
+          moon run src/cmd/request_trace --target native
+
       - name: Format check
         run: |
           moon fmt
