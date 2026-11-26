@@ -184,7 +184,8 @@ async test "managed worker cancellation settles uncertain in-flight work and pre
       worker.cancel()
       let cancelled = Ref(false)
       worker.wait() catch {
-        error => cancelled.val = @async.is_cancellation_error(error)
+        @async.WaitedTaskAlreadyCancelled => cancelled.val = true
+        error => raise error
       }
       assert_true(cancelled.val)
       assert_eq(managed.stats().failed_batches, 1L)

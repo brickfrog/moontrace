@@ -105,7 +105,8 @@ async test "managed cancellation interrupts a slow HTTP response without retry" 
       worker.cancel()
       let cancelled = Ref(false)
       worker.wait() catch {
-        error => cancelled.val = @async.is_cancellation_error(error)
+        @async.WaitedTaskAlreadyCancelled => cancelled.val = true
+        error => raise error
       }
       assert_true(cancelled.val)
       let stats = managed.shutdown()

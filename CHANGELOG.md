@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Upgrade the pinned MoonBit toolchain to `0.10.20+65efd5b93`, migrate derived traits to `#derive(...)`, and refresh generated interfaces.
+- Update CI to `moon 0.1.20261126` and `moonc 1.0.0-rc1+3c0520448`. Use `moonbitlang/async@0.22.5` for compatibility across native, JavaScript, and Wasm GC.
+- Migrate derived traits to `#derive(...)` and refresh generated interfaces.
 
 ### Fixed
 

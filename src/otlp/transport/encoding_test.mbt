@@ -959,10 +959,10 @@ fn bytes_from_hex(value : String) -> Bytes {
   if value.length() % 2 != 0 {
     abort("odd-length hex fixture")
   }
-  let bytes = Buffer(size_hint=value.length() / 2)
+  let bytes = Buffer(capacity=value.length() / 2)
   for index = 0; index < value.length(); {
     let pair = value[index:index + 2].to_owned()
-    let byte = @string.parse_int(pair, base=16) catch {
+    let byte = @string.parse_int(pair, radix=16) catch {
       _ => abort("invalid hex fixture")
     }
     bytes.write_byte(byte.to_byte())
