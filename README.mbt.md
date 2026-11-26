@@ -341,8 +341,9 @@ recorded as `Cancelled` without an exception event).
 })
 ```
 
-MoonBit has no runtime type names, so `exception.type` is the leading
-identifier of the error's display string (`Failure(boom)` gives `Failure`), or
+The built-in `Failure` has exception type `Failure`. For other errors,
+`exception.type` is the leading
+identifier of the error's display string (`Broken(7)` gives `Broken`), or
 `Error` when there is none; pass `type_name=` for a precise name. Stack traces
 are not captured. `Span::add_event(name, fields=...)` records other span events,
 such as retries or cache misses; events added after a span exits are ignored.
@@ -518,11 +519,10 @@ pub async fn handle_request() -> Unit {
 ```
 
 `with_span_async`, `with_child_span_async`, and `with_remote_span_async` enter
-before the async closure runs and exit when it returns or raises. Errors, including structured
-cancellation delivered through MoonBit async error/catch paths, record
-`SpanError` before exit and are re-raised. This is best-effort structured
-cancellation instrumentation, not Rust Drop-guard semantics; out-of-band
-abort/kill is out of scope.
+before the async closure runs and exit on return, error, or cancellation.
+A raised error records an exception event and propagates to the caller.
+Structured cancellation sets the span status to `SpanError` with the message
+`Cancelled` and propagates after the span exits.
 
 For incoming trace headers, parse them with `parse_span_context(traceparent,
 tracestate=...)`, then pass the resulting context to

@@ -80,7 +80,7 @@ test "record_exception sets status and adds an exception event" {
 test "exception_fields derives or accepts the type name" {
   let fields = @moontrace.exception_fields(Failure("boom"))
   assert_eq(fields.map(f => f.key), ["exception.type", "exception.message"])
-  assert_eq(fields.map(f => f.value), [Json("Failure"), Json("Failure(boom)")])
+  assert_eq(fields.map(f => f.value), [Json("Failure"), Json("Failure: boom")])
 
   let quiet = @moontrace.exception_fields(QuietError)
   assert_eq(quiet[0].value, quiet[1].value)

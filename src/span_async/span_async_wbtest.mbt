@@ -199,7 +199,8 @@ async test "remote async span closes and records cancellation without changing r
     task.cancel()
     let cancelled = Ref(false)
     task.wait() catch {
-      error => cancelled.val = @async.is_cancellation_error(error)
+      @async.WaitedTaskAlreadyCancelled => cancelled.val = true
+      error => raise error
     }
     assert_true(cancelled.val)
   })

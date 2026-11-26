@@ -176,7 +176,7 @@ fn trace_id_hash(trace_id : String) -> UInt64 {
 ///|
 fn trace_id_unit(trace_id : String) -> Double {
   let hash = trace_id_hash(trace_id)
-  Double::convert_uint64(hash << 11 >> 11) / Double::convert_uint64(1UL << 53)
+  (hash << 11 >> 11).to_double() / (1UL << 53).to_double()
 }
 
 ///|

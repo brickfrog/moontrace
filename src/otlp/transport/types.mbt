@@ -147,7 +147,9 @@ fn parse_retry_after_value_ms(value : String) -> Int32? {
   } else {
     // Only the delay-seconds Retry-After form is supported here. HTTP-date or
     // otherwise unparseable values safely fall back to exponential backoff.
-    let seconds = @string.parse_int(trimmed, base=10) catch { _ => return None }
+    let seconds = @string.parse_int(trimmed, radix=10) catch {
+      _ => return None
+    }
     if seconds < 0 {
       None
     } else if seconds > MAX_RETRY_AFTER_MS / 1000 {

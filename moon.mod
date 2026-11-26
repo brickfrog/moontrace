@@ -3,7 +3,7 @@ name = "brickfrog/moontrace"
 version = "0.19.0"
 
 import {
-  "moonbitlang/async@0.21.1",
+  "moonbitlang/async@0.22.5",
   "moonbitlang/protobuf@0.1.2",
 }
 

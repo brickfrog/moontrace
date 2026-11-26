@@ -24,7 +24,7 @@ pub fn Span::add_event(
 
 ///|
 /// Derive an exception type name from an error's display string: the leading
-/// identifier when the string starts with one (`Failure(boom)` -> `Failure`,
+/// identifier when the string starts with one (`Broken(7)` -> `Broken`,
 /// `pkg.MyError.Case` -> itself), otherwise `Error`. MoonBit has no runtime
 /// type names, so pass `type_name` where a precise name matters.
 fn exception_type_name(display : String) -> String {
@@ -57,7 +57,11 @@ pub fn exception_fields(err : Error, type_name? : String) -> Array[Field] {
   let message = "\{err}"
   let exception_type = match type_name {
     Some(name) => name
-    None => exception_type_name(message)
+    None =>
+      match err {
+        Failure(_) => "Failure"
+        _ => exception_type_name(message)
+      }
   }
   [
     { key: "exception.type", value: Json(exception_type), },

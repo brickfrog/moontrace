@@ -1,24 +1,8 @@
 ///|
-fn error_message(err : Error) -> String {
-  if @async.is_cancellation_error(err) {
-    "Cancelled"
-  } else {
-    "\{err}"
-  }
-}
-
-///|
 /// Run an async closure inside a new span.
 ///
-/// The span is exited by `defer`, so it is exited on normal return, on a raised
-/// error, and on async cancellation. The error message is recorded by a
-/// catch-all handler, which is the only construct that can observe the error
-/// value: `errdefer` runs no matter the error but binds nothing.
-///
-/// This is best-effort structured cancellation instrumentation. It is not a
-/// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
-/// scope. If a future compiler stops routing cancellation through `catch`, the
-/// span is still exited but the cancellation message is no longer recorded.
+/// The span exits on return, error, or cancellation. Raised errors are recorded
+/// as exceptions. Cancellation records the error status with message `Cancelled`.
 /// `level` behaves as for `@moontrace.span`.
 #callsite(autofill(loc))
 pub async fn[T] with_span_async(
@@ -35,13 +19,8 @@ pub async fn[T] with_span_async(
 /// Run an async closure inside a child span with an explicit parent span.
 ///
 /// The child span inherits the parent's trace_id, records parent_span_id, and
-/// emits the core CHILD_OF span link. The span is exited by `defer`, so it is
-/// exited on normal return, on a raised error, and on async cancellation.
-///
-/// This is best-effort structured cancellation instrumentation. It is not a
-/// Rust Drop-guard equivalent, and out-of-band abort/kill paths are out of
-/// scope. If a future compiler stops routing cancellation through `catch`, the
-/// span is still exited but the cancellation message is no longer recorded.
+/// emits the core CHILD_OF span link. Errors and cancellation are recorded
+/// as in `with_span_async`.
 /// `level` behaves as for `@moontrace.span`.
 #callsite(autofill(loc))
 pub async fn[T] with_child_span_async(
@@ -59,21 +38,23 @@ pub async fn[T] with_child_span_async(
 }
 
 ///|
-// Catch observes the original error; defer owns cleanup for all async helpers.
-#warnings("-fragile_catch_all")
 async fn[T] run_in_span_async(
   s : @moontrace.Span,
   f : async (@moontrace.Span) -> T,
 ) -> T {
   s.enter()
   defer s.exit()
-  f(s) catch {
-    err => {
-      if @async.is_cancellation_error(err) {
-        s.record_error(error_message(err))
-      } else {
-        s.record_exception(err)
-      }
+  let outcome = {
+    // Ordinary errors become Err here, so only cancellation unwinds this block.
+    errdefer s.record_error("Cancelled")
+    Ok(f(s)) catch {
+      err => Err(err)
+    }
+  }
+  match outcome {
+    Ok(value) => value
+    Err(err) => {
+      s.record_exception(err)
       raise err
     }
   }

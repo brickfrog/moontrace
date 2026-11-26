@@ -242,10 +242,10 @@ fn hex_id_bytes(
   if value.length() != expected_bytes * 2 {
     raise InvalidHexId(field, value)
   }
-  let bytes = Buffer(size_hint=expected_bytes)
+  let bytes = Buffer(capacity=expected_bytes)
   for index = 0; index < value.length(); {
     let pair = value[index:index + 2].to_owned()
-    let byte = @string.parse_int(pair, base=16) catch {
+    let byte = @string.parse_int(pair, radix=16) catch {
       _ => raise InvalidHexId(field, value)
     }
     if byte < 0 || byte > 255 {
