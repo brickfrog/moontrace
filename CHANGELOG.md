@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-11-26
+
 ### Changed
 
 - Update CI to `moon 0.1.20261126` and `moonc 1.0.0-rc1+3c0520448`. Use `moonbitlang/async@0.22.5` for compatibility across native, JavaScript, and Wasm GC.
@@ -14,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserve span cancellation reporting and the built-in `Failure` exception type on MoonBit 1.0 RC1 (#142).
 - Sample both incoming contexts in the synthetic request-tracing example so its four-span export assertions match the fixture; run the native tracing examples in CI.
 
 ## [0.19.0] - 2026-11-01
